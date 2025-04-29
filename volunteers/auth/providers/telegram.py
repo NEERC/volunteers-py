@@ -15,5 +15,4 @@ async def verify_telegram_login(data: TelegramLoginData) -> bool:
     """
     Verify the Telegram login data.
     """
-    return True # TODO: Implement the actual verification
-
+    return True  # TODO: Implement the actual verification

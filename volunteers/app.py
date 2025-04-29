@@ -19,4 +19,5 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None]:
     if shutdown_resources:
         await shutdown_resources
 
+
 app = FastAPI(lifespan=lifespan)

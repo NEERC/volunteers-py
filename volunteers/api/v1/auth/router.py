@@ -19,17 +19,22 @@ from volunteers.core.di import Container
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
+
 @router.post("/telegram")
 @inject
-async def login(request: TelegramLoginRequest, config: Config = Provide[Container.config]) -> SuccessfullLoginResponse | ErrorLoginResponse:
-    if not await verify_telegram_login(TelegramLoginData(
-        auth_date=request.auth_date,
-        first_name=request.first_name,
-        last_name=request.last_name,
-        username=request.username,
-        id=request.id,
-        hash=request.hash,
-    )):
+async def login(
+    request: TelegramLoginRequest, config: Config = Provide[Container.config]
+) -> SuccessfullLoginResponse | ErrorLoginResponse:
+    if not await verify_telegram_login(
+        TelegramLoginData(
+            auth_date=request.auth_date,
+            first_name=request.first_name,
+            last_name=request.last_name,
+            username=request.username,
+            id=request.id,
+            hash=request.hash,
+        )
+    ):
         raise HTTPException(status_code=401, detail="Invalid Telegram login")
 
     payload = JWTTokenPayload(user_id=request.id, role="user")
@@ -39,16 +44,19 @@ async def login(request: TelegramLoginRequest, config: Config = Provide[Containe
         token=access_token,
         refresh_token=refresh_token,
         expires_in=config.jwt.expiration,
-        refresh_expires_in=config.jwt.refresh_expiration
+        refresh_expires_in=config.jwt.refresh_expiration,
     )
+
 
 @router.post("/refresh")
 @inject
-async def refresh(request: RefreshTokenRequest, config: Config = Provide[Container.config]) -> SuccessfullLoginResponse | ErrorLoginResponse:
+async def refresh(
+    request: RefreshTokenRequest, config: Config = Provide[Container.config]
+) -> SuccessfullLoginResponse | ErrorLoginResponse:
     payload = await verify_refresh_token(request.refresh_token, config)
     return SuccessfullLoginResponse(
         token=await create_access_token(payload),
         refresh_token=request.refresh_token,
         expires_in=config.jwt.expiration,
-        refresh_expires_in=config.jwt.refresh_expiration
+        refresh_expires_in=config.jwt.refresh_expiration,
     )

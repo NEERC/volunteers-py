@@ -5,6 +5,7 @@
 ```bash
 poetry install
 poetry run ruff check
+pre-commit install
 ```
 
 ## Structure
@@ -41,4 +42,3 @@ volunteers/
 └── __main__.py
 
 ```
-
