@@ -88,10 +88,10 @@ inline-quotes = "double"
 "tests/**/*" = ["S101", "T20"]
 
 [tool.pytest.ini_options]
-addopts = "-ra -q --strict-markers --cov=app --cov-report=term-missing"
+addopts = "-ra -q --strict-markers --cov=volunteers --cov-report=term-missing"
 asyncio_mode = "auto"
 filterwarnings = ["error"]
 markers = [
   "slow: marks tests as slow (deselect with '-m \"not slow\"')",
 ]
-testpaths = ["tests"]
+testpaths = ["."]
