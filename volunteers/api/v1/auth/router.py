@@ -4,7 +4,7 @@ from fastapi import APIRouter, HTTPException
 from volunteers.api.v1.auth.schemas import (
     ErrorLoginResponse,
     RefreshTokenRequest,
-    SuccessfullLoginResponse,
+    SuccessfulLoginResponse,
     TelegramLoginRequest,
 )
 from volunteers.auth.jwt_tokens import (
@@ -24,7 +24,7 @@ router = APIRouter(prefix="/auth", tags=["auth"])
 @inject
 async def login(
     request: TelegramLoginRequest, config: Config = Provide[Container.config]
-) -> SuccessfullLoginResponse | ErrorLoginResponse:
+) -> SuccessfulLoginResponse | ErrorLoginResponse:
     if not await verify_telegram_login(
         TelegramLoginData(
             auth_date=request.auth_date,
@@ -40,7 +40,7 @@ async def login(
     payload = JWTTokenPayload(user_id=request.id, role="user")
     refresh_token = await create_refresh_token(payload)
     access_token = await create_access_token(payload)
-    return SuccessfullLoginResponse(
+    return SuccessfulLoginResponse(
         token=access_token,
         refresh_token=refresh_token,
         expires_in=config.jwt.expiration,
@@ -52,9 +52,9 @@ async def login(
 @inject
 async def refresh(
     request: RefreshTokenRequest, config: Config = Provide[Container.config]
-) -> SuccessfullLoginResponse | ErrorLoginResponse:
+) -> SuccessfulLoginResponse | ErrorLoginResponse:
     payload = await verify_refresh_token(request.refresh_token, config)
-    return SuccessfullLoginResponse(
+    return SuccessfulLoginResponse(
         token=await create_access_token(payload),
         refresh_token=request.refresh_token,
         expires_in=config.jwt.expiration,
