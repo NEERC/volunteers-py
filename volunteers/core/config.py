@@ -23,11 +23,13 @@ class ServerConfig(BaseModel):
 
 
 class LoggingConfig(BaseModel):
-    level: int
+    level: str
 
 
 class Config(BaseSettings):
-    model_config = SettingsConfigDict(env_file=".env", env_prefix="VOLUNTEERS_")
+    model_config = SettingsConfigDict(
+        env_file=".env", env_prefix="VOLUNTEERS_", env_nested_delimiter="__"
+    )
     jwt: JWTConfig
     telegram: TelegramConfig
     database: DatabaseConfig

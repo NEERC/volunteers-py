@@ -1,12 +1,14 @@
 from datetime import datetime
 
-from sqlalchemy import DateTime, func
+from sqlalchemy import DateTime, MetaData, func
 from sqlalchemy.ext.asyncio import AsyncAttrs
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 
+metadata = MetaData()
+
 
 class Base(AsyncAttrs, DeclarativeBase):
-    pass
+    metadata = metadata
 
 
 class TimestampMixin:

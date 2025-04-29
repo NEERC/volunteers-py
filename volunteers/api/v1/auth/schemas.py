@@ -25,3 +25,11 @@ class SuccessfulLoginResponse(BaseSuccessResponse):
 
 class ErrorLoginResponse(BaseErrorResponse):
     pass
+
+
+class UserResponse(BaseModel):
+    id: int
+    username: str
+    first_name: str
+    last_name: str
+    is_admin: bool

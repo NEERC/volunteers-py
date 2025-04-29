@@ -4,6 +4,7 @@ from typing import Any
 import jwt
 from dependency_injector.wiring import Provide, inject
 from fastapi import HTTPException
+from loguru import logger
 from pydantic import BaseModel
 
 from volunteers.core.config import Config
@@ -60,8 +61,10 @@ def decode_token(token: str, config: Config = Provide[Container.config]) -> dict
             options={"verify_signature": True},
         )
     except jwt.ExpiredSignatureError as e:
+        logger.error(f"Token expired: {e}")
         raise HTTPException(status_code=401, detail="Token expired") from e
     except jwt.InvalidTokenError as e:
+        logger.error(f"Invalid token: {e}")
         raise HTTPException(status_code=401, detail="Invalid token") from e
     return token_data
 
@@ -70,7 +73,7 @@ def decode_token(token: str, config: Config = Provide[Container.config]) -> dict
 async def verify_access_token(
     token: str, config: Config = Provide[Container.config]
 ) -> JWTTokenPayload:
-    payload = decode_token(token, config)
+    payload = decode_token(token)
     if payload["type"] != "access":
         raise HTTPException(status_code=401, detail="Invalid token type")
     return JWTTokenPayload(**payload)
@@ -80,7 +83,7 @@ async def verify_access_token(
 async def verify_refresh_token(
     token: str, config: Config = Provide[Container.config]
 ) -> JWTTokenPayload:
-    payload = decode_token(token, config)
+    payload = decode_token(token)
     if payload["type"] != "refresh":
         raise HTTPException(status_code=401, detail="Invalid token type")
     return JWTTokenPayload(**payload)

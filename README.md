@@ -6,6 +6,7 @@
 poetry install
 poetry run ruff check
 pre-commit install
+uvicorn volunteers.app:app --reload
 ```
 
 ## Structure
