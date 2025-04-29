@@ -1,0 +1,97 @@
+[tool.poetry]
+name = "volunteers-py"
+version = "0.1.0"
+description = "Volunteers management system for NEERC"
+authors = ["Your Name <you@example.com>"]
+license = "MIT"
+readme = "README.md"
+package-mode = false
+
+[tool.poetry.dependencies]
+python = "^3.13"
+fastapi = "^0.115.12"
+pydantic = "^2.11.3"
+uvicorn = { extras = ["standard"], version = "^0.34.2" }
+pyjwt = "^2.10.1"
+dependency-injector = "^4.46.0"
+pydantic-settings = "^2.9.1"
+sqlalchemy = "^2.0.40"
+loguru = "^0.7.3"
+
+
+[tool.poetry.group.dev.dependencies]
+ruff = "^0.11.7"
+mypy = "^1.15.0"
+pytest = "^8.2.0"
+pytest-asyncio = "^0.26.0"
+pytest-cov = "^6.1.1"
+pre-commit = "^4.2.0"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
+
+
+[tool.mypy]
+python_version = "3.13"
+strict = true
+show_error_codes = true
+warn_unreachable = true
+warn_unused_ignores = true
+warn_redundant_casts = true
+warn_return_any = true
+warn_unused_configs = true
+disallow_untyped_defs = true
+disallow_incomplete_defs = true
+disallow_subclassing_any = true
+disallow_any_generics = true
+disallow_untyped_decorators = true
+explicit_package_bases = true
+plugins = ["pydantic.mypy"]
+
+[tool.ruff]
+# Target the same interpreter as mypy for consistent syntax targeting
+target-version = "py313"
+line-length = 100
+fix = true
+
+[tool.ruff.lint]
+# Go (almost) full‑send on linting; dial back ignores case‑by‑case
+select = [
+    "F",   # pyflakes (undefined names, etc.)
+    "E", "W",  # pycodestyle
+    "I",  # isort (import order)
+    "UP", # pyupgrade (modern syntax)
+    "B",  # flake8‑bugbear (common pitfalls)
+    "C4", # flake8‑comprehensions (list/dict comp smells)
+    "T20",# flake8‑print (no stray prints)
+    "SIM",# flake8‑simplify (redundancies)
+    "PGH",# pygrep‑hooks (misc best practices)
+    "RUF",# Ruff‑specific goodies
+    "S",  # bandit (security)
+    "PIE",# flake8‑pie (misc wins)
+    "TRY",# tryceratops (exception hygiene)
+    "PERF",# perflint (micro‑perf tweaks)
+    "NPY",# numpy‑specific
+    "DTZ",# datetime‑related issues
+]
+
+extend-ignore = [
+    "E501",  # handled by line‑length
+    "B008",  # function call in default arg (allow in FastAPI deps)
+]
+
+[tool.ruff.lint.flake8-quotes]
+inline-quotes = "double"
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**/*" = ["S101", "T20"]
+
+[tool.pytest.ini_options]
+addopts = "-ra -q --strict-markers --cov=app --cov-report=term-missing"
+asyncio_mode = "auto"
+filterwarnings = ["error"]
+markers = [
+  "slow: marks tests as slow (deselect with '-m \"not slow\"')",
+]
+testpaths = ["tests"]
