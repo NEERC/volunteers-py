@@ -2,5 +2,9 @@
     "python.analysis.typeCheckingMode": "basic",
     "python.analysis.extraPaths": [
         "./volunteers"
-    ]
+    ],
+
+    "[python]": {
+        "editor.defaultFormatter": "charliermarsh.ruff"
+    }
 }
