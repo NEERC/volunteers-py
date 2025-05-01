@@ -17,7 +17,11 @@ from volunteers.auth.jwt_tokens import (
     create_refresh_token,
     verify_refresh_token,
 )
-from volunteers.auth.providers.telegram import TelegramLoginData, verify_telegram_login
+from volunteers.auth.providers.telegram import (
+    TelegramLoginConfig,
+    TelegramLoginData,
+    verify_telegram_login,
+)
 from volunteers.core.config import Config
 from volunteers.core.di import Container
 from volunteers.models.user import User
@@ -31,14 +35,17 @@ async def login(
     request: TelegramLoginRequest, config: Annotated[Config, Depends(Provide[Container.config])]
 ) -> SuccessfulLoginResponse | ErrorLoginResponse:
     if not await verify_telegram_login(
-        TelegramLoginData(
+        data=TelegramLoginData(
             auth_date=request.auth_date,
             first_name=request.first_name,
             last_name=request.last_name,
             username=request.username,
             id=request.id,
             hash=request.hash,
-        )
+        ),
+        config=TelegramLoginConfig(
+            token=config.telegram.token, expiration_time=config.telegram.expiration_time
+        ),
     ):
         raise HTTPException(status_code=401, detail="Invalid Telegram login")
 
