@@ -22,6 +22,7 @@ class User(Base, TimestampMixin):
         back_populates="user", cascade="all, delete-orphan"
     )
 
+
 class Year(Base, TimestampMixin):
     __tablename__ = "years"
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
@@ -31,6 +32,7 @@ class Year(Base, TimestampMixin):
     users: Mapped[set[ApplicationForm]] = relationship(
         back_populates="year", cascade="all, delete-orphan"
     )
+
 
 class Day(Base, TimestampMixin):
     __tablename__ = "days"
@@ -43,6 +45,7 @@ class Day(Base, TimestampMixin):
         back_populates="day", cascade="all, delete-orphan"
     )
 
+
 class UserDay(Base, TimestampMixin):
     __tablename__ = "userdays"
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
@@ -53,12 +56,14 @@ class UserDay(Base, TimestampMixin):
     applicationform_id: Mapped[int] = mapped_column(ForeignKey("applicationforms.id"))
     applicationform: Mapped[ApplicationForm] = relationship(back_populates="userdays")
 
+
 application_wanted_roles = Table(
     "application_wanted_roles",
     Base.metadata,
     Column("application_id", ForeignKey("applicationforms.id"), primary_key=True),
     Column("role_id", ForeignKey("roles.id"), primary_key=True),
 )
+
 
 class ApplicationForm(Base, TimestampMixin):
     __tablename__ = "applicationforms"
@@ -75,6 +80,7 @@ class ApplicationForm(Base, TimestampMixin):
         back_populates="applicationform", cascade="all, delete-orphan"
     )
     additional_info: Mapped[str] = mapped_column(String)
+
 
 class Role(Base, TimestampMixin):
     __tablename__ = "roles"
