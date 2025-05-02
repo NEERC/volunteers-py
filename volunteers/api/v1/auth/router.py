@@ -34,7 +34,7 @@ router = APIRouter(prefix="/auth", tags=["auth"])
 async def login(
     request: TelegramLoginRequest, config: Annotated[Config, Depends(Provide[Container.config])]
 ) -> SuccessfulLoginResponse | ErrorLoginResponse:
-    if not await verify_telegram_login(
+    if not verify_telegram_login(
         data=TelegramLoginData(
             auth_date=request.auth_date,
             first_name=request.first_name,
@@ -42,6 +42,7 @@ async def login(
             username=request.username,
             id=request.id,
             hash=request.hash,
+            photo_url=request.photo_url,
         ),
         config=TelegramLoginConfig(
             token=config.telegram.token, expiration_time=config.telegram.expiration_time
