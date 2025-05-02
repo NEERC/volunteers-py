@@ -13,10 +13,3 @@ class Day(Base, TimestampMixin):
     information: Mapped[str] = mapped_column(String)
     year: Mapped[Year] = relationship(back_populates="days")
     userdays: Mapped[set[UserDay]] = relationship(back_populates="day")
-
-    def addUserDay(self, userDay: UserDay):
-        if userDay is not None:
-            if self.userdays is None:
-                self.userdays = set()
-            self.userdays.add(userDay)
-            userDay.day = self
