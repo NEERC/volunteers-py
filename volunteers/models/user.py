@@ -17,6 +17,5 @@ class User(Base, TimestampMixin):
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
     is_admin: Mapped[bool] = mapped_column(Boolean, default=False)
     applicationforms: Mapped[set[ApplicationForm]] = relationship(
-        back_populates="user",
-        cascade="all, delete-orphan"
-        )
+        back_populates="user", cascade="all, delete-orphan"
+    )

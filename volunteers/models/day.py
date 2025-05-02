@@ -14,6 +14,5 @@ class Day(Base, TimestampMixin):
     year_id: Mapped[int] = mapped_column(ForeignKey("years.id"))
     year: Mapped[Year] = relationship(back_populates="days")
     userdays: Mapped[set[UserDay]] = relationship(
-        back_populates="day",
-        cascade="all, delete-orphan"
-        )
+        back_populates="day", cascade="all, delete-orphan"
+    )

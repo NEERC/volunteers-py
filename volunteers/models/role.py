@@ -11,7 +11,5 @@ class Role(Base, TimestampMixin):
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     role_name: Mapped[str] = mapped_column(String)
     applications: Mapped[set[ApplicationForm]] = relationship(
-        secondary=application_wanted_roles,
-        back_populates="wanted_roles",
-        collection_class=set
-        )
+        secondary=application_wanted_roles, back_populates="wanted_roles", collection_class=set
+    )

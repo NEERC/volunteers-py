@@ -15,13 +15,12 @@ class ApplicationForm(Base, TimestampMixin):
     user_id: Mapped[int] = mapped_column(ForeignKey("users.id"))
     user: Mapped[User] = relationship(back_populates="applicationforms")
     experience: Mapped[float] = mapped_column(Double)
-    wanted_roles: Mapped[set[Role]] = relationship(secondary=application_wanted_roles,
-                                                   back_populates="applications",
-                                                   collection_class=set)
+    wanted_roles: Mapped[set[Role]] = relationship(
+        secondary=application_wanted_roles, back_populates="applications", collection_class=set
+    )
     year_id: Mapped[int] = mapped_column(ForeignKey("years.id"))
     year: Mapped[Year] = relationship(back_populates="users")
     userdays: Mapped[list[UserDay]] = relationship(
-        back_populates="applicationform",
-        cascade="all, delete-orphan"
-        )
+        back_populates="applicationform", cascade="all, delete-orphan"
+    )
     additional_info: Mapped[str] = mapped_column(String)
