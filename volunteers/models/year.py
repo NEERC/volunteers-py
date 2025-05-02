@@ -11,9 +11,7 @@ class Year(Base, TimestampMixin):
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     year_name: Mapped[str] = mapped_column(String)
     openForRegistration: Mapped[bool] = mapped_column(Boolean)
-    days: Mapped[list[Day]] = relationship(
-        back_populates="year", cascade="all, delete-orphan"
-    )
+    days: Mapped[list[Day]] = relationship(back_populates="year", cascade="all, delete-orphan")
     users: Mapped[set[ApplicationForm]] = relationship(
         back_populates="year", cascade="all, delete-orphan"
     )
