@@ -1,7 +1,10 @@
+from typing import Set
+
 from sqlalchemy import Boolean, Integer, String
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from volunteers.models.base import Base, TimestampMixin
+from volunteers.models.application_form import ApplicationForm
 
 
 class User(Base, TimestampMixin):
@@ -15,3 +18,4 @@ class User(Base, TimestampMixin):
     email: Mapped[str] = mapped_column(String, unique=True)
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
     is_admin: Mapped[bool] = mapped_column(Boolean, default=False)
+    applicationforms: Mapped[Set["ApplicationForm"]] = relationship(back_populates="user")
