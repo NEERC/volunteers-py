@@ -4,12 +4,13 @@ from volunteers.schemas.base import BaseErrorResponse, BaseSuccessResponse
 
 
 class TelegramLoginRequest(BaseModel):
+    id: int
     auth_date: int
     first_name: str
-    last_name: str
-    username: str
-    id: int
     hash: str
+    last_name: str | None
+    username: str | None
+    photo_url: str | None
 
 
 class RefreshTokenRequest(BaseModel):

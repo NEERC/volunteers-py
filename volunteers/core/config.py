@@ -11,6 +11,7 @@ class JWTConfig(BaseModel):
 
 class TelegramConfig(BaseModel):
     token: str
+    expiration_time: int
 
 
 class DatabaseConfig(BaseModel):

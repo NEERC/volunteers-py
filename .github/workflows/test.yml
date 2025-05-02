@@ -10,6 +10,8 @@ jobs:
   test:
     runs-on: ubuntu-latest
 
+    environment: test
+
     steps:
     - uses: actions/checkout@v4
 
@@ -35,6 +37,13 @@ jobs:
     - name: Install dependencies
       if: steps.cached-poetry-dependencies.outputs.cache-hit != 'true'
       run: poetry install --no-interaction --no-root
+
+    - name: Prepare environment
+      run: |
+        cat << EOF > .env
+        $(jq -r 'to_entries | map(select(.key | startswith("VOLUNTEERS_")) | "\(.key)=\(.value|tostring)") | .[]' <<< '${{ toJSON(secrets) }}')
+        $(jq -r 'to_entries | map(select(.key | startswith("VOLUNTEERS_")) | "\(.key)=\(.value|tostring)") | .[]' <<< '${{ toJSON(vars) }}')
+        EOF
 
     - name: Run tests
       run: poetry run pytest
