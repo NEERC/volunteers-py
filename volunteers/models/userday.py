@@ -1,6 +1,4 @@
-from typing import Set
-
-from sqlalchemy import Integer, String, Enum
+from sqlalchemy import Enum, Integer, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from volunteers.models.application_form import ApplicationForm
@@ -14,6 +12,5 @@ class UserDay(Base, TimestampMixin):
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     day: Mapped["Day"] = relationship(back_populates="userdays")
     information: Mapped[str] = mapped_column(String)
-    attendance: Mapped["Attendance"] = mapped_column(Enum,
-                                                     default=Attendance.UNKNOWN)
-    applicationforms: Mapped[Set["ApplicationForm"]] = relationship(back_populates="userdays")
+    attendance: Mapped["Attendance"] = mapped_column(Enum, default=Attendance.UNKNOWN)
+    applicationforms: Mapped[set["ApplicationForm"]] = relationship(back_populates="userdays")
