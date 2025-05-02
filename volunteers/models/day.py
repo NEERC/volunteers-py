@@ -1,5 +1,3 @@
-from typing import Set
-
 from sqlalchemy import Integer, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -13,9 +11,9 @@ class Day(Base, TimestampMixin):
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     day_name: Mapped[str] = mapped_column(String)
     information: Mapped[str] = mapped_column(String)
-    year: Mapped["Year"] = relationship(back_populates="days")
-    userdays: Mapped[Set["UserDay"]] = relationship(back_populates="day")
-    
+    year: Mapped[Year] = relationship(back_populates="days")
+    userdays: Mapped[set[UserDay]] = relationship(back_populates="day")
+
     def addUserDay(self, userDay: UserDay):
         if userDay is not None:
             if self.userdays is None:

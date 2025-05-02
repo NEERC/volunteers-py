@@ -16,4 +16,4 @@ class User(Base, TimestampMixin):
     email: Mapped[str] = mapped_column(String, unique=True)
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
     is_admin: Mapped[bool] = mapped_column(Boolean, default=False)
-    applicationforms: Mapped[set["ApplicationForm"]] = relationship(back_populates="user")
+    applicationforms: Mapped[set[ApplicationForm]] = relationship(back_populates="user")
