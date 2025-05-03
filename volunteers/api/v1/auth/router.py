@@ -24,7 +24,7 @@ from volunteers.auth.providers.telegram import (
 )
 from volunteers.core.config import Config
 from volunteers.core.di import Container
-from volunteers.models.user import User
+from volunteers.models import User
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
@@ -79,8 +79,10 @@ async def refresh(
 async def me(user: Annotated[User, Depends(with_user)]) -> UserResponse:
     return UserResponse(
         id=user.id,
-        username=user.username,
-        first_name=user.first_name,
-        last_name=user.last_name,
+        # username=user.username,
+        first_name_en=user.first_name_en,
+        last_name_en=user.last_name_en,
+        first_name_ru=user.first_name_ru,
+        last_name_ru=user.last_name_ru,
         is_admin=user.is_admin,
     )

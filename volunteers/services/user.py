@@ -1,6 +1,6 @@
 from sqlalchemy import select
 
-from volunteers.models.user import User
+from volunteers.models import User
 from volunteers.services.base import BaseService
 
 

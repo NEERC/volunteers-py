@@ -30,7 +30,9 @@ class ErrorLoginResponse(BaseErrorResponse):
 
 class UserResponse(BaseModel):
     id: int
-    username: str
-    first_name: str
-    last_name: str
+    # username: str
+    first_name_ru: str
+    last_name_ru: str
+    first_name_en: str
+    last_name_en: str
     is_admin: bool
