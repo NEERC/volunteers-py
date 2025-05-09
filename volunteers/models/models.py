@@ -10,8 +10,8 @@ from .base import Base, TimestampMixin
 class Year(Base, TimestampMixin):
     __tablename__ = "years"
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
-    # year_name: Mapped[str] = mapped_column(String)
-    # open_for_registration: Mapped[bool] = mapped_column(Boolean)
+    year_name: Mapped[str] = mapped_column(String)
+    open_for_registration: Mapped[bool] = mapped_column(Boolean)
 
     application_forms: Mapped[set[ApplicationForm]] = relationship(
         back_populates="year", cascade="all, delete-orphan"
