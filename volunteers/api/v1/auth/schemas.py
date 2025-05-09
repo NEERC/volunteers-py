@@ -4,7 +4,7 @@ from volunteers.schemas.base import BaseErrorResponse, BaseSuccessResponse
 
 
 class TelegramLoginRequest(BaseModel):
-    id: int
+    telegram_id: int
     auth_date: int
     first_name: str
     hash: str
@@ -29,10 +29,7 @@ class ErrorLoginResponse(BaseErrorResponse):
 
 
 class UserResponse(BaseModel):
-    id: int
-    # username: str
-    first_name_ru: str
-    last_name_ru: str
-    first_name_en: str
-    last_name_en: str
+    user_id: int
+    first_name: str
     is_admin: bool
+    last_name: str | None

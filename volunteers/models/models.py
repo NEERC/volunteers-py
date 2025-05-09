@@ -14,29 +14,26 @@ class Year(Base, TimestampMixin):
     # open_for_registration: Mapped[bool] = mapped_column(Boolean)
 
     application_forms: Mapped[set[ApplicationForm]] = relationship(
-        back_populates="years", cascade="all, delete-orphan"
+        back_populates="year", cascade="all, delete-orphan"
     )
 
 
 class User(Base, TimestampMixin):
     __tablename__ = "users"
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
-    # username: Mapped[str] = mapped_column(String, unique=True)
-    # password: Mapped[str] = mapped_column(String)
+
     telegram_id: Mapped[int] = mapped_column(Integer, unique=True)
-    first_name_ru: Mapped[str] = mapped_column(String)
-    last_name_ru: Mapped[str] = mapped_column(String)
-    first_name_en: Mapped[str] = mapped_column(String)
-    last_name_en: Mapped[str] = mapped_column(String)
-    telegram_username: Mapped[str] = mapped_column(String, unique=True)
-    phone_number: Mapped[str] = mapped_column(String, unique=True)
-    isu_id: Mapped[int | None] = mapped_column(Integer, nullable=True)
-    # email: Mapped[str] = mapped_column(String, unique=True)
-    # is_active: Mapped[bool] = mapped_column(Boolean, default=True)
+    first_name: Mapped[str] = mapped_column(String)
+
     is_admin: Mapped[bool] = mapped_column(Boolean, default=False)
 
+    last_name: Mapped[str | None] = mapped_column(String, nullable=True)
+    telegram_username: Mapped[str | None] = mapped_column(String, nullable=True)
+    phone_number: Mapped[str | None] = mapped_column(String, nullable=True)
+    isu_id: Mapped[int | None] = mapped_column(Integer, nullable=True)
+
     application_forms: Mapped[set[ApplicationForm]] = relationship(
-        back_populates="users", cascade="all, delete-orphan"
+        back_populates="user", cascade="all, delete-orphan"
     )
 
 
@@ -58,7 +55,6 @@ class ApplicationForm(Base, TimestampMixin):
 
     desired_positions: Mapped[set[Position]] = relationship(
         secondary="application_form_position_association",
-        back_populates="application_forms",
         collection_class=set,
     )
 

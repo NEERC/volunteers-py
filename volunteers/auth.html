@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Telegram Login Widget</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f5f5f5;
+        }
+        .container {
+            text-align: center;
+            padding: 20px;
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .widget-container {
+            margin: 20px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Login with Telegram</h1>
+        <p>Click the button below to authenticate</p>
+
+        <div class="widget-container">
+            <script async src="https://telegram.org/js/telegram-widget.js?22" data-telegram-login="nerc_volunteers_bot" data-size="large" data-onauth="onTelegramAuth(user)" data-request-access="write"></script>
+            <script type="text/javascript">
+            function onTelegramAuth(user) {
+                console.info(JSON.stringify(user));
+            }
+            </script>
+        </div>
+
+        <p>Don't have Telegram? <a href="https://telegram.org/" target="_blank">Download it here</a></p>
+    </div>
+</body>
+</html>

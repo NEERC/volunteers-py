@@ -1,7 +1,7 @@
 from pydantic import BaseModel
 
 from volunteers.schemas.base import BaseSuccessResponse
-from volunteers.schemas.position import PositionIn, PositionOut
+from volunteers.schemas.position import PositionOut
 
 
 class ApplicationFormYearSavedResponse(BaseSuccessResponse):
@@ -12,6 +12,6 @@ class ApplicationFormYearSavedResponse(BaseSuccessResponse):
 
 
 class ApplicationFormYearSaveRequest(BaseModel):
-    desired_positions: set[PositionIn]
+    desired_positions_ids: set[int]
     itmo_group: str | None
     comments: str = ""

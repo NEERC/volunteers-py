@@ -25,23 +25,27 @@ from volunteers.auth.providers.telegram import (
 from volunteers.core.config import Config
 from volunteers.core.di import Container
 from volunteers.models import User
+from volunteers.schemas.user import UserIn
+from volunteers.services.user import UserService
 
-router = APIRouter(prefix="/auth", tags=["auth"])
+router = APIRouter(tags=["auth"])
 
 
 @router.post("/telegram")
 @inject
 async def login(
-    request: TelegramLoginRequest, config: Annotated[Config, Depends(Provide[Container.config])]
+    request: TelegramLoginRequest,
+    user_service: Annotated[UserService, Depends(Provide[Container.user_service])],
+    config: Annotated[Config, Depends(Provide[Container.config])],
 ) -> SuccessfulLoginResponse | ErrorLoginResponse:
     if not verify_telegram_login(
         data=TelegramLoginData(
+            id=request.telegram_id,
             auth_date=request.auth_date,
             first_name=request.first_name,
+            hash=request.hash,
             last_name=request.last_name,
             username=request.username,
-            id=request.id,
-            hash=request.hash,
             photo_url=request.photo_url,
         ),
         config=TelegramLoginConfig(
@@ -50,9 +54,21 @@ async def login(
     ):
         raise HTTPException(status_code=401, detail="Invalid Telegram login")
 
-    payload = JWTTokenPayload(user_id=request.id, role="user")
+    payload = JWTTokenPayload(user_id=request.telegram_id, role="user")
     refresh_token = await create_refresh_token(payload)
     access_token = await create_access_token(payload)
+
+    user = await user_service.get_user_by_telegram_id(telegram_id=request.telegram_id)
+    if not user:
+        user_in = UserIn(
+            telegram_id=request.telegram_id,
+            first_name=request.first_name,
+            is_admin=False,
+            last_name=request.last_name,
+            telegram_username=request.username,
+        )
+        await user_service.create_user(user_in)
+
     return SuccessfulLoginResponse(
         token=access_token,
         refresh_token=refresh_token,
@@ -78,11 +94,8 @@ async def refresh(
 @router.get("/me")
 async def me(user: Annotated[User, Depends(with_user)]) -> UserResponse:
     return UserResponse(
-        id=user.id,
-        # username=user.username,
-        first_name_en=user.first_name_en,
-        last_name_en=user.last_name_en,
-        first_name_ru=user.first_name_ru,
-        last_name_ru=user.last_name_ru,
+        user_id=user.id,
+        first_name=user.first_name,
         is_admin=user.is_admin,
+        last_name=user.last_name,
     )
