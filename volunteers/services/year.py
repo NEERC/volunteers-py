@@ -12,6 +12,11 @@ class ApplicationFormNotFound(DomainError):
 
 
 class YearService(BaseService):
+    async def get_years(self) -> list[Year]:
+        async with self.session_scope() as session:
+            result = await session.execute(select(Year))
+            return list(result.scalars().all())
+
     async def get_year_by_year_id(self, year_id: int) -> Year | None:
         async with self.session_scope() as session:
             result = await session.execute(select(Year).where(Year.id == year_id))

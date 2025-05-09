@@ -8,14 +8,25 @@ from volunteers.core.di import Container
 from volunteers.models import User
 from volunteers.schemas.application_form import ApplicationFormIn
 from volunteers.schemas.position import PositionOut
+from volunteers.schemas.year import YearOut
 from volunteers.services.year import YearService
 
 from .schemas import (
     ApplicationFormYearSavedResponse,
     ApplicationFormYearSaveRequest,
+    YearsResponse,
 )
 
 router = APIRouter(tags=["year"])
+
+
+@router.get("/", description="Return info about all years")
+@inject
+async def get_years(
+    year_service: Annotated[YearService, Depends(Provide[Container.year_service])],
+) -> YearsResponse:
+    years = await year_service.get_years()
+    return YearsResponse(years=[YearOut(year_id=y.id) for y in years])
 
 
 @router.get("/{year_id}", description="Return year positions and saved user form data")
