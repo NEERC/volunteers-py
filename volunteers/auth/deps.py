@@ -6,7 +6,7 @@ from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 
 from volunteers.auth.jwt_tokens import verify_access_token
 from volunteers.core.di import Container
-from volunteers.models.user import User
+from volunteers.models import User
 from volunteers.services.user import UserService
 
 JWTBearer = HTTPBearer()

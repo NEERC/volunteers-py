@@ -3,6 +3,7 @@ from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
+from fastapi.responses import FileResponse
 from loguru import logger
 
 from volunteers.api.router import router as api_router
@@ -34,3 +35,8 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None]:
 app = FastAPI(lifespan=lifespan)
 
 app.include_router(api_router)
+
+
+@app.get("/")
+async def auth() -> FileResponse:
+    return FileResponse("./volunteers/auth.html")
