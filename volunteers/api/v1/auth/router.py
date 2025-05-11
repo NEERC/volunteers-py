@@ -60,10 +60,6 @@ async def register(
 
     user_in = UserIn(
         telegram_id=request.telegram_id,
-        first_name=request.first_name,
-        is_admin=False,
-        last_name=request.last_name,
-        telegram_username=request.username,
         first_name_ru=request.first_name_ru,
         last_name_ru=request.last_name_ru,
         first_name_en=request.first_name_en,
@@ -71,6 +67,7 @@ async def register(
         isu_id=request.isu_id,
         surname_ru=request.surname_ru,
         surname_en=request.surname_en,
+        is_admin=False,
     )
     await user_service.create_user(user_in)
 
