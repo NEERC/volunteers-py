@@ -42,12 +42,12 @@ async def register(
     if not verify_telegram_login(
         data=TelegramLoginData(
             id=request.telegram_id,
-            auth_date=request.auth_date,
-            first_name=request.first_name,
-            hash=request.hash,
-            last_name=request.last_name,
-            username=request.username,
-            photo_url=request.photo_url,
+            auth_date=request.telegram_auth_date,
+            first_name=request.telegram_first_name,
+            hash=request.telegram_hash,
+            last_name=request.telegram_last_name,
+            username=request.telegram_username,
+            photo_url=request.telegram_photo_url,
         ),
         config=TelegramLoginConfig(
             token=config.telegram.token, expiration_time=config.telegram.expiration_time
@@ -93,12 +93,12 @@ async def login(
     if not verify_telegram_login(
         data=TelegramLoginData(
             id=request.telegram_id,
-            auth_date=request.auth_date,
-            first_name=request.first_name,
-            hash=request.hash,
-            last_name=request.last_name,
-            username=request.username,
-            photo_url=request.photo_url,
+            auth_date=request.telegram_auth_date,
+            first_name=request.telegram_first_name,
+            hash=request.telegram_hash,
+            last_name=request.telegram_last_name,
+            username=request.telegram_username,
+            photo_url=request.telegram_photo_url,
         ),
         config=TelegramLoginConfig(
             token=config.telegram.token, expiration_time=config.telegram.expiration_time

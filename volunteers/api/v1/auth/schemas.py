@@ -5,12 +5,12 @@ from volunteers.schemas.base import BaseErrorResponse, BaseSuccessResponse
 
 class TelegramLoginRequest(BaseModel):
     telegram_id: int
-    auth_date: int
-    first_name: str
-    hash: str
-    last_name: str | None
-    username: str | None
-    photo_url: str | None
+    telegram_auth_date: int
+    telegram_first_name: str
+    telegram_hash: str
+    telegram_last_name: str | None
+    telegram_username: str | None
+    telegram_photo_url: str | None
 
 
 class RegistrationRequest(TelegramLoginRequest):
