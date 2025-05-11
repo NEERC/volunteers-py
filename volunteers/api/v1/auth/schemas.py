@@ -13,6 +13,16 @@ class TelegramLoginRequest(BaseModel):
     photo_url: str | None
 
 
+class RegistrationRequest(TelegramLoginRequest):
+    first_name_ru: str
+    last_name_ru: str
+    first_name_en: str
+    last_name_en: str
+    isu_id: int | None
+    surname_ru: str | None
+    surname_en: str | None
+
+
 class RefreshTokenRequest(BaseModel):
     refresh_token: str
 
@@ -30,6 +40,11 @@ class ErrorLoginResponse(BaseErrorResponse):
 
 class UserResponse(BaseModel):
     user_id: int
-    first_name: str
+    first_name_ru: str
+    last_name_ru: str
+    first_name_en: str
+    last_name_en: str
     is_admin: bool
-    last_name: str | None
+    isu_id: int | None
+    surname_ru: str | None
+    surname_en: str | None

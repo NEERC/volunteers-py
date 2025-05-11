@@ -15,10 +15,14 @@ class UserService(BaseService):
     async def create_user(self, user_in: UserIn) -> User:
         user = User(
             telegram_id=user_in.telegram_id,
-            first_name=user_in.first_name,
+            first_name_ru=user_in.first_name_ru,
+            first_name_en=user_in.first_name_en,
+            last_name_ru=user_in.last_name_ru,
+            last_name_en=user_in.last_name_en,
+            isu_id=user_in.isu_id,
+            surname_ru=user_in.surname_ru,
+            surname_en=user_in.surname_en,
             is_admin=user_in.is_admin,
-            last_name=user_in.last_name,
-            telegram_username=user_in.telegram_username,
         )
         async with self.session_scope() as session:
             session.add(user)

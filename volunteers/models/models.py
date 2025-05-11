@@ -21,16 +21,17 @@ class Year(Base, TimestampMixin):
 class User(Base, TimestampMixin):
     __tablename__ = "users"
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
-
     telegram_id: Mapped[int] = mapped_column(Integer, unique=True)
-    first_name: Mapped[str] = mapped_column(String)
+
+    first_name_ru: Mapped[str] = mapped_column(String)
+    last_name_ru: Mapped[str] = mapped_column(String)
+    first_name_en: Mapped[str] = mapped_column(String)
+    last_name_en: Mapped[str] = mapped_column(String)
+    isu_id: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    surname_ru: Mapped[str | None] = mapped_column(String, nullable=True)
+    surname_en: Mapped[str | None] = mapped_column(String, nullable=True)
 
     is_admin: Mapped[bool] = mapped_column(Boolean, default=False)
-
-    last_name: Mapped[str | None] = mapped_column(String, nullable=True)
-    telegram_username: Mapped[str | None] = mapped_column(String, nullable=True)
-    phone_number: Mapped[str | None] = mapped_column(String, nullable=True)
-    isu_id: Mapped[int | None] = mapped_column(Integer, nullable=True)
 
     application_forms: Mapped[set[ApplicationForm]] = relationship(
         back_populates="user", cascade="all, delete-orphan"
