@@ -104,6 +104,15 @@ class FormPositionAssociation(Base, TimestampMixin):
 #     )
 
 
+# class Assessment(Base, TimestampMixin):
+#     __tablename__ = "assessments"
+#     id: Mapped[int] = mapped_column(Integer, primary_key=True)
+#     comment: Mapped[str] = mapped_column(String)
+#     value: Mapped[float] = mapped_column(Double)
+#     user_id: Mapped[int] = mapped_column(ForeignKey("userdays.id"))
+#     user: Mapped[UserDay] = relationship(back_populates="assessments")
+
+
 # class UserDay(Base, TimestampMixin):
 #     __tablename__ = "userdays"
 #     id: Mapped[int] = mapped_column(Integer, primary_key=True)
@@ -113,6 +122,9 @@ class FormPositionAssociation(Base, TimestampMixin):
 #     attendance: Mapped[Attendance] = mapped_column(Enum, default=Attendance.UNKNOWN)
 #     applicationform_id: Mapped[int] = mapped_column(ForeignKey("applicationforms.id"))
 #     applicationform: Mapped[ApplicationForm] = relationship(back_populates="userdays")
+#     assessments: Mapped[set[Assessment]] = relationship(
+#         back_populates="user", cascade="all, delete-orphan"
+#     )
 
 
 # application_wanted_roles = Table(
