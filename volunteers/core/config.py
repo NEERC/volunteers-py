@@ -12,6 +12,8 @@ class JWTConfig(BaseModel):
 class TelegramConfig(BaseModel):
     token: str
     expiration_time: int
+    alert_token: str
+    chat_id: str
 
 
 class DatabaseConfig(BaseModel):

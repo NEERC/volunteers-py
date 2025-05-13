@@ -2,6 +2,7 @@ from typing import Annotated
 
 from dependency_injector.wiring import Provide, inject
 from fastapi import APIRouter, Depends, Path, Response, status
+from loguru import logger
 
 from volunteers.auth.deps import with_user
 from volunteers.core.di import Container
@@ -19,6 +20,8 @@ from .schemas import (
 
 router = APIRouter(tags=["year"])
 
+DB_PREFIX = 'Response from database:'
+
 
 @router.get("/", description="Return info about all years")
 @inject
@@ -26,6 +29,7 @@ async def get_years(
     year_service: Annotated[YearService, Depends(Provide[Container.year_service])],
 ) -> YearsResponse:
     years = await year_service.get_years()
+    logger.debug(f'{DB_PREFIX} Got years info')
     return YearsResponse(
         years=[
             YearOut(
@@ -46,6 +50,7 @@ async def get_form_year(
     form = await year_service.get_form_by_year_id_and_user_id(year_id=year_id, user_id=user.id)
     positions = await year_service.get_positions_by_year_id(year_id=year_id)
 
+    logger.debug(f'{DB_PREFIX} Got user form and year positions')
     return ApplicationFormYearSavedResponse(
         positions=[PositionOut(position_id=p.id, name=p.name) for p in positions],
         desired_positions=[
@@ -77,6 +82,7 @@ async def save_form_year(
     year_service: Annotated[YearService, Depends(Provide[Container.year_service])],
 ) -> None:
     form = await year_service.get_form_by_year_id_and_user_id(year_id=year_id, user_id=user.id)
+    logger.debug(f'{DB_PREFIX} Got user form for sign up')
     form_in = ApplicationFormIn(
         year_id=year_id,
         user_id=user.id,
@@ -86,7 +92,9 @@ async def save_form_year(
     )
     if not form:
         await year_service.create_form(form_in)
+        logger.debug(f'{DB_PREFIX} Created user form')
         response.status_code = status.HTTP_201_CREATED
     else:
         await year_service.update_form(form_in)
+        logger.debug(f'{DB_PREFIX} Updated user form')
         response.status_code = status.HTTP_204_NO_CONTENT

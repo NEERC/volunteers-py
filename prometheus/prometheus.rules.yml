@@ -1,0 +1,22 @@
+groups:
+- name: http_errors
+  rules:
+  - alert: High5xxErrorRate
+    expr: |
+      (sum by (endpoint, method) (
+        rate(http_requests_total{status_code=~"5.."}[5m])
+      ) 
+      / 
+      sum by (endpoint, method) (
+        rate(http_requests_total[5m])
+      )) * 100 > 1
+    for: 5m
+    labels:
+      severity: critical
+    annotations:
+      summary: "High 5xx error rate on {{ $labels.method }} {{ $labels.endpoint }}"
+      description: |
+        {{ $labels.method }} {{ $labels.endpoint }} has {{ $value | printf "%.2f" }}% 5xx errors
+        (Threshold: 1%)
+        Total requests (5m): {{ $value | printf "%.0f" (query "sum by (endpoint,method)(rate(http_requests_total[5m]))" | first | value) }}
+        5xx errors (5m): {{ $value | printf "%.0f" (query "sum by (endpoint,method)(rate(http_requests_total{status_code=~\"5..\"}[5m]))" | first | value) }}
