@@ -8,10 +8,11 @@ route:
 receivers:
 - name: 'telegram'
   telegram_configs:
-  - bot_token: '{{ .Env.VOLUNTEERS_TELEGRAM__ALERT_TOKEN }}'
-    chat_id: '{{ .Env.VOLUNTEERS_TELEGRAM__CHAT_ID }}'
+  - bot_token: ${VOLUNTEERS_TELEGRAM__ALERT_TOKEN}
+    chat_id: ${VOLUNTEERS_TELEGRAM__CHAT_ID}
     parse_mode: 'HTML'
+    api_url: 'https://api.telegram.org'
     message: '{{ template "telegram.message" . }}'
 
 templates:
-- '/etc/alertmanager/template/*.tmpl'
+- '/etc/alertmanager/templates/*.tmpl'

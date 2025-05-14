@@ -32,13 +32,19 @@ services:
   alertmanager:
     image: prom/alertmanager
     container_name: alertmanager
+    cap_add:
+      - NET_ADMIN
+      - NET_RAW
     ports:
       - "9093:9093"
     env_file:
       - .env
+    entrypoint: ["/etc/alertmanager/entrypoint.sh"]
+    command: ["--config.file=/etc/alertmanager/alertmanager.yml"]
     volumes:
-      - ./alertmanager.yml:/etc/alertmanager/alertmanager.yml
-      - ./template:/etc/alertmanager/template
+      - ./alertmanager.template.yml:/etc/alertmanager/alertmanager.template.yml
+      - ./entrypoint.sh:/etc/alertmanager/entrypoint.sh
+      - ./templates:/etc/alertmanager/templates
     networks:
       - app-network
 
