@@ -77,7 +77,7 @@ def send_telegram_alert(message: str):
     config = container.config()
     url = f"https://api.telegram.org/bot{config.telegram.alert_token}/sendMessage"
     payload = {"chat_id": config.telegram.chat_id, "text": message}
-    requests.post(url, json=payload)
+    requests.post(url, json=payload, timeout=3)
     logger.info(f"Sent alert: {message}")
 
 

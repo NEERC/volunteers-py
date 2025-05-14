@@ -18,5 +18,5 @@ groups:
       description: |
         {{ $labels.method }} {{ $labels.endpoint }} has {{ $value | printf "%.2f" }}% 5xx errors
         (Threshold: 1%)
-        Total requests (5m): {{ $value | printf "%.0f" (query "sum by (endpoint,method)(rate(http_requests_total[5m]))" | first | value) }}
-        5xx errors (5m): {{ $value | printf "%.0f" (query "sum by (endpoint,method)(rate(http_requests_total{status_code=~\"5..\"}[5m]))" | first | value) }}
+        Total requests (5m): {{ with query "sum by (endpoint,method)(rate(http_requests_total[5m]))" }}{{ . | first | value | printf "%.0f" }}{{ end }}
+        5xx errors (5m): {{ with query "sum by (endpoint,method)(rate(http_requests_total{status_code=~'5..'}[5m]))" }}{{ . | first | value | printf "%.0f" }}{{ end }}
