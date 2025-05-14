@@ -5,8 +5,8 @@ groups:
     expr: |
       (sum by (endpoint, method) (
         rate(http_requests_total{status_code=~"5.."}[5m])
-      ) 
-      / 
+      )
+      /
       sum by (endpoint, method) (
         rate(http_requests_total[5m])
       )) * 100 > 1

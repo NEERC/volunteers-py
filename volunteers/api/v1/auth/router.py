@@ -70,7 +70,7 @@ async def login(
         )
         await user_service.create_user(user_in)
 
-    logger.debug('Login successful')
+    logger.debug("Login successful")
     return SuccessfulLoginResponse(
         token=access_token,
         refresh_token=refresh_token,
@@ -85,7 +85,7 @@ async def refresh(
     request: RefreshTokenRequest, config: Annotated[Config, Depends(Provide[Container.config])]
 ) -> SuccessfulLoginResponse | ErrorLoginResponse:
     payload = await verify_refresh_token(request.refresh_token)
-    logger.debug('Login successful')
+    logger.debug("Login successful")
     return SuccessfulLoginResponse(
         token=await create_access_token(payload),
         refresh_token=request.refresh_token,

@@ -28,7 +28,7 @@ def verify_telegram_login(data: TelegramLoginData, config: TelegramLoginConfig) 
     import time
 
     if not verify_telegram_login_hash(data, config.token):
-        logger.debug('Telegram hash verification failed')
+        logger.debug("Telegram hash verification failed")
         return False
 
     return time.time() - data.auth_date < config.expiration_time

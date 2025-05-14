@@ -44,21 +44,15 @@ metrics_app = make_asgi_app()
 app.mount("/metrics", metrics_app)
 
 HTTP_REQUESTS_TOTAL = Counter(
-    'http_requests_total',
-    'Total HTTP requests',
-    ['method', 'endpoint', 'status_code']
+    'http_requests_total', 'Total HTTP requests', ['method', 'endpoint', 'status_code']
 )
 
 
 @app.middleware("http")
-async def track_requests(request: Request,
-                         call_next: Callable[[Request],
-                                             Awaitable[Response]]):
+async def track_requests(request: Request, call_next: Callable[[Request], Awaitable[Response]]):
     response = await call_next(request)
     HTTP_REQUESTS_TOTAL.labels(
-        method=request.method,
-        endpoint=request.url.path,
-        status_code=response.status_code
+        method=request.method, endpoint=request.url.path, status_code=response.status_code
     ).inc()
     return response
 
