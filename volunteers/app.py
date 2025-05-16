@@ -5,7 +5,7 @@ from contextlib import asynccontextmanager
 
 import psutil
 import requests
-from fastapi import FastAPI, HTTPException, Request, Response
+from fastapi import FastAPI, Request, Response
 from fastapi.responses import FileResponse
 from loguru import logger
 from prometheus_client import Counter, make_asgi_app
@@ -44,12 +44,14 @@ metrics_app = make_asgi_app()
 app.mount("/metrics", metrics_app)
 
 HTTP_REQUESTS_TOTAL = Counter(
-    'http_requests_total', 'Total HTTP requests', ['method', 'endpoint', 'status_code']
+    "http_requests_total", "Total HTTP requests", ["method", "endpoint", "status_code"]
 )
 
 
 @app.middleware("http")
-async def track_requests(request: Request, call_next: Callable[[Request], Awaitable[Response]]):
+async def track_requests(
+    request: Request, call_next: Callable[[Request], Awaitable[Response]]
+) -> Response:
     response = await call_next(request)
     HTTP_REQUESTS_TOTAL.labels(
         method=request.method, endpoint=request.url.path, status_code=response.status_code
@@ -57,17 +59,12 @@ async def track_requests(request: Request, call_next: Callable[[Request], Awaita
     return response
 
 
-@app.get("/error-test")
-async def error_test():
-    raise HTTPException(status_code=502)
-
-
 @app.get("/")
 async def auth() -> FileResponse:
     return FileResponse("./volunteers/auth.html")
 
 
-def send_telegram_alert(message: str):
+def send_telegram_alert(message: str) -> None:
     config = container.config()
     url = f"https://api.telegram.org/bot{config.telegram.alert_token}/sendMessage"
     payload = {"chat_id": config.telegram.chat_id, "text": message}
@@ -75,7 +72,7 @@ def send_telegram_alert(message: str):
     logger.info(f"Sent alert: {message}")
 
 
-def check_cpu():
+def check_cpu() -> None:
     threading.Timer(60.0, check_cpu).start()
     cpu = psutil.cpu_percent()
     if cpu > 90:
