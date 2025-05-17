@@ -1,0 +1,7 @@
+nerc-volunteers.itmo.ru {
+	tls internal
+	# proxy /api to localhost:8000
+	reverse_proxy /api/* localhost:8000
+	# proxy everything else to localhost:3000
+	reverse_proxy * localhost:3000
+}

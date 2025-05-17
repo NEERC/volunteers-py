@@ -37,6 +37,7 @@ app = FastAPI(lifespan=lifespan)
 app.include_router(api_router)
 
 
-@app.get("/")
-async def auth() -> FileResponse:
+# Proxy everything else to the frontend
+@app.get("/{path:path}")
+async def proxy(path: str) -> FileResponse:
     return FileResponse("./volunteers/auth.html")
