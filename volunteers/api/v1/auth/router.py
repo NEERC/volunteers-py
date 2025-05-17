@@ -2,7 +2,6 @@ from typing import Annotated
 
 from dependency_injector.wiring import Provide, inject
 from fastapi import APIRouter, Depends, HTTPException
-from loguru import logger
 
 from volunteers.api.v1.auth.schemas import (
     ErrorLoginResponse,
@@ -70,7 +69,6 @@ async def login(
         )
         await user_service.create_user(user_in)
 
-    logger.debug("Login successful")
     return SuccessfulLoginResponse(
         token=access_token,
         refresh_token=refresh_token,
@@ -85,7 +83,6 @@ async def refresh(
     request: RefreshTokenRequest, config: Annotated[Config, Depends(Provide[Container.config])]
 ) -> SuccessfulLoginResponse | ErrorLoginResponse:
     payload = await verify_refresh_token(request.refresh_token)
-    logger.debug("Login successful")
     return SuccessfulLoginResponse(
         token=await create_access_token(payload),
         refresh_token=request.refresh_token,
