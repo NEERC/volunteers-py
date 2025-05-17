@@ -5,12 +5,21 @@ from volunteers.schemas.base import BaseErrorResponse, BaseSuccessResponse
 
 class TelegramLoginRequest(BaseModel):
     telegram_id: int
-    auth_date: int
-    first_name: str
-    hash: str
-    last_name: str | None
-    username: str | None
-    photo_url: str | None
+    telegram_auth_date: int
+    telegram_first_name: str
+    telegram_hash: str
+    telegram_last_name: str | None
+    telegram_username: str | None
+    telegram_photo_url: str | None
+
+
+class RegistrationRequest(TelegramLoginRequest):
+    first_name_ru: str
+    last_name_ru: str
+    full_name_en: str
+
+    isu_id: int | None
+    patronymic_ru: str | None
 
 
 class RefreshTokenRequest(BaseModel):
@@ -30,6 +39,10 @@ class ErrorLoginResponse(BaseErrorResponse):
 
 class UserResponse(BaseModel):
     user_id: int
-    first_name: str
+    first_name_ru: str
+    last_name_ru: str
+    full_name_en: str
     is_admin: bool
-    last_name: str | None
+
+    isu_id: int | None
+    patronymic_ru: str | None
