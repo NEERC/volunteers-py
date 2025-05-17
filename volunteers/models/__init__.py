@@ -1,3 +1,21 @@
-__all__ = ["ApplicationForm", "FormPositionAssociation", "Position", "User", "Year"]
+__all__ = [
+    "ApplicationForm",
+    "Assessment",
+    "Day",
+    "FormPositionAssociation",
+    "Position",
+    "User",
+    "UserDay",
+    "Year",
+]
 
-from .models import ApplicationForm, FormPositionAssociation, Position, User, Year
+from .models import (
+    ApplicationForm,
+    Assessment,
+    Day,
+    FormPositionAssociation,
+    Position,
+    User,
+    UserDay,
+    Year,
+)
