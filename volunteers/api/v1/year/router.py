@@ -7,6 +7,7 @@ from volunteers.auth.deps import with_user
 from volunteers.core.di import Container
 from volunteers.models import User
 from volunteers.schemas.application_form import ApplicationFormIn
+from volunteers.schemas.day import DayOut
 from volunteers.schemas.position import PositionOut
 from volunteers.schemas.year import YearOut
 from volunteers.services.year import YearService
@@ -36,7 +37,7 @@ async def get_years(
     )
 
 
-@router.get("/{year_id}", description="Return year positions and saved user form data")
+@router.get("/{year_id}", description="Return year positions, days and saved user form data")
 @inject
 async def get_form_year(
     year_id: Annotated[int, Path(title="The ID of the year")],
@@ -45,9 +46,11 @@ async def get_form_year(
 ) -> ApplicationFormYearSavedResponse:
     form = await year_service.get_form_by_year_id_and_user_id(year_id=year_id, user_id=user.id)
     positions = await year_service.get_positions_by_year_id(year_id=year_id)
+    days = await year_service.get_days_by_year_id(year_id=year_id)
 
     return ApplicationFormYearSavedResponse(
         positions=[PositionOut(position_id=p.id, name=p.name) for p in positions],
+        days=[DayOut(day_id=d.id, name=d.name, information=d.information) for d in days],
         desired_positions=[
             PositionOut(position_id=p.id, name=p.name) for p in form.desired_positions
         ]

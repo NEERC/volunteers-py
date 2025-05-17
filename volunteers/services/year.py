@@ -1,6 +1,6 @@
 from sqlalchemy import and_, delete, select
 
-from volunteers.models import ApplicationForm, FormPositionAssociation, Position, Year
+from volunteers.models import ApplicationForm, Day, FormPositionAssociation, Position, Year
 from volunteers.schemas.application_form import ApplicationFormIn
 
 from .base import BaseService
@@ -25,6 +25,11 @@ class YearService(BaseService):
     async def get_positions_by_year_id(self, year_id: int) -> set[Position]:
         async with self.session_scope() as session:
             result = await session.execute(select(Position).where(Position.year_id == year_id))
+            return set(result.scalars().all())
+
+    async def get_days_by_year_id(self, year_id: int) -> set[Day]:
+        async with self.session_scope() as session:
+            result = await session.execute(select(Day).where(Day.year_id == year_id))
             return set(result.scalars().all())
 
     async def get_form_by_year_id_and_user_id(
