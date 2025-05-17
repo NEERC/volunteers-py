@@ -23,13 +23,11 @@ class User(Base, TimestampMixin):
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     telegram_id: Mapped[int] = mapped_column(Integer, unique=True)
 
+    isu_id: Mapped[int | None] = mapped_column(Integer, nullable=True)
     first_name_ru: Mapped[str] = mapped_column(String)
     last_name_ru: Mapped[str] = mapped_column(String)
-    first_name_en: Mapped[str] = mapped_column(String)
-    last_name_en: Mapped[str] = mapped_column(String)
-    isu_id: Mapped[int | None] = mapped_column(Integer, nullable=True)
     patronymic_ru: Mapped[str | None] = mapped_column(String, nullable=True)
-    patronymic_en: Mapped[str | None] = mapped_column(String, nullable=True)
+    full_name_en: Mapped[str] = mapped_column(String)
 
     is_admin: Mapped[bool] = mapped_column(Boolean, default=False)
 

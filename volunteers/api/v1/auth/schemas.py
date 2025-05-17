@@ -16,11 +16,10 @@ class TelegramLoginRequest(BaseModel):
 class RegistrationRequest(TelegramLoginRequest):
     first_name_ru: str
     last_name_ru: str
-    first_name_en: str
-    last_name_en: str
+    full_name_en: str
+
     isu_id: int | None
     patronymic_ru: str | None
-    patronymic_en: str | None
 
 
 class RefreshTokenRequest(BaseModel):
@@ -42,9 +41,8 @@ class UserResponse(BaseModel):
     user_id: int
     first_name_ru: str
     last_name_ru: str
-    first_name_en: str
-    last_name_en: str
+    full_name_en: str
     is_admin: bool
+
     isu_id: int | None
     patronymic_ru: str | None
-    patronymic_en: str | None

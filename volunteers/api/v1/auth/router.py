@@ -62,11 +62,9 @@ async def register(
         telegram_id=request.telegram_id,
         first_name_ru=request.first_name_ru,
         last_name_ru=request.last_name_ru,
-        first_name_en=request.first_name_en,
-        last_name_en=request.last_name_en,
+        full_name_en=request.full_name_en,
         isu_id=request.isu_id,
         patronymic_ru=request.patronymic_ru,
-        patronymic_en=request.patronymic_en,
         is_admin=False,
     )
     await user_service.create_user(user_in)
@@ -141,11 +139,9 @@ async def me(user: Annotated[User, Depends(with_user)]) -> UserResponse:
     return UserResponse(
         user_id=user.id,
         first_name_ru=user.first_name_ru,
-        first_name_en=user.first_name_en,
         last_name_ru=user.last_name_ru,
-        last_name_en=user.last_name_en,
+        full_name_en=user.full_name_en,
+        is_admin=user.is_admin,
         isu_id=user.isu_id,
         patronymic_ru=user.patronymic_ru,
-        patronymic_en=user.patronymic_en,
-        is_admin=user.is_admin,
     )
