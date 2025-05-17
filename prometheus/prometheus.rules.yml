@@ -20,3 +20,35 @@ groups:
         (Threshold: 1%)
         Total requests (5m): {{ with query "sum by (endpoint,method)(rate(http_requests_total[5m]))" }}{{ . | first | value | printf "%.0f" }}{{ end }}
         5xx errors (5m): {{ with query "sum by (endpoint,method)(rate(http_requests_total{status_code=~'5..'}[5m]))" }}{{ . | first | value | printf "%.0f" }}{{ end }}
+
+- name: host-alerts
+  rules:
+  - alert: HighHostCPU
+    expr: |
+      100 - (
+        avg by (instance) (
+          rate(node_cpu_seconds_total{mode="idle"}[2m])
+        ) * 100
+      ) > 70
+    for: 2m
+    labels:
+      severity: warning
+    annotations:
+      summary: "High CPU on {{ $labels.instance }}"
+      description: "Host CPU usage is {{ $value | humanize }}%"
+
+- name: container-alerts
+  rules:
+  - alert: HighContainerCPU
+    expr: |
+      sum by (container_name) (
+        rate(container_cpu_usage_seconds_total[2m])
+      ) / ignoring(cpu) group_left
+      count without(cpu)(node_cpu_seconds_total{mode="idle"}) * 100
+      > 70
+    for: 2m
+    labels:
+      severity: warning
+    annotations:
+      summary: "High CPU in container {{ $labels.container_name }}"
+      description: "Container using {{ $value | humanize }}% of a CPU core"

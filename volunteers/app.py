@@ -1,10 +1,7 @@
 import sys
-import threading
 from collections.abc import AsyncGenerator, Awaitable, Callable
 from contextlib import asynccontextmanager
 
-import psutil
-import requests
 from fastapi import FastAPI, Request, Response
 from fastapi.responses import FileResponse
 from loguru import logger
@@ -62,21 +59,3 @@ async def track_requests(
 @app.get("/")
 async def auth() -> FileResponse:
     return FileResponse("./volunteers/auth.html")
-
-
-def send_telegram_alert(message: str) -> None:
-    config = container.config()
-    url = f"https://api.telegram.org/bot{config.telegram.alert_token}/sendMessage"
-    payload = {"chat_id": config.telegram.chat_id, "text": message}
-    requests.post(url, json=payload, timeout=3)
-    logger.info(f"Sent alert: {message}")
-
-
-def check_cpu() -> None:
-    threading.Timer(60.0, check_cpu).start()
-    cpu = psutil.cpu_percent()
-    if cpu > 90:
-        send_telegram_alert(f"High CPU: {cpu}%")
-
-
-check_cpu()

@@ -3,6 +3,17 @@ rule_files:
   - '/etc/prometheus/prometheus.rules.yml'
 
 scrape_configs:
+  - job_name: 'node'
+    static_configs:
+      - targets: ['host.docker.internal:9100']  # For Mac/Windows
+      # For Linux, use your actual host IP or:
+      # - targets: ['node_exporter:9100'] if using host networking
+
+  - job_name: 'cadvisor'
+    static_configs:
+      - targets: ['host.docker.internal:8080']
+      # For Linux: ['cadvisor:8080'] or host IP
+
   - job_name: 'prometheus'
     static_configs:
       - targets: ['localhost:9090']
@@ -11,7 +22,7 @@ scrape_configs:
     metrics_path: '/metrics'
     static_configs:
       - targets: ['host.docker.internal:8000']  # For Mac/Windows
-      # For Linux use: ['172.17.0.1:8000'] or create a network
+      # For Linux, use your actual host IP
 
 alerting:
   alertmanagers:
