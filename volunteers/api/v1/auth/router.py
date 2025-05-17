@@ -2,6 +2,7 @@ from typing import Annotated
 
 from dependency_injector.wiring import Provide, inject
 from fastapi import APIRouter, Depends, HTTPException
+from loguru import logger
 
 from volunteers.api.v1.auth.schemas import (
     ErrorLoginResponse,
@@ -53,9 +54,11 @@ async def register(
             token=config.telegram.token, expiration_time=config.telegram.expiration_time
         ),
     ):
+        logger.info("Invalid Telegram login")
         raise HTTPException(status_code=401, detail="Invalid Telegram login")
 
     if _ := await user_service.get_user_by_telegram_id(telegram_id=request.telegram_id):
+        logger.warning("Detected an attempt to register an existing user again")
         raise HTTPException(status_code=409, detail="User is already registered")
 
     user_in = UserIn(
@@ -68,6 +71,7 @@ async def register(
         is_admin=False,
     )
     await user_service.create_user(user_in)
+    logger.info("User has been registered")
 
     payload = JWTTokenPayload(user_id=request.telegram_id, role="user")
     refresh_token = await create_refresh_token(payload)
@@ -102,11 +106,14 @@ async def login(
             token=config.telegram.token, expiration_time=config.telegram.expiration_time
         ),
     ):
+        logger.info("Invalid Telegram login")
         raise HTTPException(status_code=401, detail="Invalid Telegram login")
 
     user = await user_service.get_user_by_telegram_id(telegram_id=request.telegram_id)
     if not user:
+        logger.warning("Detected an attempt to authorize a non-existent user")
         raise HTTPException(status_code=401, detail="User is not registered")
+    logger.info("User has been authorized")
 
     payload = JWTTokenPayload(user_id=request.telegram_id, role="user")
     refresh_token = await create_refresh_token(payload)
