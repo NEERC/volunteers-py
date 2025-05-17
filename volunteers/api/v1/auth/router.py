@@ -65,8 +65,8 @@ async def register(
         first_name_en=request.first_name_en,
         last_name_en=request.last_name_en,
         isu_id=request.isu_id,
-        surname_ru=request.surname_ru,
-        surname_en=request.surname_en,
+        patronymic_ru=request.patronymic_ru,
+        patronymic_en=request.patronymic_en,
         is_admin=False,
     )
     await user_service.create_user(user_in)
@@ -145,7 +145,7 @@ async def me(user: Annotated[User, Depends(with_user)]) -> UserResponse:
         last_name_ru=user.last_name_ru,
         last_name_en=user.last_name_en,
         isu_id=user.isu_id,
-        surname_ru=user.surname_ru,
-        surname_en=user.surname_en,
+        patronymic_ru=user.patronymic_ru,
+        patronymic_en=user.patronymic_en,
         is_admin=user.is_admin,
     )

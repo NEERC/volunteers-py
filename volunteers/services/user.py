@@ -20,8 +20,8 @@ class UserService(BaseService):
             last_name_ru=user_in.last_name_ru,
             last_name_en=user_in.last_name_en,
             isu_id=user_in.isu_id,
-            surname_ru=user_in.surname_ru,
-            surname_en=user_in.surname_en,
+            patronymic_ru=user_in.patronymic_ru,
+            patronymic_en=user_in.patronymic_en,
             is_admin=user_in.is_admin,
         )
         async with self.session_scope() as session:

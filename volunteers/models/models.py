@@ -28,8 +28,8 @@ class User(Base, TimestampMixin):
     first_name_en: Mapped[str] = mapped_column(String)
     last_name_en: Mapped[str] = mapped_column(String)
     isu_id: Mapped[int | None] = mapped_column(Integer, nullable=True)
-    surname_ru: Mapped[str | None] = mapped_column(String, nullable=True)
-    surname_en: Mapped[str | None] = mapped_column(String, nullable=True)
+    patronymic_ru: Mapped[str | None] = mapped_column(String, nullable=True)
+    patronymic_en: Mapped[str | None] = mapped_column(String, nullable=True)
 
     is_admin: Mapped[bool] = mapped_column(Boolean, default=False)
 
