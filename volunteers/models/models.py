@@ -17,6 +17,8 @@ class Year(Base, TimestampMixin):
         back_populates="year", cascade="all, delete-orphan"
     )
 
+    days: Mapped[set[Day]] = relationship(back_populates="year", cascade="all, delete-orphan")
+
 
 class User(Base, TimestampMixin):
     __tablename__ = "users"
