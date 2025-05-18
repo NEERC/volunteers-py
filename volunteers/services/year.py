@@ -2,6 +2,7 @@ from sqlalchemy import and_, delete, select
 
 from volunteers.models import ApplicationForm, Day, FormPositionAssociation, Position, Year
 from volunteers.schemas.application_form import ApplicationFormIn
+from volunteers.schemas.position import PositionEditIn, PositionIn
 from volunteers.schemas.year import YearEditIn, YearIn
 
 from .base import BaseService
@@ -72,6 +73,30 @@ class YearService(BaseService):
                 updated_year.year_name = year_name
             if (open_for_registration := year_edit_in.open_for_registration) is not None:
                 updated_year.open_for_registration = open_for_registration
+
+            await session.commit()
+
+    async def add_position(self, position_in: PositionIn) -> Position:
+        created_position = Position(year_id=position_in.year_id, name=position_in.name)
+        async with self.session_scope() as session:
+            session.add(created_position)
+            await session.commit()
+        return created_position
+
+    async def edit_position_by_position_id(
+        self, position_id: int, position_edit_in: PositionEditIn
+    ) -> None:
+        async with self.session_scope() as session:
+            existing_position = await session.execute(
+                select(Position).where(Position.id == position_id)
+            )
+
+            updated_position = existing_position.scalar_one_or_none()
+            if not updated_position:
+                raise ApplicationFormNotFound()
+
+            if (name := position_edit_in.name) is not None:
+                updated_position.name = name
 
             await session.commit()
 

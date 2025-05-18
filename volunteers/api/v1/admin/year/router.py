@@ -49,3 +49,4 @@ async def edit_year(
         year_name=request.year_name, open_for_registration=request.open_for_registration
     )
     await year_service.edit_year_by_year_id(year_id=year_id, year_edit_in=year_edit_in)
+    logger.info("Year has been edited")
