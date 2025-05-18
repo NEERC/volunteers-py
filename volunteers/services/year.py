@@ -1,8 +1,8 @@
-from sqlalchemy import and_, delete, select, update
+from sqlalchemy import and_, delete, select
 
 from volunteers.models import ApplicationForm, Day, FormPositionAssociation, Position, Year
 from volunteers.schemas.application_form import ApplicationFormIn
-from volunteers.schemas.year import YearIn
+from volunteers.schemas.year import YearEditIn, YearIn
 
 from .base import BaseService
 from .errors import DomainError
@@ -10,6 +10,10 @@ from .errors import DomainError
 
 class ApplicationFormNotFound(DomainError):
     """Application form not found"""
+
+
+class YearNotFound(DomainError):
+    """Year not found"""
 
 
 class YearService(BaseService):
@@ -56,18 +60,19 @@ class YearService(BaseService):
             await session.commit()
         return created_year
 
-    async def open_year_by_year_id(self, year_id: int) -> None:
+    async def edit_year_by_year_id(self, year_id: int, year_edit_in: YearEditIn) -> None:
         async with self.session_scope() as session:
-            await session.execute(
-                update(Year).where(Year.id == year_id).values(open_for_registration=True)
-            )
-            await session.commit()
+            existing_year = await session.execute(select(Year).where(Year.id == year_id))
 
-    async def close_year_by_year_id(self, year_id: int) -> None:
-        async with self.session_scope() as session:
-            await session.execute(
-                update(Year).where(Year.id == year_id).values(open_for_registration=False)
-            )
+            updated_year = existing_year.scalar_one_or_none()
+            if not updated_year:
+                raise ApplicationFormNotFound()
+
+            if (year_name := year_edit_in.year_name) is not None:
+                updated_year.year_name = year_name
+            if (open_for_registration := year_edit_in.open_for_registration) is not None:
+                updated_year.open_for_registration = open_for_registration
+
             await session.commit()
 
     async def create_form(self, form: ApplicationFormIn) -> None:

@@ -9,3 +9,8 @@ class AddYearRequest(BaseModel):
 
 class AddYearResponse(BaseSuccessResponse):
     year_id: int
+
+
+class EditYearRequest(BaseModel):
+    year_name: str | None = None
+    open_for_registration: bool | None = None
