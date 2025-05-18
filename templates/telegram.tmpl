@@ -1,0 +1,9 @@
+{{ define "telegram.message" }}
+<b>{{ .Status | toUpper }}</b>
+{{ range .Alerts }}
+<b>Alert:</b> {{ .Annotations.summary }}
+<b>Description:</b> {{ .Annotations.description }}
+<b>Severity:</b> {{ .Labels.severity }}
+<b>Time:</b> {{ .StartsAt.Format "2006-01-02 15:04:05 UTC" }}
+{{ end }}
+{{ end }}

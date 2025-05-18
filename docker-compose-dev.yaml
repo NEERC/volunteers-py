@@ -1,4 +1,3 @@
-
 services:
   db:
     image: postgres:16
@@ -10,6 +9,69 @@ services:
       - "5432:5432"
     volumes:
       - dev-db:/var/lib/postgresql/data
+    networks:
+      - app-network
+
+  prometheus:
+    image: prom/prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+      - ./prometheus/prometheus.rules.yml:/etc/prometheus/prometheus.rules.yml
+    networks:
+      - app-network
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--web.enable-lifecycle'
+    depends_on:
+      - alertmanager
+
+  alertmanager:
+    image: prom/alertmanager
+    container_name: alertmanager
+    cap_add:
+      - NET_ADMIN
+      - NET_RAW
+    ports:
+      - "9093:9093"
+    env_file:
+      - .env
+    entrypoint: ["/etc/alertmanager/entrypoint.sh"]
+    command: ["--config.file=/etc/alertmanager/alertmanager.yml"]
+    volumes:
+      - ./alertmanager.template.yml:/etc/alertmanager/alertmanager.template.yml
+      - ./entrypoint.sh:/etc/alertmanager/entrypoint.sh
+      - ./templates:/etc/alertmanager/templates
+    networks:
+      - app-network
+
+  node_exporter:
+    image: quay.io/prometheus/node-exporter:v1.9.1
+    container_name: node_exporter
+    command:
+      - '--collector.disable-defaults'
+      - '--collector.cpu'
+    ports:
+      - "9100:9100"  # Required for Windows/Mac
+    volumes:
+      - /proc:/host/proc:ro  # Needed for CPU stats
+    restart: unless-stopped
+
+  cadvisor:
+    image: gcr.io/cadvisor/cadvisor:v0.47.0
+    container_name: cadvisor
+    network_mode: host
+    volumes:
+      - /:/rootfs:ro
+      - /var/run:/var/run:rw
+      - /sys:/sys:ro
+      - /var/lib/docker:/var/lib/docker:ro
+    restart: unless-stopped
 
 volumes:
   dev-db:
+
+networks:
+  app-network:
+    driver: bridge

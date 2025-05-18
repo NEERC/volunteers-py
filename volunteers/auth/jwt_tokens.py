@@ -25,6 +25,7 @@ def create_token(payload: dict[str, Any], config: Config = Provide[Container.con
 async def create_refresh_token(
     payload: JWTTokenPayload, config: Config = Provide[Container.config]
 ) -> str:
+    logger.debug("Refresh token created")
     return create_token(
         {
             **payload.model_dump(),
@@ -40,6 +41,7 @@ async def create_refresh_token(
 async def create_access_token(
     payload: JWTTokenPayload, config: Config = Provide[Container.config]
 ) -> str:
+    logger.debug("Access token created")
     return create_token(
         {
             **payload.model_dump(),
@@ -66,6 +68,7 @@ def decode_token(token: str, config: Config = Provide[Container.config]) -> dict
     except jwt.InvalidTokenError as e:
         logger.error(f"Invalid token: {e}")
         raise HTTPException(status_code=401, detail="Invalid token") from e
+    logger.debug("Token is valid")
     return token_data
 
 
