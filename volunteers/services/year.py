@@ -1,7 +1,8 @@
-from sqlalchemy import and_, delete, select
+from sqlalchemy import and_, delete, select, update
 
 from volunteers.models import ApplicationForm, Day, FormPositionAssociation, Position, Year
 from volunteers.schemas.application_form import ApplicationFormIn
+from volunteers.schemas.year import YearIn
 
 from .base import BaseService
 from .errors import DomainError
@@ -45,6 +46,29 @@ class YearService(BaseService):
                 )
             )
             return result.scalar_one_or_none()
+
+    async def add_year(self, year_in: YearIn) -> Year:
+        created_year = Year(
+            year_name=year_in.year_name, open_for_registration=year_in.open_for_registration
+        )
+        async with self.session_scope() as session:
+            session.add(created_year)
+            await session.commit()
+        return created_year
+
+    async def open_year_by_year_id(self, year_id: int) -> None:
+        async with self.session_scope() as session:
+            await session.execute(
+                update(Year).where(Year.id == year_id).values(open_for_registration=True)
+            )
+            await session.commit()
+
+    async def close_year_by_year_id(self, year_id: int) -> None:
+        async with self.session_scope() as session:
+            await session.execute(
+                update(Year).where(Year.id == year_id).values(open_for_registration=False)
+            )
+            await session.commit()
 
     async def create_form(self, form: ApplicationFormIn) -> None:
         async with self.session_scope() as session:
