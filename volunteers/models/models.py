@@ -1,9 +1,9 @@
 from __future__ import annotations
 
-from sqlalchemy import Boolean, ForeignKey, Integer, String, UniqueConstraint
+from sqlalchemy import Boolean, Double, Enum, ForeignKey, Integer, String, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-# from .attendance import Attendance
+from .attendance import Attendance
 from .base import Base, TimestampMixin
 
 
@@ -16,6 +16,8 @@ class Year(Base, TimestampMixin):
     application_forms: Mapped[set[ApplicationForm]] = relationship(
         back_populates="year", cascade="all, delete-orphan"
     )
+
+    days: Mapped[set[Day]] = relationship(back_populates="year", cascade="all, delete-orphan")
 
 
 class User(Base, TimestampMixin):
@@ -46,9 +48,6 @@ class ApplicationForm(Base, TimestampMixin):
     user_id: Mapped[int] = mapped_column(ForeignKey("users.id"))
     user: Mapped[User] = relationship(back_populates="application_forms")
 
-    # experience: Mapped[float] = mapped_column(Double)
-    # additional_info: Mapped[str] = mapped_column(String)
-
     itmo_group: Mapped[str | None] = mapped_column(String, default="", nullable=True)
     comments: Mapped[str] = mapped_column(String, default="")
 
@@ -57,12 +56,11 @@ class ApplicationForm(Base, TimestampMixin):
         collection_class=set,
     )
 
-    # userdays: Mapped[list[UserDay]] = relationship(
-    #     back_populates="applicationform", cascade="all, delete-orphan"
-    # )
+    user_days: Mapped[set[UserDay]] = relationship(
+        back_populates="application_form", cascade="all, delete-orphan"
+    )
 
     __table_args__ = (
-        # UniqueConstraint("id", "year_id", name="application_forms_unique_id_year_id"),
         UniqueConstraint("year_id", "user_id", name="application_forms_unique_year_id_user_id"),
     )
 
@@ -73,10 +71,6 @@ class Position(Base, TimestampMixin):
     year_id: Mapped[int] = mapped_column(ForeignKey("years.id"))
     name: Mapped[str] = mapped_column(String, unique=True)
 
-    # __table_args__ = (
-    #     UniqueConstraint("id", "year_id", name="positions_unique_id_year_id"),
-    # )
-
 
 class FormPositionAssociation(Base, TimestampMixin):
     __tablename__ = "application_form_position_association"
@@ -84,48 +78,48 @@ class FormPositionAssociation(Base, TimestampMixin):
     position_id: Mapped[int] = mapped_column(ForeignKey("positions.id"), primary_key=True)
     year_id: Mapped[int] = mapped_column(ForeignKey("years.id"))
 
-    # TODO:
-    # __table_args__ = (
-    #     ForeignKeyConstraint(["form_id", "year_id"], ["application_forms.id", "application_forms.year_id"]),
-    #     ForeignKeyConstraint(["position_id", "year_id"], ["positions.id", "positions.year_id"]),
-    # )
+
+class Day(Base, TimestampMixin):
+    __tablename__ = "days"
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+
+    year_id: Mapped[int] = mapped_column(ForeignKey("years.id"))
+    year: Mapped[Year] = relationship(back_populates="days")
+
+    name: Mapped[str] = mapped_column(String)
+    information: Mapped[str] = mapped_column(String)
+
+    user_days: Mapped[set[UserDay]] = relationship(
+        back_populates="day", cascade="all, delete-orphan"
+    )
 
 
-# class Day(Base, TimestampMixin):
-#     __tablename__ = "days"
-#     id: Mapped[int] = mapped_column(Integer, primary_key=True)
-#     day_name: Mapped[str] = mapped_column(String)
-#     information: Mapped[str] = mapped_column(String)
-#     year_id: Mapped[int] = mapped_column(ForeignKey("years.id"))
-#     year: Mapped[Year] = relationship(back_populates="days")
-#     userdays: Mapped[set[UserDay]] = relationship(
-#         back_populates="day", cascade="all, delete-orphan"
-#     )
+class UserDay(Base, TimestampMixin):
+    __tablename__ = "user_days"
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+
+    application_form_id: Mapped[int] = mapped_column(ForeignKey("application_forms.id"))
+    application_form: Mapped[ApplicationForm] = relationship(back_populates="user_days")
+
+    day_id: Mapped[int] = mapped_column(ForeignKey("days.id"))
+    day: Mapped[Day] = relationship(back_populates="user_days")
+
+    information: Mapped[str] = mapped_column(String)
+    attendance: Mapped[Attendance] = mapped_column(
+        Enum(Attendance, name="attendance_enum"), default=Attendance.UNKNOWN
+    )
+
+    assessments: Mapped[set[Assessment]] = relationship(
+        back_populates="user_day", cascade="all, delete-orphan"
+    )
 
 
-# class UserDay(Base, TimestampMixin):
-#     __tablename__ = "userdays"
-#     id: Mapped[int] = mapped_column(Integer, primary_key=True)
-#     day_id: Mapped[int] = mapped_column(ForeignKey("days.id"))
-#     day: Mapped[Day] = relationship(back_populates="userdays")
-#     information: Mapped[str] = mapped_column(String)
-#     attendance: Mapped[Attendance] = mapped_column(Enum, default=Attendance.UNKNOWN)
-#     applicationform_id: Mapped[int] = mapped_column(ForeignKey("applicationforms.id"))
-#     applicationform: Mapped[ApplicationForm] = relationship(back_populates="userdays")
+class Assessment(Base, TimestampMixin):
+    __tablename__ = "assessments"
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
 
+    user_day_id: Mapped[int] = mapped_column(ForeignKey("user_days.id"))
+    user_day: Mapped[UserDay] = relationship(back_populates="assessments")
 
-# application_wanted_roles = Table(
-#     "application_wanted_roles",
-#     Base.metadata,
-#     Column("application_id", ForeignKey("applicationforms.id"), primary_key=True),
-#     Column("role_id", ForeignKey("roles.id"), primary_key=True),
-# )
-
-
-# class Role(Base, TimestampMixin):
-#     __tablename__ = "roles"
-#     id: Mapped[int] = mapped_column(Integer, primary_key=True)
-#     role_name: Mapped[str] = mapped_column(String)
-#     applications: Mapped[set[ApplicationForm]] = relationship(
-#         secondary=application_wanted_roles, back_populates="wanted_roles", collection_class=set
-#     )
+    comment: Mapped[str] = mapped_column(String)
+    value: Mapped[float] = mapped_column(Double)
