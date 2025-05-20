@@ -17,6 +17,10 @@ class YearNotFound(DomainError):
     """Year not found"""
 
 
+class PositionNotFound(DomainError):
+    """Position not found"""
+
+
 class YearService(BaseService):
     async def get_years(self) -> list[Year]:
         async with self.session_scope() as session:
@@ -67,7 +71,7 @@ class YearService(BaseService):
 
             updated_year = existing_year.scalar_one_or_none()
             if not updated_year:
-                raise ApplicationFormNotFound()
+                raise YearNotFound()
 
             if (year_name := year_edit_in.year_name) is not None:
                 updated_year.year_name = year_name
@@ -93,7 +97,7 @@ class YearService(BaseService):
 
             updated_position = existing_position.scalar_one_or_none()
             if not updated_position:
-                raise ApplicationFormNotFound()
+                raise PositionNotFound()
 
             if (name := position_edit_in.name) is not None:
                 updated_position.name = name

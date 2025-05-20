@@ -39,7 +39,7 @@ async def add_position(
 
 @router.post("/{position_id}/edit")
 @inject
-async def edit_year(
+async def edit_position(
     position_id: Annotated[int, Path(title="The ID of the position")],
     request: EditPositionRequest,
     _: Annotated[User, Depends(with_admin)],
