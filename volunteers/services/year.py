@@ -1,8 +1,17 @@
 from sqlalchemy import and_, delete, select
 from sqlalchemy.orm import selectinload
 
-from volunteers.models import ApplicationForm, Day, FormPositionAssociation, Position, UserDay, Year
+from volunteers.models import (
+    ApplicationForm,
+    Assessment,
+    Day,
+    FormPositionAssociation,
+    Position,
+    UserDay,
+    Year,
+)
 from volunteers.schemas.application_form import ApplicationFormIn
+from volunteers.schemas.assessment import AssessmentEditIn, AssessmentIn
 from volunteers.schemas.day import DayEditIn, DayIn
 from volunteers.schemas.position import PositionEditIn, PositionIn
 from volunteers.schemas.user_day import UserDayEditIn, UserDayIn
@@ -30,6 +39,10 @@ class DayNotFound(DomainError):
 
 class UserDayNotFound(DomainError):
     """User day not found"""
+
+
+class AssessmentNotFound(DomainError):
+    """Assessment not found"""
 
 
 class YearService(BaseService):
@@ -167,6 +180,36 @@ class YearService(BaseService):
                 updated_user_day.information = information
             if (attendance := user_day_edit_in.attendance) is not None:
                 updated_user_day.attendance = attendance
+
+            await session.commit()
+
+    async def add_assessment(self, assessment_in: AssessmentIn) -> Assessment:
+        created_assessment = Assessment(
+            user_day_id=assessment_in.user_day_id,
+            comment=assessment_in.comment,
+            value=assessment_in.value,
+        )
+        async with self.session_scope() as session:
+            session.add(created_assessment)
+            await session.commit()
+        return created_assessment
+
+    async def edit_assessment_by_assessment_id(
+        self, assessment_id: int, assessment_edit_in: AssessmentEditIn
+    ) -> None:
+        async with self.session_scope() as session:
+            existing_assessment = await session.execute(
+                select(Assessment).where(Assessment.id == assessment_id)
+            )
+
+            updated_assessment = existing_assessment.scalar_one_or_none()
+            if not updated_assessment:
+                raise AssessmentNotFound()
+
+            if (comment := assessment_edit_in.comment) is not None:
+                updated_assessment.comment = comment
+            if (value := assessment_edit_in.value) is not None:
+                updated_assessment.value = value
 
             await session.commit()
 
