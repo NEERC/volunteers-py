@@ -1,9 +1,11 @@
 from sqlalchemy import and_, delete, select
+from sqlalchemy.orm import selectinload
 
-from volunteers.models import ApplicationForm, Day, FormPositionAssociation, Position, Year
+from volunteers.models import ApplicationForm, Day, FormPositionAssociation, Position, UserDay, Year
 from volunteers.schemas.application_form import ApplicationFormIn
 from volunteers.schemas.day import DayEditIn, DayIn
 from volunteers.schemas.position import PositionEditIn, PositionIn
+from volunteers.schemas.user_day import UserDayEditIn, UserDayIn
 from volunteers.schemas.year import YearEditIn, YearIn
 
 from .base import BaseService
@@ -24,6 +26,10 @@ class PositionNotFound(DomainError):
 
 class DayNotFound(DomainError):
     """Day not found"""
+
+
+class UserDayNotFound(DomainError):
+    """User day not found"""
 
 
 class YearService(BaseService):
@@ -52,12 +58,14 @@ class YearService(BaseService):
     ) -> ApplicationForm | None:
         async with self.session_scope() as session:
             result = await session.execute(
-                select(ApplicationForm).where(
+                select(ApplicationForm)
+                .where(
                     and_(
                         ApplicationForm.year_id == year_id,
                         ApplicationForm.user_id == user_id,
                     )
                 )
+                .options(selectinload(ApplicationForm.desired_positions))
             )
             return result.scalar_one_or_none()
 
@@ -128,6 +136,37 @@ class YearService(BaseService):
                 updated_day.name = name
             if (information := day_edit_in.information) is not None:
                 updated_day.information = information
+
+            await session.commit()
+
+    async def add_user_day(self, user_day_in: UserDayIn) -> UserDay:
+        created_user_day = UserDay(
+            application_form_id=user_day_in.application_form_id,
+            day_id=user_day_in.day_id,
+            information=user_day_in.information,
+            attendance=user_day_in.attendance,
+        )
+        async with self.session_scope() as session:
+            session.add(created_user_day)
+            await session.commit()
+        return created_user_day
+
+    async def edit_user_day_by_user_day_id(
+        self, user_day_id: int, user_day_edit_in: UserDayEditIn
+    ) -> None:
+        async with self.session_scope() as session:
+            existing_user_day = await session.execute(
+                select(UserDay).where(UserDay.id == user_day_id)
+            )
+
+            updated_user_day = existing_user_day.scalar_one_or_none()
+            if not updated_user_day:
+                raise UserDayNotFound()
+
+            if (information := user_day_edit_in.information) is not None:
+                updated_user_day.information = information
+            if (attendance := user_day_edit_in.attendance) is not None:
+                updated_user_day.attendance = attendance
 
             await session.commit()
 
