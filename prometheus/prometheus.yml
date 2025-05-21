@@ -1,28 +1,23 @@
----
 rule_files:
   - '/etc/prometheus/prometheus.rules.yml'
 
 scrape_configs:
   - job_name: 'node'
     static_configs:
-      - targets: ['host.docker.internal:9100']  # For Mac/Windows
-      # For Linux, use your actual host IP or:
-      # - targets: ['node_exporter:9100'] if using host networking
+      - targets: ['node_exporter:9100']
 
   - job_name: 'cadvisor'
     static_configs:
-      - targets: ['host.docker.internal:8080']
-      # For Linux: ['cadvisor:8080'] or host IP
+      - targets: ['cadvisor:8080']
 
   - job_name: 'prometheus'
     static_configs:
-      - targets: ['localhost:9090']
+      - targets: ['prometheus:9090']
 
   - job_name: 'fastapi'
     metrics_path: '/metrics'
     static_configs:
-      - targets: ['host.docker.internal:8000']  # For Mac/Windows
-      # For Linux, use your actual host IP
+      - targets: ['host.docker.internal:8000', 'host-gateway:8000', 'fastapi:8000']
 
 alerting:
   alertmanagers:
