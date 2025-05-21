@@ -33,6 +33,7 @@ pytest-cov = "^6.1.1"
 pre-commit = "^4.2.0"
 types-psutil = "^7.0.0.20250516"
 types-requests = "^2.32.0.20250515"
+httpx = "^0.28.1"
 
 [build-system]
 requires = ["poetry-core"]
