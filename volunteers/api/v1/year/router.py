@@ -57,7 +57,10 @@ async def get_form_year(
         positions=[
             PositionOut(position_id=p.id, year_id=p.year_id, name=p.name) for p in positions
         ],
-        days=[DayOut(day_id=d.id, name=d.name, information=d.information) for d in days],
+        days=[
+            DayOut(day_id=d.id, year_id=d.year_id, name=d.name, information=d.information)
+            for d in days
+        ],
         desired_positions=[
             PositionOut(position_id=p.id, year_id=p.year_id, name=p.name)
             for p in form.desired_positions

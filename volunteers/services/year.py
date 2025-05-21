@@ -2,6 +2,7 @@ from sqlalchemy import and_, delete, select
 
 from volunteers.models import ApplicationForm, Day, FormPositionAssociation, Position, Year
 from volunteers.schemas.application_form import ApplicationFormIn
+from volunteers.schemas.day import DayEditIn, DayIn
 from volunteers.schemas.position import PositionEditIn, PositionIn
 from volunteers.schemas.year import YearEditIn, YearIn
 
@@ -19,6 +20,10 @@ class YearNotFound(DomainError):
 
 class PositionNotFound(DomainError):
     """Position not found"""
+
+
+class DayNotFound(DomainError):
+    """Day not found"""
 
 
 class YearService(BaseService):
@@ -101,6 +106,28 @@ class YearService(BaseService):
 
             if (name := position_edit_in.name) is not None:
                 updated_position.name = name
+
+            await session.commit()
+
+    async def add_day(self, day_in: DayIn) -> Day:
+        created_day = Day(year_id=day_in.year_id, name=day_in.name, information=day_in.information)
+        async with self.session_scope() as session:
+            session.add(created_day)
+            await session.commit()
+        return created_day
+
+    async def edit_day_by_day_id(self, day_id: int, day_edit_in: DayEditIn) -> None:
+        async with self.session_scope() as session:
+            existing_day = await session.execute(select(Day).where(Day.id == day_id))
+
+            updated_day = existing_day.scalar_one_or_none()
+            if not updated_day:
+                raise DayNotFound()
+
+            if (name := day_edit_in.name) is not None:
+                updated_day.name = name
+            if (information := day_edit_in.information) is not None:
+                updated_day.information = information
 
             await session.commit()
 

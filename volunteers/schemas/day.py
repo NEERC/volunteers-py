@@ -2,9 +2,15 @@ from pydantic import BaseModel
 
 
 class DayIn(BaseModel):
-    day_id: int
+    year_id: int
+    name: str
+    information: str
+
+
+class DayEditIn(BaseModel):
+    name: str | None
+    information: str | None
 
 
 class DayOut(DayIn):
-    name: str
-    information: str
+    day_id: int
