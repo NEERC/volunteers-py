@@ -112,7 +112,7 @@ async def login(
     user = await user_service.get_user_by_telegram_id(telegram_id=request.telegram_id)
     if not user:
         logger.warning("Detected an attempt to authorize a non-existent user")
-        raise HTTPException(status_code=401, detail="User is not registered")
+        raise HTTPException(status_code=403, detail="User is not found")
     logger.info("User has been authorized")
 
     payload = JWTTokenPayload(user_id=request.telegram_id, role="user")

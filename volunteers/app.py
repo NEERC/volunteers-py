@@ -56,6 +56,7 @@ async def track_requests(
     return response
 
 
-@app.get("/")
-async def auth() -> FileResponse:
+# Proxy everything else to the frontend
+@app.get("/{path:path}")
+async def proxy(path: str) -> FileResponse:
     return FileResponse("./volunteers/auth.html")

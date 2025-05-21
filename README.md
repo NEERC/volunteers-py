@@ -2,6 +2,19 @@
 
 ## Development
 
+add `127.0.0.1	nerc-volunteers.itmo.ru` to `/etc/hosts`
+then run `caddy run` (might ask for sudo)
+
+## UI
+
+```bash
+cd ui
+npm install
+npm run dev
+```
+
+## backend
+
 ```bash
 poetry install
 poetry run ruff check
