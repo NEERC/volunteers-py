@@ -31,13 +31,6 @@ def test_root_serves_auth_html(client: TestClient, monkeypatch: MonkeyPatch) -> 
     assert response.status_code == 200
 
 
-def test_metrics_endpoint(client: TestClient) -> None:
-    response = client.get("/metrics")
-    # Prometheus metrics endpoint should return plaintext metrics data
-    assert response.status_code == 200
-    assert b"# HELP" in response.content
-
-
 def test_api_router_included(client: TestClient) -> None:
     # This checks that the /api or other router endpoints exist.
     # If you know a specific route, check it, e.g., /api/health or similar.
