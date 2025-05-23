@@ -14,7 +14,16 @@ logger.remove()
 logger.add(sys.stdout, level="DEBUG")
 
 container = Container()
-container.wire(packages=["volunteers"])
+container.wire(
+    packages=[
+        "volunteers.services",
+        "volunteers.models",
+        "volunteers.schemas",
+        "volunteers.core",
+        "volunteers.auth",
+        "volunteers.api",
+    ]
+)
 
 
 @asynccontextmanager
