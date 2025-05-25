@@ -8,9 +8,9 @@ class TelegramLoginRequest(BaseModel):
     telegram_auth_date: int
     telegram_first_name: str
     telegram_hash: str
-    telegram_last_name: str | None
-    telegram_username: str | None
-    telegram_photo_url: str | None
+    telegram_last_name: str | None = None
+    telegram_username: str | None = None
+    telegram_photo_url: str | None = None
 
 
 class RegistrationRequest(TelegramLoginRequest):
@@ -18,8 +18,8 @@ class RegistrationRequest(TelegramLoginRequest):
     last_name_ru: str
     full_name_en: str
 
-    isu_id: int | None
-    patronymic_ru: str | None
+    isu_id: int | None = None
+    patronymic_ru: str | None = None
 
 
 class RefreshTokenRequest(BaseModel):

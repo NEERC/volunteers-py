@@ -54,10 +54,16 @@ async def get_form_year(
 
     logger.debug(f"{DB_PREFIX} Got user form and year positions")
     return ApplicationFormYearSavedResponse(
-        positions=[PositionOut(position_id=p.id, name=p.name) for p in positions],
-        days=[DayOut(day_id=d.id, name=d.name, information=d.information) for d in days],
+        positions=[
+            PositionOut(position_id=p.id, year_id=p.year_id, name=p.name) for p in positions
+        ],
+        days=[
+            DayOut(day_id=d.id, year_id=d.year_id, name=d.name, information=d.information)
+            for d in days
+        ],
         desired_positions=[
-            PositionOut(position_id=p.id, name=p.name) for p in form.desired_positions
+            PositionOut(position_id=p.id, year_id=p.year_id, name=p.name)
+            for p in form.desired_positions
         ]
         if form
         else [],

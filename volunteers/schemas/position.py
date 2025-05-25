@@ -2,8 +2,13 @@ from pydantic import BaseModel
 
 
 class PositionIn(BaseModel):
-    position_id: int
+    year_id: int
+    name: str
+
+
+class PositionEditIn(BaseModel):
+    name: str | None
 
 
 class PositionOut(PositionIn):
-    name: str
+    position_id: int

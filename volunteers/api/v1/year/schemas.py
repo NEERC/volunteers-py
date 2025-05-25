@@ -16,7 +16,7 @@ class ApplicationFormYearSavedResponse(BaseSuccessResponse):
 
 class ApplicationFormYearSaveRequest(BaseModel):
     desired_positions_ids: set[int]
-    itmo_group: str | None
+    itmo_group: str | None = None
     comments: str = ""
 
 
