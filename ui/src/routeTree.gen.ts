@@ -14,6 +14,7 @@ import { Route as rootRoute } from './routes/__root'
 import { Route as LoginImport } from './routes/login'
 import { Route as LoggedInImport } from './routes/_logged-in'
 import { Route as LoggedInIndexImport } from './routes/_logged-in/index'
+import { Route as LoggedInYearIdIndexImport } from './routes/_logged-in/$yearId/index'
 
 // Create/Update Routes
 
@@ -31,6 +32,12 @@ const LoggedInRoute = LoggedInImport.update({
 const LoggedInIndexRoute = LoggedInIndexImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => LoggedInRoute,
+} as any)
+
+const LoggedInYearIdIndexRoute = LoggedInYearIdIndexImport.update({
+  id: '/$yearId/',
+  path: '/$yearId/',
   getParentRoute: () => LoggedInRoute,
 } as any)
 
@@ -59,6 +66,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LoggedInIndexImport
       parentRoute: typeof LoggedInImport
     }
+    '/_logged-in/$yearId/': {
+      id: '/_logged-in/$yearId/'
+      path: '/$yearId'
+      fullPath: '/$yearId'
+      preLoaderRoute: typeof LoggedInYearIdIndexImport
+      parentRoute: typeof LoggedInImport
+    }
   }
 }
 
@@ -66,10 +80,12 @@ declare module '@tanstack/react-router' {
 
 interface LoggedInRouteChildren {
   LoggedInIndexRoute: typeof LoggedInIndexRoute
+  LoggedInYearIdIndexRoute: typeof LoggedInYearIdIndexRoute
 }
 
 const LoggedInRouteChildren: LoggedInRouteChildren = {
   LoggedInIndexRoute: LoggedInIndexRoute,
+  LoggedInYearIdIndexRoute: LoggedInYearIdIndexRoute,
 }
 
 const LoggedInRouteWithChildren = LoggedInRoute._addFileChildren(
@@ -80,11 +96,13 @@ export interface FileRoutesByFullPath {
   '': typeof LoggedInRouteWithChildren
   '/login': typeof LoginRoute
   '/': typeof LoggedInIndexRoute
+  '/$yearId': typeof LoggedInYearIdIndexRoute
 }
 
 export interface FileRoutesByTo {
   '/login': typeof LoginRoute
   '/': typeof LoggedInIndexRoute
+  '/$yearId': typeof LoggedInYearIdIndexRoute
 }
 
 export interface FileRoutesById {
@@ -92,14 +110,20 @@ export interface FileRoutesById {
   '/_logged-in': typeof LoggedInRouteWithChildren
   '/login': typeof LoginRoute
   '/_logged-in/': typeof LoggedInIndexRoute
+  '/_logged-in/$yearId/': typeof LoggedInYearIdIndexRoute
 }
 
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '' | '/login' | '/'
+  fullPaths: '' | '/login' | '/' | '/$yearId'
   fileRoutesByTo: FileRoutesByTo
-  to: '/login' | '/'
-  id: '__root__' | '/_logged-in' | '/login' | '/_logged-in/'
+  to: '/login' | '/' | '/$yearId'
+  id:
+    | '__root__'
+    | '/_logged-in'
+    | '/login'
+    | '/_logged-in/'
+    | '/_logged-in/$yearId/'
   fileRoutesById: FileRoutesById
 }
 
@@ -130,7 +154,8 @@ export const routeTree = rootRoute
     "/_logged-in": {
       "filePath": "_logged-in.tsx",
       "children": [
-        "/_logged-in/"
+        "/_logged-in/",
+        "/_logged-in/$yearId/"
       ]
     },
     "/login": {
@@ -138,6 +163,10 @@ export const routeTree = rootRoute
     },
     "/_logged-in/": {
       "filePath": "_logged-in/index.tsx",
+      "parent": "/_logged-in"
+    },
+    "/_logged-in/$yearId/": {
+      "filePath": "_logged-in/$yearId/index.tsx",
       "parent": "/_logged-in"
     }
   }

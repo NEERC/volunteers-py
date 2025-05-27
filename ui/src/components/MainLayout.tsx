@@ -1,26 +1,63 @@
-import { Link, useLocation, useMatches } from '@tanstack/react-router'
-import { AppBar, Toolbar, IconButton, Typography, Box, Drawer, ListItemIcon, ListItemText, ListItemButton, List, ListItem, Divider, FormControl, Select, MenuItem, InputLabel } from '@mui/material'
-import { useState } from 'react';
-import MenuIcon from '@mui/icons-material/Menu';
-import InboxIcon from '@mui/icons-material/Inbox';
-import MailIcon from '@mui/icons-material/Mail';
-import { useQuery } from '@tanstack/react-query';
-import { getYearsApiV1YearGet } from '@/client';
+import {
+  Link,
+  useLocation,
+  useMatch,
+  useMatches,
+  useNavigate,
+} from "@tanstack/react-router";
+import {
+  AppBar,
+  Toolbar,
+  IconButton,
+  Typography,
+  Box,
+  Drawer,
+  ListItemIcon,
+  ListItemText,
+  ListItemButton,
+  List,
+  ListItem,
+  Divider,
+  FormControl,
+  Select,
+  MenuItem,
+  InputLabel,
+  Button,
+  type SelectChangeEvent,
+} from "@mui/material";
+import { useState } from "react";
+import MenuIcon from "@mui/icons-material/Menu";
+import InboxIcon from "@mui/icons-material/Inbox";
+import MailIcon from "@mui/icons-material/Mail";
+import { useQuery } from "@tanstack/react-query";
+import { getYearsApiV1YearGet } from "@/client";
+import { authStore } from "@/store/auth";
+import { useYears } from "@/data/use-years";
 
 const drawerWidth = 240;
 
-export default function MainLayout({ children, title }: { children: React.ReactNode, title: string }) {
+export default function MainLayout({
+  children,
+  title,
+}: { children: React.ReactNode; title: string }) {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [isClosing, setIsClosing] = useState(false);
 
-  const years = useQuery({
-    queryKey: ['years'],
-    queryFn: async () => (await getYearsApiV1YearGet({ throwOnError: true })).data,
-  });
+  const years = useYears();
 
-  const breadcrumbs = useMatches({
-    select: (match) => match.pathname,
-  });
+  const selectedYear =
+    useMatch({
+      from: "/_logged-in/$yearId/",
+      select: (match) => match.params.yearId,
+      shouldThrow: false,
+    }) ?? "";
+
+  const navigate = useNavigate();
+
+  const handleYearChange = (event: SelectChangeEvent<string>) => {
+    const yearId = event.target.value;
+    navigate({ to: `/${yearId}` });
+  };
 
   const handleDrawerClose = () => {
     setIsClosing(true);
@@ -44,20 +81,22 @@ export default function MainLayout({ children, title }: { children: React.ReactN
           <Select
             labelId="year-selector"
             id="year-selector"
-            // value={age}
-            // onChange={handleChange}
+            value={selectedYear}
+            onChange={handleYearChange}
             label="Год"
           >
-            {years.isSuccess && years.data.years.map((year) => (
-              <MenuItem key={year.year_id} value={year.year_id}>
-                {year.year_name}
-              </MenuItem>
-            ))}
+            <MenuItem value={""}>Главная</MenuItem>
+            {years.isSuccess &&
+              years.data.years.map((year) => (
+                <MenuItem key={year.year_id} value={year.year_id}>
+                  {year.year_name}
+                </MenuItem>
+              ))}
           </Select>
         </FormControl>
       </Toolbar>
       <Divider />
-      <List>
+      {/* <List>
         {['Inbox', 'Starred', 'Send email', 'Drafts'].map((text, index) => (
           <ListItem key={text} disablePadding>
             <ListItemButton>
@@ -81,11 +120,11 @@ export default function MainLayout({ children, title }: { children: React.ReactN
             </ListItemButton>
           </ListItem>
         ))}
-      </List>
+      </List> */}
     </div>
   );
   return (
-    <Box sx={{ display: 'flex' }}>
+    <Box sx={{ display: "flex" }}>
       <AppBar
         position="fixed"
         sx={{
@@ -99,13 +138,16 @@ export default function MainLayout({ children, title }: { children: React.ReactN
             aria-label="open drawer"
             edge="start"
             onClick={handleDrawerToggle}
-            sx={{ mr: 2, display: { sm: 'none' } }}
+            sx={{ mr: 2, display: { sm: "none" } }}
           >
             <MenuIcon />
           </IconButton>
           <Typography variant="h6" noWrap component="div">
             {title}
           </Typography>
+          <Button color="inherit" onClick={() => authStore.logout()}>
+            Выйти
+          </Button>
         </Toolbar>
       </AppBar>
       <Box
@@ -120,8 +162,11 @@ export default function MainLayout({ children, title }: { children: React.ReactN
           onTransitionEnd={handleDrawerTransitionEnd}
           onClose={handleDrawerClose}
           sx={{
-            display: { xs: 'block', sm: 'none' },
-            '& .MuiDrawer-paper': { boxSizing: 'border-box', width: drawerWidth },
+            display: { xs: "block", sm: "none" },
+            "& .MuiDrawer-paper": {
+              boxSizing: "border-box",
+              width: drawerWidth,
+            },
           }}
           slotProps={{
             root: {
@@ -134,8 +179,11 @@ export default function MainLayout({ children, title }: { children: React.ReactN
         <Drawer
           variant="permanent"
           sx={{
-            display: { xs: 'none', sm: 'block' },
-            '& .MuiDrawer-paper': { boxSizing: 'border-box', width: drawerWidth },
+            display: { xs: "none", sm: "block" },
+            "& .MuiDrawer-paper": {
+              boxSizing: "border-box",
+              width: drawerWidth,
+            },
           }}
           open
         >
@@ -144,11 +192,15 @@ export default function MainLayout({ children, title }: { children: React.ReactN
       </Box>
       <Box
         component="main"
-        sx={{ flexGrow: 1, p: 3, width: { sm: `calc(100% - ${drawerWidth}px)` } }}
+        sx={{
+          flexGrow: 1,
+          p: 3,
+          width: { sm: `calc(100% - ${drawerWidth}px)` },
+        }}
       >
         <Toolbar />
         {children}
       </Box>
     </Box>
-  )
+  );
 }
