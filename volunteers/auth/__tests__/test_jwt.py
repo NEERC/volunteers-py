@@ -27,7 +27,7 @@ class DummyJWTConfig:
 
 
 class DummyConfig(Config):
-    # Inherit from Config for full compatibility, but override init to skip pydantic validation
+    # Inherit from Config for full compatibility, but override init
     def __init__(self) -> None:
         object.__setattr__(self, "jwt", DummyJWTConfig())
 
@@ -55,7 +55,6 @@ def test_create_token_and_decode_token(dummy_config: Config) -> None:
         "iat": datetime.datetime.now(tz=datetime.UTC),
     }
     token = jwt_tokens.create_token(payload, config=dummy_config)
-    # Remove bytes/str unreachable check: token is always str
     decoded = jwt_tokens.decode_token(token, config=dummy_config)
     assert decoded["user_id"] == 1
     assert decoded["role"] == "admin"
