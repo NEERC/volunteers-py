@@ -42,7 +42,7 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None]:
         await shutdown_resources
 
 
-app = FastAPI(lifespan=lifespan)
+app = FastAPI(lifespan=lifespan, openapi_url="/api/v1/openapi.json", docs_url="/api/v1/docs")
 
 app.include_router(api_router)
 

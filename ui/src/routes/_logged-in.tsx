@@ -41,5 +41,6 @@ export const Route = createFileRoute("/_logged-in")({
     if (authStore.user === null) {
       throw redirect({ to: "/login" });
     }
+    return { user: authStore.user };
   },
 });

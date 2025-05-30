@@ -1,10 +1,14 @@
 import {
   Link,
+  useChildMatches,
   useLocation,
   useMatch,
   useMatches,
   useNavigate,
+  type FileRoutesByPath,
 } from "@tanstack/react-router";
+import { routeTree } from "@/routeTree.gen";
+import type { RegisteredRouter } from "@tanstack/react-router";
 import {
   AppBar,
   Toolbar,
@@ -24,39 +28,85 @@ import {
   InputLabel,
   Button,
   type SelectChangeEvent,
+  Collapse,
+  styled,
 } from "@mui/material";
 import { useState } from "react";
 import MenuIcon from "@mui/icons-material/Menu";
-import InboxIcon from "@mui/icons-material/Inbox";
-import MailIcon from "@mui/icons-material/Mail";
+import AssignmentIcon from "@mui/icons-material/Assignment";
+import ContactsIcon from "@mui/icons-material/Contacts";
+import CalendarMonthIcon from "@mui/icons-material/CalendarMonth";
+import AssessmentIcon from "@mui/icons-material/Assessment";
+import EmojiEventsIcon from "@mui/icons-material/EmojiEvents";
+import SettingsIcon from "@mui/icons-material/Settings";
+import GroupIcon from "@mui/icons-material/Group";
+import ExpandLess from "@mui/icons-material/ExpandLess";
+import ExpandMore from "@mui/icons-material/ExpandMore";
 import { useQuery } from "@tanstack/react-query";
-import { getYearsApiV1YearGet } from "@/client";
+import { getFormYearApiV1YearYearIdGet, getYearsApiV1YearGet } from "@/client";
 import { authStore } from "@/store/auth";
 import { useYears } from "@/data/use-years";
+import { observer } from "mobx-react-lite";
 
 const drawerWidth = 240;
 
-export default function MainLayout({
+const StyledLink = styled(Link)<{ theme?: any }>(({ theme }) => ({
+  textDecoration: 'none',
+  color: 'inherit',
+  display: 'block',
+  width: '100%',
+  '&.active .MuiListItemButton-root': {
+    backgroundColor: theme.palette.action.selected,
+  },
+  '& .MuiListItemButton-root:hover': {
+    backgroundColor: theme.palette.action.hover,
+  },
+}));
+
+const StyledListItemButton = styled(ListItemButton)(({ theme }) => ({
+  '&:hover': {
+    backgroundColor: theme.palette.action.hover,
+  },
+}));
+
+export default observer(function MainLayout({
   children,
   title,
 }: { children: React.ReactNode; title: string }) {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [isClosing, setIsClosing] = useState(false);
+  const [daysOpen, setDaysOpen] = useState(true);
 
   const years = useYears();
+  const location = useLocation();
 
-  const selectedYear =
-    useMatch({
-      from: "/_logged-in/$yearId/",
-      select: (match) => match.params.yearId,
-      shouldThrow: false,
-    }) ?? "";
+  const selectedYear = useMatch({
+    from: "/_logged-in/$yearId",
+    select: (match) => match.params.yearId,
+    shouldThrow: false,
+  }) ?? "";
+
+  const yearData = useQuery({
+    queryKey: ["year", selectedYear],
+    queryFn: async () => {
+      if (!selectedYear) return null;
+      const response = await getFormYearApiV1YearYearIdGet({
+        path: { year_id: Number(selectedYear) },
+      });
+      return response.data;
+    },
+    enabled: !!selectedYear,
+  });
 
   const navigate = useNavigate();
 
   const handleYearChange = (event: SelectChangeEvent<string>) => {
     const yearId = event.target.value;
-    navigate({ to: `/${yearId}` });
+    if (yearId === "create") {
+      navigate({ to: "/create" });
+    } else {
+      navigate({ to: `/${yearId}` });
+    }
   };
 
   const handleDrawerClose = () => {
@@ -73,56 +123,187 @@ export default function MainLayout({
       setMobileOpen(!mobileOpen);
     }
   };
+
+  const isLinkActive = (path: string) => {
+    return location.pathname === path;
+  };
+
   const drawer = (
     <div>
       <Toolbar>
         <FormControl variant="standard" sx={{ minWidth: 120 }} fullWidth>
-          <InputLabel id="year-selector">Год</InputLabel>
+          <InputLabel id="year-selector">Year</InputLabel>
           <Select
             labelId="year-selector"
             id="year-selector"
             value={selectedYear}
             onChange={handleYearChange}
-            label="Год"
+            label="Year"
           >
-            <MenuItem value={""}>Главная</MenuItem>
+            <MenuItem value={""}>Main</MenuItem>
+            <MenuItem
+              disabled
+              sx={{
+                borderTop: 1,
+                borderColor: "divider",
+                my: 1,
+                opacity: 1,
+                pointerEvents: "none",
+              }}
+            >
+              Years
+            </MenuItem>
             {years.isSuccess &&
               years.data.years.map((year) => (
                 <MenuItem key={year.year_id} value={year.year_id}>
                   {year.year_name}
                 </MenuItem>
               ))}
+            {authStore.user?.is_admin && (
+              <MenuItem
+                value="create"
+                sx={{
+                  borderTop: 1,
+                  borderColor: "divider",
+                  mt: 1,
+                  color: "primary.main",
+                }}
+              >
+                + Create Year
+              </MenuItem>
+            )}
           </Select>
         </FormControl>
       </Toolbar>
       <Divider />
-      {/* <List>
-        {['Inbox', 'Starred', 'Send email', 'Drafts'].map((text, index) => (
-          <ListItem key={text} disablePadding>
-            <ListItemButton>
-              <ListItemIcon>
-                {index % 2 === 0 ? <InboxIcon /> : <MailIcon />}
-              </ListItemIcon>
-              <ListItemText primary={text} />
-            </ListItemButton>
+      {selectedYear && (
+        <List>
+          <ListItem disablePadding>
+            <StyledLink
+              to="/$yearId/registration"
+              params={{ yearId: selectedYear }}
+              className={isLinkActive(`/${selectedYear}/registration`) ? 'active' : ''}
+            >
+              <ListItemButton>
+                <ListItemIcon>
+                  <AssignmentIcon />
+                </ListItemIcon>
+                <ListItemText primary="Registration Form" />
+              </ListItemButton>
+            </StyledLink>
           </ListItem>
-        ))}
-      </List>
-      <Divider />
-      <List>
-        {['All mail', 'Trash', 'Spam'].map((text, index) => (
-          <ListItem key={text} disablePadding>
-            <ListItemButton>
-              <ListItemIcon>
-                {index % 2 === 0 ? <InboxIcon /> : <MailIcon />}
-              </ListItemIcon>
-              <ListItemText primary={text} />
-            </ListItemButton>
+          <ListItem disablePadding>
+            <StyledLink
+              to="/$yearId/contacts"
+              params={{ yearId: selectedYear }}
+              className={isLinkActive(`/${selectedYear}/contacts`) ? 'active' : ''}
+            >
+              <ListItemButton>
+                <ListItemIcon>
+                  <ContactsIcon />
+                </ListItemIcon>
+                <ListItemText primary="Contacts" />
+              </ListItemButton>
+            </StyledLink>
           </ListItem>
-        ))}
-      </List> */}
+          <ListItem disablePadding>
+            <StyledListItemButton onClick={() => setDaysOpen(!daysOpen)}>
+              <ListItemIcon>
+                <CalendarMonthIcon />
+              </ListItemIcon>
+              <ListItemText primary="Days" />
+              {daysOpen ? <ExpandLess /> : <ExpandMore />}
+            </StyledListItemButton>
+          </ListItem>
+          <Collapse in={daysOpen} timeout="auto" unmountOnExit>
+            <List component="div" disablePadding>
+              {yearData.isSuccess &&
+                yearData.data?.days.map((day) => (
+                  <StyledLink
+                    key={day.day_id}
+                    to="/$yearId/days/$dayId"
+                    params={{ yearId: selectedYear, dayId: day.day_id.toString() }}
+                    className={isLinkActive(`/${selectedYear}/days/${day.day_id}`) ? 'active' : ''}
+                  >
+                    <ListItemButton sx={{ pl: 4 }}>
+                      <ListItemText primary={day.name} />
+                    </ListItemButton>
+                  </StyledLink>
+                ))}
+              {authStore.user?.is_admin && (
+                <StyledLink
+                  to="/$yearId/days/create"
+                  params={{ yearId: selectedYear }}
+                  className={isLinkActive(`/${selectedYear}/days/create`) ? 'active' : ''}
+                >
+                  <ListItemButton sx={{ pl: 4, color: 'primary.main' }}>
+                    <ListItemText primary="+ Create Day" />
+                  </ListItemButton>
+                </StyledLink>
+              )}
+            </List>
+          </Collapse>
+          <ListItem disablePadding>
+            <StyledLink
+              to="/$yearId/results"
+              params={{ yearId: selectedYear }}
+              className={isLinkActive(`/${selectedYear}/results`) ? 'active' : ''}
+            >
+              <ListItemButton>
+                <ListItemIcon>
+                  <AssessmentIcon />
+                </ListItemIcon>
+                <ListItemText primary="Results" />
+              </ListItemButton>
+            </StyledLink>
+          </ListItem>
+          <ListItem disablePadding>
+            <StyledLink
+              to="/$yearId/medals"
+              params={{ yearId: selectedYear }}
+              className={isLinkActive(`/${selectedYear}/medals`) ? 'active' : ''}
+            >
+              <ListItemButton>
+                <ListItemIcon>
+                  <EmojiEventsIcon />
+                </ListItemIcon>
+                <ListItemText primary="User Medals" />
+              </ListItemButton>
+            </StyledLink>
+          </ListItem>
+          <ListItem disablePadding>
+            <StyledLink
+              to="/$yearId/settings"
+              params={{ yearId: selectedYear }}
+              className={isLinkActive(`/${selectedYear}/settings`) ? 'active' : ''}
+            >
+              <ListItemButton>
+                <ListItemIcon>
+                  <SettingsIcon />
+                </ListItemIcon>
+                <ListItemText primary="Settings" />
+              </ListItemButton>
+            </StyledLink>
+          </ListItem>
+          <ListItem disablePadding>
+            <StyledLink
+              to="/$yearId/users"
+              params={{ yearId: selectedYear }}
+              className={isLinkActive(`/${selectedYear}/users`) ? 'active' : ''}
+            >
+              <ListItemButton>
+                <ListItemIcon>
+                  <GroupIcon />
+                </ListItemIcon>
+                <ListItemText primary="Users" />
+              </ListItemButton>
+            </StyledLink>
+          </ListItem>
+        </List>
+      )}
     </div>
   );
+
   return (
     <Box sx={{ display: "flex" }}>
       <AppBar
@@ -142,11 +323,11 @@ export default function MainLayout({
           >
             <MenuIcon />
           </IconButton>
-          <Typography variant="h6" noWrap component="div">
+          <Typography variant="h6" noWrap component="div" sx={{ flexGrow: 1 }}>
             {title}
           </Typography>
           <Button color="inherit" onClick={() => authStore.logout()}>
-            Выйти
+            Logout
           </Button>
         </Toolbar>
       </AppBar>
@@ -156,7 +337,6 @@ export default function MainLayout({
         aria-label="mailbox folders"
       >
         <Drawer
-          // container={container}
           variant="temporary"
           open={mobileOpen}
           onTransitionEnd={handleDrawerTransitionEnd}
@@ -203,4 +383,4 @@ export default function MainLayout({
       </Box>
     </Box>
   );
-}
+});

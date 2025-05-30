@@ -102,17 +102,19 @@ function RouteComponent() {
             if (Object.keys(errors).length > 0) {
               return;
             }
-            return await authStore.registerTelegram({
+            await authStore.registerTelegram({
               ...telegramData,
               first_name_ru: regForm.values.first_name_ru,
               last_name_ru: regForm.values.last_name_ru,
-              full_name_en: regForm.values.full_name_en,
               isu_id: regForm.values.isu_id,
+              full_name_en: regForm.values.full_name_en,
               patronymic_ru: regForm.values.patronymic_ru,
             });
+            navigate({ to: "/" });
+          } else {  
+            await authStore.loginTelegram(telegramData);
+            navigate({ to: "/" });
           }
-          await authStore.loginTelegram(telegramData);
-          navigate({ to: "/" });
         } catch (error) {
           if (error instanceof UserNotFoundError) {
             setShouldRegister(true);
