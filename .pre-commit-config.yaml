@@ -32,7 +32,7 @@ repos:
     hooks:
       - id: pnpm-lint
         name: pnpm-lint
-        entry: cd ui && pnpm run lint --fix
+        entry: bash -c 'cd ui && pnpm run lint --fix'
         language: system
         types_or: [javascript, jsx, ts, tsx]
         require_serial: true
@@ -40,7 +40,7 @@ repos:
 
       - id: pnpm-check
         name: pnpm-check
-        entry: cd ui && pnpm run check
+        entry: bash -c 'cd ui && pnpm run check'
         language: system
         types_or: [javascript, jsx, ts, tsx]
         require_serial: true
