@@ -326,7 +326,10 @@ export default observer(function MainLayout({
           <Typography variant="h6" noWrap component="div" sx={{ flexGrow: 1 }}>
             {title}
           </Typography>
-          <Button color="inherit" onClick={() => authStore.logout()}>
+          <Button color="inherit" onClick={() => {
+            authStore.logout();
+            navigate({ to: "/login" });
+          }}>
             Logout
           </Button>
         </Toolbar>

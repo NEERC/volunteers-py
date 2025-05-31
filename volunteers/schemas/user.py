@@ -11,3 +11,11 @@ class UserIn(BaseModel):
 
     isu_id: int | None
     patronymic_ru: str | None
+
+
+class UserUpdate(BaseModel):
+    first_name_ru: str | None = None
+    last_name_ru: str | None = None
+    full_name_en: str | None = None
+    isu_id: int | None = None
+    patronymic_ru: str | None = None

@@ -163,6 +163,14 @@ export type UserResponse = {
     patronymic_ru: string | null;
 };
 
+export type UserUpdateRequest = {
+    first_name_ru?: string | null;
+    last_name_ru?: string | null;
+    full_name_en?: string | null;
+    isu_id?: number | null;
+    patronymic_ru?: string | null;
+};
+
 export type ValidationError = {
     loc: Array<string | number>;
     msg: string;
@@ -540,6 +548,31 @@ export type MeApiV1AuthMeGetResponses = {
 };
 
 export type MeApiV1AuthMeGetResponse = MeApiV1AuthMeGetResponses[keyof MeApiV1AuthMeGetResponses];
+
+export type UpdateUserApiV1AuthUpdatePostData = {
+    body: UserUpdateRequest;
+    path?: never;
+    query?: never;
+    url: '/api/v1/auth/update';
+};
+
+export type UpdateUserApiV1AuthUpdatePostErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type UpdateUserApiV1AuthUpdatePostError = UpdateUserApiV1AuthUpdatePostErrors[keyof UpdateUserApiV1AuthUpdatePostErrors];
+
+export type UpdateUserApiV1AuthUpdatePostResponses = {
+    /**
+     * Successful Response
+     */
+    200: UserResponse;
+};
+
+export type UpdateUserApiV1AuthUpdatePostResponse = UpdateUserApiV1AuthUpdatePostResponses[keyof UpdateUserApiV1AuthUpdatePostResponses];
 
 export type GetYearsApiV1YearGetData = {
     body?: never;

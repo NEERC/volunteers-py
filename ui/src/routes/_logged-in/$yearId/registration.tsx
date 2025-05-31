@@ -1,37 +1,58 @@
 import { createFileRoute, useNavigate } from '@tanstack/react-router';
-import { useMutation } from '@tanstack/react-query';
-import { saveFormYearApiV1YearYearIdPost } from '@/client';
-import { Box, Container, Typography, Paper, Button, TextField, FormControl, InputLabel, Select, MenuItem, Checkbox, CircularProgress, Alert } from '@mui/material';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { saveFormYearApiV1YearYearIdPost, updateUserApiV1AuthUpdatePost } from '@/client';
+import { Box, Container, Typography, Paper, Button, TextField, FormControl, InputLabel, Select, MenuItem, Checkbox, CircularProgress, Alert, Divider } from '@mui/material';
 import { useFormik } from 'formik';
 import * as Yup from 'yup';
+import { authStore } from '@/store/auth';
+import { observer } from 'mobx-react-lite';
 
 export const Route = createFileRoute('/_logged-in/$yearId/registration')({
-  component: RouteComponent,
+  component: observer(RouteComponent),
 });
 
 function RouteComponent() {
   const year = Route.useRouteContext().year;
   const { yearId } = Route.useParams();
   const navigate = useNavigate();
-
+  const queryClient = useQueryClient();
 
   const saveMutation = useMutation({
     mutationFn: async (values: {
       desired_positions: number[];
       itmo_group: string | null;
       comments: string;
+      first_name_ru: string | null;
+      last_name_ru: string | null;
+      full_name_en: string | null;
+      isu_id: number | null;
+      patronymic_ru: string | null;
     }) => {
-      return saveFormYearApiV1YearYearIdPost({
-        path: { year_id: parseInt(yearId) },
-        body: {
-          desired_positions_ids: values.desired_positions,
-          itmo_group: values.itmo_group,
-          comments: values.comments,
-        },
-        throwOnError: true
-      });
+      const [formResponse, userResponse] = await Promise.all([
+        saveFormYearApiV1YearYearIdPost({
+          path: { year_id: parseInt(yearId) },
+          body: {
+            desired_positions_ids: values.desired_positions,
+            itmo_group: values.itmo_group,
+            comments: values.comments,
+          },
+          throwOnError: true
+        }),
+        updateUserApiV1AuthUpdatePost({
+          body: {
+            first_name_ru: values.first_name_ru,
+            last_name_ru: values.last_name_ru,
+            full_name_en: values.full_name_en,
+            isu_id: values.isu_id,
+            patronymic_ru: values.patronymic_ru,
+          },
+          throwOnError: true
+        })
+      ]);
+      return { formResponse, userResponse };
     },
-    onSuccess: () => {
+    onSuccess: async (data) => {
+      await authStore.fetchUser();
       navigate({ to: `/${yearId}` });
     },
   });
@@ -41,12 +62,22 @@ function RouteComponent() {
       desired_positions: year?.desired_positions?.map(p => p.position_id) ?? [],
       itmo_group: year?.itmo_group ?? '',
       comments: year?.comments ?? '',
+      first_name_ru: authStore.user?.first_name_ru ?? '',
+      last_name_ru: authStore.user?.last_name_ru ?? '',
+      full_name_en: authStore.user?.full_name_en ?? '',
+      isu_id: authStore.user?.isu_id ?? null,
+      patronymic_ru: authStore.user?.patronymic_ru ?? '',
     },
     enableReinitialize: true,
     validationSchema: Yup.object({
       desired_positions: Yup.array().of(Yup.number()).min(1, 'Please select at least one position'),
       itmo_group: Yup.string().nullable(),
       comments: Yup.string(),
+      first_name_ru: Yup.string().required('Required'),
+      last_name_ru: Yup.string().required('Required'),
+      full_name_en: Yup.string().required('Required'),
+      isu_id: Yup.number().nullable(),
+      patronymic_ru: Yup.string().nullable(),
     }),
     onSubmit: (values) => {
       saveMutation.mutate(values);
@@ -61,16 +92,6 @@ function RouteComponent() {
     );
   }
 
-  if (!year) {
-    return (
-      <Container maxWidth="md" sx={{ mt: 4 }}>
-        <Alert severity="error">
-          Failed to load registration form. Please try again later.
-        </Alert>
-      </Container>
-    );
-  }
-
   return (
     <Container maxWidth="md" sx={{ py: 4 }}>
       <Paper elevation={3} sx={{ p: 4 }}>
@@ -79,6 +100,72 @@ function RouteComponent() {
         </Typography>
         
         <form onSubmit={formik.handleSubmit}>
+          <Typography variant="h6" gutterBottom sx={{ mt: 3 }}>
+            Personal Information
+          </Typography>
+          
+          <TextField
+            fullWidth
+            label="First Name (RU)"
+            name="first_name_ru"
+            value={formik.values.first_name_ru}
+            onChange={formik.handleChange}
+            error={formik.touched.first_name_ru && Boolean(formik.errors.first_name_ru)}
+            helperText={formik.touched.first_name_ru && formik.errors.first_name_ru}
+            sx={{ mb: 2 }}
+          />
+
+          <TextField
+            fullWidth
+            label="Last Name (RU)"
+            name="last_name_ru"
+            value={formik.values.last_name_ru}
+            onChange={formik.handleChange}
+            error={formik.touched.last_name_ru && Boolean(formik.errors.last_name_ru)}
+            helperText={formik.touched.last_name_ru && formik.errors.last_name_ru}
+            sx={{ mb: 2 }}
+          />
+
+          <TextField
+            fullWidth
+            label="Patronymic (RU)"
+            name="patronymic_ru"
+            value={formik.values.patronymic_ru}
+            onChange={formik.handleChange}
+            error={formik.touched.patronymic_ru && Boolean(formik.errors.patronymic_ru)}
+            helperText={formik.touched.patronymic_ru && formik.errors.patronymic_ru}
+            sx={{ mb: 2 }}
+          />
+
+          <TextField
+            fullWidth
+            label="Full Name (EN)"
+            name="full_name_en"
+            value={formik.values.full_name_en}
+            onChange={formik.handleChange}
+            error={formik.touched.full_name_en && Boolean(formik.errors.full_name_en)}
+            helperText={formik.touched.full_name_en && formik.errors.full_name_en}
+            sx={{ mb: 2 }}
+          />
+
+          <TextField
+            fullWidth
+            label="ISU ID"
+            name="isu_id"
+            type="number"
+            value={formik.values.isu_id || ''}
+            onChange={formik.handleChange}
+            error={formik.touched.isu_id && Boolean(formik.errors.isu_id)}
+            helperText={formik.touched.isu_id && formik.errors.isu_id}
+            sx={{ mb: 3 }}
+          />
+
+          <Divider sx={{ my: 3 }} />
+          
+          <Typography variant="h6" gutterBottom>
+            Registration Details
+          </Typography>
+
           <FormControl fullWidth sx={{ mb: 3 }}>
             <InputLabel id="positions-label">Desired Positions</InputLabel>
             <Select

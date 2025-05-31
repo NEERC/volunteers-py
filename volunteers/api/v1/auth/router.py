@@ -11,6 +11,7 @@ from volunteers.api.v1.auth.schemas import (
     SuccessfulLoginResponse,
     TelegramLoginRequest,
     UserResponse,
+    UserUpdateRequest,
 )
 from volunteers.auth.deps import with_user
 from volunteers.auth.jwt_tokens import (
@@ -27,7 +28,7 @@ from volunteers.auth.providers.telegram import (
 from volunteers.core.config import Config
 from volunteers.core.di import Container
 from volunteers.models import User
-from volunteers.schemas.user import UserIn
+from volunteers.schemas.user import UserIn, UserUpdate
 from volunteers.services.user import UserService
 
 router = APIRouter(tags=["auth"])
@@ -152,3 +153,29 @@ async def me(user: Annotated[User, Depends(with_user)]) -> UserResponse:
         isu_id=user.isu_id,
         patronymic_ru=user.patronymic_ru,
     )
+
+
+@router.post("/update")
+@inject
+async def update_user(
+    user_update: UserUpdateRequest,
+    current_user: Annotated[User, Depends(with_user)],
+    user_service: Annotated[UserService, Depends(Provide[Container.user_service])],
+) -> UserResponse:
+    updated_user = await user_service.update_user(
+        telegram_id=current_user.telegram_id,
+        user_update=UserUpdate(**user_update.dict()),
+    )
+    if not updated_user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    return UserResponse(
+        user_id=updated_user.id,
+        first_name_ru=updated_user.first_name_ru,
+        last_name_ru=updated_user.last_name_ru,
+        full_name_en=updated_user.full_name_en,
+        is_admin=updated_user.is_admin,
+        isu_id=updated_user.isu_id,
+        patronymic_ru=updated_user.patronymic_ru,
+    )
+
