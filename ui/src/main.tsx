@@ -1,70 +1,73 @@
-import { StrictMode } from 'react'
-import ReactDOM from 'react-dom/client'
-import { RouterProvider, createRouter } from '@tanstack/react-router'
-import '@fontsource/inter';
+import { RouterProvider, createRouter } from "@tanstack/react-router";
+import { StrictMode } from "react";
+import ReactDOM from "react-dom/client";
+import "@fontsource/inter";
 
-import { client } from './client/client.gen';
+import { client } from "./client/client.gen";
 
-
-
-import * as TanStackQueryProvider from './integrations/tanstack-query/root-provider.tsx'
+import * as TanStackQueryProvider from "./integrations/tanstack-query/root-provider.tsx";
 
 // Import the generated route tree
-import { routeTree } from './routeTree.gen'
+import { routeTree } from "./routeTree.gen";
 
-import './styles.css'
-import reportWebVitals from './reportWebVitals.ts'
-
+import "./styles.css";
+import { observer } from "mobx-react-lite";
+import reportWebVitals from "./reportWebVitals.ts";
 // Create a new router instance
 const router = createRouter({
   routeTree,
   context: {
     ...TanStackQueryProvider.getContext(),
-    getTitle: () => 'Volunteers',
+    title: "Volunteers",
   },
-  defaultPreload: 'intent',
+  defaultPreload: "intent",
   scrollRestoration: true,
   defaultStructuralSharing: true,
   defaultPreloadStaleTime: 0,
-})
+});
 
 // Register the router instance for type safety
-declare module '@tanstack/react-router' {
+declare module "@tanstack/react-router" {
   interface Register {
-    router: typeof router
+    router: typeof router;
   }
 }
 
 client.setConfig({
-  baseURL: '/'
-})
+  baseURL: "/",
+});
 
-client.instance.interceptors.response.use(response => response, async (error) => {
-  const maybeDescription = error.response?.data?.description
-  if (maybeDescription) {
-    error.message += `: ${maybeDescription}`
-  }
-  const maybeDetail = error.response?.data?.detail
-  if (maybeDetail) {
-    error.message += `: ${maybeDetail}`
-  }
-  return Promise.reject(error)
-})
+client.instance.interceptors.response.use(
+  (response) => response,
+  async (error) => {
+    const maybeDescription = error.response?.data?.description;
+    if (maybeDescription) {
+      error.message += `: ${maybeDescription}`;
+    }
+    const maybeDetail = error.response?.data?.detail;
+    if (maybeDetail) {
+      error.message += `: ${maybeDetail}`;
+    }
+    return Promise.reject(error);
+  },
+);
+
+const App = observer(() => (
+  <StrictMode>
+    <TanStackQueryProvider.Provider>
+      <RouterProvider router={router} />
+    </TanStackQueryProvider.Provider>
+  </StrictMode>
+));
 
 // Render the app
-const rootElement = document.getElementById('app')
+const rootElement = document.getElementById("app");
 if (rootElement && !rootElement.innerHTML) {
-  const root = ReactDOM.createRoot(rootElement)
-  root.render(
-    <StrictMode>
-      <TanStackQueryProvider.Provider>
-        <RouterProvider router={router} />
-      </TanStackQueryProvider.Provider>
-    </StrictMode>,
-  )
+  const root = ReactDOM.createRoot(rootElement);
+  root.render(<App />);
 }
 
 // If you want to start measuring performance in your app, pass a function
 // to log results (for example: reportWebVitals(console.log))
 // or send to an analytics endpoint. Learn more: https://bit.ly/CRA-vitals
-reportWebVitals()
+reportWebVitals();

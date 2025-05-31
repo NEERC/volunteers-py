@@ -42,7 +42,7 @@ def test_api_router_included(client: TestClient) -> None:
     # This checks that the /api or other router endpoints exist.
     # If you know a specific route, check it, e.g., /api/health or similar.
     # Here, we just check that the OpenAPI docs (served by FastAPI) exist.
-    response = client.get("/openapi.json")
+    response = client.get("/api/v1/openapi.json")
     assert response.status_code == 200
     assert "paths" in response.json()
 

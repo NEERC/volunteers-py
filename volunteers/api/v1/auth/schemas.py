@@ -22,6 +22,14 @@ class RegistrationRequest(TelegramLoginRequest):
     patronymic_ru: str | None = None
 
 
+class UserUpdateRequest(BaseModel):
+    first_name_ru: str | None = None
+    last_name_ru: str | None = None
+    full_name_en: str | None = None
+    isu_id: int | None = None
+    patronymic_ru: str | None = None
+
+
 class RefreshTokenRequest(BaseModel):
     refresh_token: str
 
