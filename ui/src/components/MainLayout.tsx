@@ -30,6 +30,7 @@ import {
   type SelectChangeEvent,
   Collapse,
   styled,
+  type Theme,
 } from "@mui/material";
 import { useState } from "react";
 import MenuIcon from "@mui/icons-material/Menu";
@@ -43,14 +44,14 @@ import GroupIcon from "@mui/icons-material/Group";
 import ExpandLess from "@mui/icons-material/ExpandLess";
 import ExpandMore from "@mui/icons-material/ExpandMore";
 import { useQuery } from "@tanstack/react-query";
-import { getFormYearApiV1YearYearIdGet, getYearsApiV1YearGet } from "@/client";
+import { getFormYearApiV1YearYearIdGet } from "@/client";
 import { authStore } from "@/store/auth";
 import { useYears } from "@/data/use-years";
 import { observer } from "mobx-react-lite";
 
 const drawerWidth = 240;
 
-const StyledLink = styled(Link)<{ theme?: any }>(({ theme }) => ({
+const StyledLink = styled(Link)<{ theme?: Theme }>(({ theme }) => ({
   textDecoration: 'none',
   color: 'inherit',
   display: 'block',

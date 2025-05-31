@@ -73,7 +73,7 @@ class AuthStore {
     });
 
     if (!response.data || response.data.success !== true) {
-      throw new Error((response.error?.detail + "") + "Failed to register");
+      throw new Error(`${response.error?.detail}Failed to register`);
     }
 
     this.accessToken = response.data.token;
