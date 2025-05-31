@@ -178,4 +178,3 @@ async def update_user(
         isu_id=updated_user.isu_id,
         patronymic_ru=updated_user.patronymic_ru,
     )
-

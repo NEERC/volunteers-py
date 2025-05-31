@@ -98,12 +98,12 @@ function RouteComponent() {
         <Typography variant="h4" component="h1" gutterBottom>
           Registration Form
         </Typography>
-        
+
         <form onSubmit={formik.handleSubmit}>
           <Typography variant="h6" gutterBottom sx={{ mt: 3 }}>
             Personal Information
           </Typography>
-          
+
           <TextField
             fullWidth
             label="First Name (RU)"
@@ -161,7 +161,7 @@ function RouteComponent() {
           />
 
           <Divider sx={{ my: 3 }} />
-          
+
           <Typography variant="h6" gutterBottom>
             Registration Details
           </Typography>

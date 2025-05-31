@@ -111,7 +111,7 @@ function RouteComponent() {
               patronymic_ru: regForm.values.patronymic_ru,
             });
             navigate({ to: "/" });
-          } else {  
+          } else {
             await authStore.loginTelegram(telegramData);
             navigate({ to: "/" });
           }
