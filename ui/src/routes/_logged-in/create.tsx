@@ -1,11 +1,19 @@
-import { createFileRoute, redirect, useNavigate } from '@tanstack/react-router'
-import { Box, Button, Card, CardActions, CardContent, TextField, Typography } from '@mui/material';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { addYearApiV1AdminYearAddPost } from '@/client';
-import type { AddYearResponse } from '@/client/types.gen';
-import { useState } from 'react';
+import { addYearApiV1AdminYearAddPost } from "@/client";
+import type { AddYearResponse } from "@/client/types.gen";
+import {
+  Box,
+  Button,
+  Card,
+  CardActions,
+  CardContent,
+  TextField,
+  Typography,
+} from "@mui/material";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { createFileRoute, redirect, useNavigate } from "@tanstack/react-router";
+import { useState } from "react";
 
-export const Route = createFileRoute('/_logged-in/create')({
+export const Route = createFileRoute("/_logged-in/create")({
   component: RouteComponent,
   loader: async ({ context }) => {
     const user = context.user;
@@ -13,10 +21,10 @@ export const Route = createFileRoute('/_logged-in/create')({
       throw redirect({ to: "/forbidden" });
     }
     return {
-      title: "Создать год"
+      title: "Создать год",
     };
   },
-})
+});
 
 function RouteComponent() {
   const [yearName, setYearName] = useState("");
@@ -27,7 +35,7 @@ function RouteComponent() {
     mutationFn: async (yearName: string): Promise<AddYearResponse> => {
       const response = await addYearApiV1AdminYearAddPost({
         body: { year_name: yearName },
-        throwOnError: true
+        throwOnError: true,
       });
       const data = response.data as AddYearResponse;
       return data;
@@ -48,13 +56,13 @@ function RouteComponent() {
   return (
     <Box
       sx={{
-        display: 'flex',
-        justifyContent: 'center',
-        alignItems: 'flex-start',
-        pt: 4
+        display: "flex",
+        justifyContent: "center",
+        alignItems: "flex-start",
+        pt: 4,
       }}
     >
-      <Card sx={{ maxWidth: 600, width: '100%' }}>
+      <Card sx={{ maxWidth: 600, width: "100%" }}>
         <form onSubmit={handleSubmit}>
           <CardContent>
             <Typography variant="h5" component="div" gutterBottom>
@@ -72,10 +80,8 @@ function RouteComponent() {
               disabled={createYearMutation.isPending}
             />
           </CardContent>
-          <CardActions sx={{ justifyContent: 'flex-end', p: 2 }}>
-            <Button onClick={() => navigate({ to: "/" })}>
-              Отмена
-            </Button>
+          <CardActions sx={{ justifyContent: "flex-end", p: 2 }}>
+            <Button onClick={() => navigate({ to: "/" })}>Отмена</Button>
             <Button
               type="submit"
               variant="contained"

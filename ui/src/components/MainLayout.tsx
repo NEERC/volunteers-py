@@ -1,71 +1,71 @@
+import { getFormYearApiV1YearYearIdGet } from "@/client";
+import { useYears } from "@/data/use-years";
+import { routeTree } from "@/routeTree.gen";
+import { authStore } from "@/store/auth";
+import AssessmentIcon from "@mui/icons-material/Assessment";
+import AssignmentIcon from "@mui/icons-material/Assignment";
+import CalendarMonthIcon from "@mui/icons-material/CalendarMonth";
+import ContactsIcon from "@mui/icons-material/Contacts";
+import EmojiEventsIcon from "@mui/icons-material/EmojiEvents";
+import ExpandLess from "@mui/icons-material/ExpandLess";
+import ExpandMore from "@mui/icons-material/ExpandMore";
+import GroupIcon from "@mui/icons-material/Group";
+import MenuIcon from "@mui/icons-material/Menu";
+import SettingsIcon from "@mui/icons-material/Settings";
 import {
+  AppBar,
+  Box,
+  Button,
+  Collapse,
+  Divider,
+  Drawer,
+  FormControl,
+  IconButton,
+  InputLabel,
+  List,
+  ListItem,
+  ListItemButton,
+  ListItemIcon,
+  ListItemText,
+  MenuItem,
+  Select,
+  type SelectChangeEvent,
+  type Theme,
+  Toolbar,
+  Typography,
+  styled,
+} from "@mui/material";
+import { useQuery } from "@tanstack/react-query";
+import {
+  type FileRoutesByPath,
   Link,
   useChildMatches,
   useLocation,
   useMatch,
   useMatches,
   useNavigate,
-  type FileRoutesByPath,
 } from "@tanstack/react-router";
-import { routeTree } from "@/routeTree.gen";
 import type { RegisteredRouter } from "@tanstack/react-router";
-import {
-  AppBar,
-  Toolbar,
-  IconButton,
-  Typography,
-  Box,
-  Drawer,
-  ListItemIcon,
-  ListItemText,
-  ListItemButton,
-  List,
-  ListItem,
-  Divider,
-  FormControl,
-  Select,
-  MenuItem,
-  InputLabel,
-  Button,
-  type SelectChangeEvent,
-  Collapse,
-  styled,
-  type Theme,
-} from "@mui/material";
-import { useState } from "react";
-import MenuIcon from "@mui/icons-material/Menu";
-import AssignmentIcon from "@mui/icons-material/Assignment";
-import ContactsIcon from "@mui/icons-material/Contacts";
-import CalendarMonthIcon from "@mui/icons-material/CalendarMonth";
-import AssessmentIcon from "@mui/icons-material/Assessment";
-import EmojiEventsIcon from "@mui/icons-material/EmojiEvents";
-import SettingsIcon from "@mui/icons-material/Settings";
-import GroupIcon from "@mui/icons-material/Group";
-import ExpandLess from "@mui/icons-material/ExpandLess";
-import ExpandMore from "@mui/icons-material/ExpandMore";
-import { useQuery } from "@tanstack/react-query";
-import { getFormYearApiV1YearYearIdGet } from "@/client";
-import { authStore } from "@/store/auth";
-import { useYears } from "@/data/use-years";
 import { observer } from "mobx-react-lite";
+import { useState } from "react";
 
 const drawerWidth = 240;
 
 const StyledLink = styled(Link)<{ theme?: Theme }>(({ theme }) => ({
-  textDecoration: 'none',
-  color: 'inherit',
-  display: 'block',
-  width: '100%',
-  '&.active .MuiListItemButton-root': {
+  textDecoration: "none",
+  color: "inherit",
+  display: "block",
+  width: "100%",
+  "&.active .MuiListItemButton-root": {
     backgroundColor: theme.palette.action.selected,
   },
-  '& .MuiListItemButton-root:hover': {
+  "& .MuiListItemButton-root:hover": {
     backgroundColor: theme.palette.action.hover,
   },
 }));
 
 const StyledListItemButton = styled(ListItemButton)(({ theme }) => ({
-  '&:hover': {
+  "&:hover": {
     backgroundColor: theme.palette.action.hover,
   },
 }));
@@ -81,11 +81,12 @@ export default observer(function MainLayout({
   const years = useYears();
   const location = useLocation();
 
-  const selectedYear = useMatch({
-    from: "/_logged-in/$yearId",
-    select: (match) => match.params.yearId,
-    shouldThrow: false,
-  }) ?? "";
+  const selectedYear =
+    useMatch({
+      from: "/_logged-in/$yearId",
+      select: (match) => match.params.yearId,
+      shouldThrow: false,
+    }) ?? "";
 
   const yearData = useQuery({
     queryKey: ["year", selectedYear],
@@ -183,7 +184,9 @@ export default observer(function MainLayout({
             <StyledLink
               to="/$yearId/registration"
               params={{ yearId: selectedYear }}
-              className={isLinkActive(`/${selectedYear}/registration`) ? 'active' : ''}
+              className={
+                isLinkActive(`/${selectedYear}/registration`) ? "active" : ""
+              }
             >
               <ListItemButton>
                 <ListItemIcon>
@@ -197,7 +200,9 @@ export default observer(function MainLayout({
             <StyledLink
               to="/$yearId/contacts"
               params={{ yearId: selectedYear }}
-              className={isLinkActive(`/${selectedYear}/contacts`) ? 'active' : ''}
+              className={
+                isLinkActive(`/${selectedYear}/contacts`) ? "active" : ""
+              }
             >
               <ListItemButton>
                 <ListItemIcon>
@@ -223,8 +228,15 @@ export default observer(function MainLayout({
                   <StyledLink
                     key={day.day_id}
                     to="/$yearId/days/$dayId"
-                    params={{ yearId: selectedYear, dayId: day.day_id.toString() }}
-                    className={isLinkActive(`/${selectedYear}/days/${day.day_id}`) ? 'active' : ''}
+                    params={{
+                      yearId: selectedYear,
+                      dayId: day.day_id.toString(),
+                    }}
+                    className={
+                      isLinkActive(`/${selectedYear}/days/${day.day_id}`)
+                        ? "active"
+                        : ""
+                    }
                   >
                     <ListItemButton sx={{ pl: 4 }}>
                       <ListItemText primary={day.name} />
@@ -235,9 +247,11 @@ export default observer(function MainLayout({
                 <StyledLink
                   to="/$yearId/days/create"
                   params={{ yearId: selectedYear }}
-                  className={isLinkActive(`/${selectedYear}/days/create`) ? 'active' : ''}
+                  className={
+                    isLinkActive(`/${selectedYear}/days/create`) ? "active" : ""
+                  }
                 >
-                  <ListItemButton sx={{ pl: 4, color: 'primary.main' }}>
+                  <ListItemButton sx={{ pl: 4, color: "primary.main" }}>
                     <ListItemText primary="+ Create Day" />
                   </ListItemButton>
                 </StyledLink>
@@ -248,7 +262,9 @@ export default observer(function MainLayout({
             <StyledLink
               to="/$yearId/results"
               params={{ yearId: selectedYear }}
-              className={isLinkActive(`/${selectedYear}/results`) ? 'active' : ''}
+              className={
+                isLinkActive(`/${selectedYear}/results`) ? "active" : ""
+              }
             >
               <ListItemButton>
                 <ListItemIcon>
@@ -262,7 +278,9 @@ export default observer(function MainLayout({
             <StyledLink
               to="/$yearId/medals"
               params={{ yearId: selectedYear }}
-              className={isLinkActive(`/${selectedYear}/medals`) ? 'active' : ''}
+              className={
+                isLinkActive(`/${selectedYear}/medals`) ? "active" : ""
+              }
             >
               <ListItemButton>
                 <ListItemIcon>
@@ -276,7 +294,9 @@ export default observer(function MainLayout({
             <StyledLink
               to="/$yearId/settings"
               params={{ yearId: selectedYear }}
-              className={isLinkActive(`/${selectedYear}/settings`) ? 'active' : ''}
+              className={
+                isLinkActive(`/${selectedYear}/settings`) ? "active" : ""
+              }
             >
               <ListItemButton>
                 <ListItemIcon>
@@ -290,7 +310,7 @@ export default observer(function MainLayout({
             <StyledLink
               to="/$yearId/users"
               params={{ yearId: selectedYear }}
-              className={isLinkActive(`/${selectedYear}/users`) ? 'active' : ''}
+              className={isLinkActive(`/${selectedYear}/users`) ? "active" : ""}
             >
               <ListItemButton>
                 <ListItemIcon>
@@ -327,10 +347,13 @@ export default observer(function MainLayout({
           <Typography variant="h6" noWrap component="div" sx={{ flexGrow: 1 }}>
             {title}
           </Typography>
-          <Button color="inherit" onClick={() => {
-            authStore.logout();
-            navigate({ to: "/login" });
-          }}>
+          <Button
+            color="inherit"
+            onClick={() => {
+              authStore.logout();
+              navigate({ to: "/login" });
+            }}
+          >
             Logout
           </Button>
         </Toolbar>

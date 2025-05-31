@@ -1,6 +1,6 @@
+import { RouterProvider, createRouter } from "@tanstack/react-router";
 import { StrictMode } from "react";
 import ReactDOM from "react-dom/client";
-import { RouterProvider, createRouter } from "@tanstack/react-router";
 import "@fontsource/inter";
 
 import { client } from "./client/client.gen";
@@ -11,8 +11,8 @@ import * as TanStackQueryProvider from "./integrations/tanstack-query/root-provi
 import { routeTree } from "./routeTree.gen";
 
 import "./styles.css";
-import reportWebVitals from "./reportWebVitals.ts";
 import { observer } from "mobx-react-lite";
+import reportWebVitals from "./reportWebVitals.ts";
 // Create a new router instance
 const router = createRouter({
   routeTree,

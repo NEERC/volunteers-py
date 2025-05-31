@@ -1,10 +1,10 @@
 import MainLayout from "@/components/MainLayout";
 import { authStore } from "@/store/auth";
 import {
-  useMatches,
   Outlet,
-  redirect,
   createFileRoute,
+  redirect,
+  useMatches,
   useNavigate,
 } from "@tanstack/react-router";
 import { observer } from "mobx-react-lite";

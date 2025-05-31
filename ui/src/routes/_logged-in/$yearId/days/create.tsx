@@ -1,18 +1,25 @@
-import { addDayApiV1AdminDayAddPost } from '@/client';
-import { Box, Button, Container, Paper, TextField, Typography } from '@mui/material';
-import { useMutation } from '@tanstack/react-query';
-import { createFileRoute, useNavigate } from '@tanstack/react-router';
-import { useState } from 'react';
+import { addDayApiV1AdminDayAddPost } from "@/client";
+import {
+  Box,
+  Button,
+  Container,
+  Paper,
+  TextField,
+  Typography,
+} from "@mui/material";
+import { useMutation } from "@tanstack/react-query";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { useState } from "react";
 
-export const Route = createFileRoute('/_logged-in/$yearId/days/create')({
+export const Route = createFileRoute("/_logged-in/$yearId/days/create")({
   component: RouteComponent,
 });
 
 function RouteComponent() {
   const { yearId } = Route.useParams();
   const navigate = useNavigate();
-  const [name, setName] = useState('');
-  const [information, setInformation] = useState('');
+  const [name, setName] = useState("");
+  const [information, setInformation] = useState("");
 
   const createDay = useMutation({
     mutationFn: async () => {
@@ -60,13 +67,13 @@ function RouteComponent() {
             rows={4}
             sx={{ mb: 3 }}
           />
-          <Box sx={{ display: 'flex', gap: 2 }}>
+          <Box sx={{ display: "flex", gap: 2 }}>
             <Button
               variant="contained"
               type="submit"
               disabled={createDay.isPending}
             >
-              {createDay.isPending ? 'Creating...' : 'Create Day'}
+              {createDay.isPending ? "Creating..." : "Create Day"}
             </Button>
             <Button
               variant="outlined"

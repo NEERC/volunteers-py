@@ -1,7 +1,7 @@
-import { getFormYearApiV1YearYearIdGet } from '@/client/sdk.gen';
-import { createFileRoute, Outlet } from '@tanstack/react-router'
+import { getFormYearApiV1YearYearIdGet } from "@/client/sdk.gen";
+import { Outlet, createFileRoute } from "@tanstack/react-router";
 
-export const Route = createFileRoute('/_logged-in/$yearId')({
+export const Route = createFileRoute("/_logged-in/$yearId")({
   component: RouteComponent,
   beforeLoad: async ({ params }) => {
     // Load the year to the context
@@ -11,8 +11,8 @@ export const Route = createFileRoute('/_logged-in/$yearId')({
     });
     return { year: year.data };
   },
-})
+});
 
 function RouteComponent() {
-  return <Outlet />
+  return <Outlet />;
 }

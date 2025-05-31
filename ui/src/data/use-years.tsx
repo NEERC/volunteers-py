@@ -1,5 +1,5 @@
-import { useQuery } from "@tanstack/react-query";
 import { getYearsApiV1YearGet } from "@/client";
+import { useQuery } from "@tanstack/react-query";
 
 export const yearsQueryOptions = {
   queryKey: ["years"],
