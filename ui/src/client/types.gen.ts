@@ -133,6 +133,8 @@ export type RegistrationRequest = {
     full_name_en: string;
     isu_id?: number | null;
     patronymic_ru?: string | null;
+    phone?: string | null;
+    email?: string | null;
 };
 
 export type SuccessfulLoginResponse = {
@@ -161,6 +163,9 @@ export type UserResponse = {
     is_admin: boolean;
     isu_id: number | null;
     patronymic_ru: string | null;
+    phone: string | null;
+    email: string | null;
+    telegram_username: string | null;
 };
 
 export type UserUpdateRequest = {
@@ -169,6 +174,8 @@ export type UserUpdateRequest = {
     full_name_en?: string | null;
     isu_id?: number | null;
     patronymic_ru?: string | null;
+    phone?: string | null;
+    email?: string | null;
 };
 
 export type ValidationError = {

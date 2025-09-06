@@ -1,5 +1,4 @@
-import { addYearApiV1AdminYearAddPost } from "@/client";
-import type { AddYearResponse } from "@/client/types.gen";
+import { useAddYear } from "@/data";
 import {
   Box,
   Button,
@@ -31,25 +30,19 @@ function RouteComponent() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
 
-  const createYearMutation = useMutation<AddYearResponse, Error, string>({
-    mutationFn: async (yearName: string): Promise<AddYearResponse> => {
-      const response = await addYearApiV1AdminYearAddPost({
-        body: { year_name: yearName },
-        throwOnError: true,
-      });
-      const data = response.data as AddYearResponse;
-      return data;
-    },
-    onSuccess: (data) => {
-      queryClient.invalidateQueries({ queryKey: ["years"] });
-      navigate({ to: `/${data.year_id}` });
-    },
-  });
+  const createYearMutation = useAddYear();
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (yearName.trim()) {
-      createYearMutation.mutate(yearName);
+      createYearMutation.mutate(
+        { year_name: yearName.trim() },
+        {
+          onSuccess: (data) => {
+            navigate({ to: `/${data.year_id}` });
+          },
+        },
+      );
     }
   };
 

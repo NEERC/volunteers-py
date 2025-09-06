@@ -1,3 +1,4 @@
+from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
 from typing import Any
 from unittest.mock import AsyncMock, MagicMock, patch
@@ -21,7 +22,7 @@ def user_service(mock_db: MagicMock) -> UserService:
 
 def make_async_cm(mock_session: Any) -> Any:
     @asynccontextmanager
-    async def cm() -> Any:
+    async def cm() -> AsyncGenerator[Any]:
         yield mock_session
 
     return cm()
@@ -37,6 +38,9 @@ async def test_get_user_by_telegram_id_found(user_service: UserService) -> None:
         full_name_en="Name Lastname",
         isu_id=42,
         patronymic_ru="Отчество",
+        phone="+1234567890",
+        email="test@example.com",
+        telegram_username="testuser",
         is_admin=False,
     )
     mock_result: MagicMock = MagicMock()
@@ -71,6 +75,9 @@ async def test_create_user(user_service: UserService) -> None:
         last_name_ru="Потехин",
         full_name_en="Denis Potekhin",
         isu_id=312656,
+        phone="+1234567890",
+        email="denis@example.com",
+        telegram_username="denis_potekhin",
         is_admin=True,
     )
 

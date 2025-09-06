@@ -20,6 +20,8 @@ class RegistrationRequest(TelegramLoginRequest):
 
     isu_id: int | None = None
     patronymic_ru: str | None = None
+    phone: str | None = None
+    email: str | None = None
 
 
 class UserUpdateRequest(BaseModel):
@@ -28,6 +30,8 @@ class UserUpdateRequest(BaseModel):
     full_name_en: str | None = None
     isu_id: int | None = None
     patronymic_ru: str | None = None
+    phone: str | None = None
+    email: str | None = None
 
 
 class RefreshTokenRequest(BaseModel):
@@ -54,3 +58,6 @@ class UserResponse(BaseModel):
 
     isu_id: int | None
     patronymic_ru: str | None
+    phone: str | None
+    email: str | None
+    telegram_username: str | None

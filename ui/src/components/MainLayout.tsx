@@ -1,5 +1,5 @@
 import { getFormYearApiV1YearYearIdGet } from "@/client";
-import { useYears } from "@/data/use-years";
+import { queryKeys, useYears } from "@/data";
 import { authStore } from "@/store/auth";
 import AssessmentIcon from "@mui/icons-material/Assessment";
 import AssignmentIcon from "@mui/icons-material/Assignment";
@@ -36,14 +36,11 @@ import {
 } from "@mui/material";
 import { useQuery } from "@tanstack/react-query";
 import {
-  type FileRoutesByPath,
   Link,
-  useChildMatches,
   useLocation,
   useMatch,
   useNavigate,
 } from "@tanstack/react-router";
-import type { RegisteredRouter } from "@tanstack/react-router";
 import { observer } from "mobx-react-lite";
 import { useState } from "react";
 
@@ -87,7 +84,7 @@ export default observer(function MainLayout({
     }) ?? "";
 
   const yearData = useQuery({
-    queryKey: ["year", selectedYear],
+    queryKey: queryKeys.year.form(selectedYear),
     queryFn: async () => {
       if (!selectedYear) return null;
       const response = await getFormYearApiV1YearYearIdGet({
@@ -180,8 +177,7 @@ export default observer(function MainLayout({
         <List>
           <ListItem disablePadding>
             <StyledLink
-              to="/$yearId/registration"
-              params={{ yearId: selectedYear }}
+              to={`/${selectedYear}/registration`}
               className={
                 isLinkActive(`/${selectedYear}/registration`) ? "active" : ""
               }
@@ -196,8 +192,7 @@ export default observer(function MainLayout({
           </ListItem>
           <ListItem disablePadding>
             <StyledLink
-              to="/$yearId/contacts"
-              params={{ yearId: selectedYear }}
+              to={`/${selectedYear}/contacts`}
               className={
                 isLinkActive(`/${selectedYear}/contacts`) ? "active" : ""
               }
@@ -225,11 +220,7 @@ export default observer(function MainLayout({
                 yearData.data?.days.map((day) => (
                   <StyledLink
                     key={day.day_id}
-                    to="/$yearId/days/$dayId"
-                    params={{
-                      yearId: selectedYear,
-                      dayId: day.day_id.toString(),
-                    }}
+                    to={`/${selectedYear}/days/${day.day_id}`}
                     className={
                       isLinkActive(`/${selectedYear}/days/${day.day_id}`)
                         ? "active"
@@ -243,8 +234,7 @@ export default observer(function MainLayout({
                 ))}
               {authStore.user?.is_admin && (
                 <StyledLink
-                  to="/$yearId/days/create"
-                  params={{ yearId: selectedYear }}
+                  to={`/${selectedYear}/days/create`}
                   className={
                     isLinkActive(`/${selectedYear}/days/create`) ? "active" : ""
                   }
@@ -258,8 +248,7 @@ export default observer(function MainLayout({
           </Collapse>
           <ListItem disablePadding>
             <StyledLink
-              to="/$yearId/results"
-              params={{ yearId: selectedYear }}
+              to={`/${selectedYear}/results`}
               className={
                 isLinkActive(`/${selectedYear}/results`) ? "active" : ""
               }
@@ -274,8 +263,7 @@ export default observer(function MainLayout({
           </ListItem>
           <ListItem disablePadding>
             <StyledLink
-              to="/$yearId/medals"
-              params={{ yearId: selectedYear }}
+              to={`/${selectedYear}/medals`}
               className={
                 isLinkActive(`/${selectedYear}/medals`) ? "active" : ""
               }
@@ -290,8 +278,7 @@ export default observer(function MainLayout({
           </ListItem>
           <ListItem disablePadding>
             <StyledLink
-              to="/$yearId/settings"
-              params={{ yearId: selectedYear }}
+              to={`/${selectedYear}/settings`}
               className={
                 isLinkActive(`/${selectedYear}/settings`) ? "active" : ""
               }
@@ -306,8 +293,7 @@ export default observer(function MainLayout({
           </ListItem>
           <ListItem disablePadding>
             <StyledLink
-              to="/$yearId/users"
-              params={{ yearId: selectedYear }}
+              to={`/${selectedYear}/users`}
               className={isLinkActive(`/${selectedYear}/users`) ? "active" : ""}
             >
               <ListItemButton>

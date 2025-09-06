@@ -158,7 +158,11 @@ async def test_register_invalid_telegram(
 async def test_login_success(
     app: FastAPIWithContainer, telegram_login_request: dict[str, Any]
 ) -> None:
-    app.container.user_service().get_user_by_telegram_id = AsyncMock(return_value=object())
+    app.container.user_service().get_user_by_telegram_id = AsyncMock(
+        return_value=type(
+            "User", (), {"telegram_username": telegram_login_request["telegram_username"]}
+        )()
+    )
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as ac:
         resp = await ac.post("/api/v1/auth/telegram/login", json=telegram_login_request)
     assert resp.status_code == 200

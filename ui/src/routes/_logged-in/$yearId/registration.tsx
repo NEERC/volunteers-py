@@ -1,7 +1,5 @@
-import {
-  saveFormYearApiV1YearYearIdPost,
-  updateUserApiV1AuthUpdatePost,
-} from "@/client";
+import { updateUserApiV1AuthUpdatePost } from "@/client";
+import { saveFormYearApiV1YearYearIdPost } from "@/client";
 import { authStore } from "@/store/auth";
 import {
   Alert,
@@ -19,7 +17,7 @@ import {
   TextField,
   Typography,
 } from "@mui/material";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation } from "@tanstack/react-query";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useFormik } from "formik";
 import { observer } from "mobx-react-lite";
@@ -33,7 +31,6 @@ function RouteComponent() {
   const year = Route.useRouteContext().year;
   const { yearId } = Route.useParams();
   const navigate = useNavigate();
-  const queryClient = useQueryClient();
 
   const saveMutation = useMutation({
     mutationFn: async (values: {
@@ -45,6 +42,8 @@ function RouteComponent() {
       full_name_en: string | null;
       isu_id: number | null;
       patronymic_ru: string | null;
+      phone: string | null;
+      email: string | null;
     }) => {
       const [formResponse, userResponse] = await Promise.all([
         saveFormYearApiV1YearYearIdPost({
@@ -63,13 +62,15 @@ function RouteComponent() {
             full_name_en: values.full_name_en,
             isu_id: values.isu_id,
             patronymic_ru: values.patronymic_ru,
+            phone: values.phone,
+            email: values.email,
           },
           throwOnError: true,
         }),
       ]);
       return { formResponse, userResponse };
     },
-    onSuccess: async (data) => {
+    onSuccess: async () => {
       await authStore.fetchUser();
       navigate({ to: `/${yearId}` });
     },
@@ -86,6 +87,8 @@ function RouteComponent() {
       full_name_en: authStore.user?.full_name_en ?? "",
       isu_id: authStore.user?.isu_id ?? null,
       patronymic_ru: authStore.user?.patronymic_ru ?? "",
+      phone: authStore.user?.phone ?? "",
+      email: authStore.user?.email ?? "",
     },
     enableReinitialize: true,
     validationSchema: Yup.object({
@@ -99,6 +102,10 @@ function RouteComponent() {
       full_name_en: Yup.string().required("Required"),
       isu_id: Yup.number().nullable(),
       patronymic_ru: Yup.string().nullable(),
+      phone: Yup.string().required("Phone is required"),
+      email: Yup.string()
+        .email("Invalid email format")
+        .required("Email is required"),
     }),
     onSubmit: (values) => {
       saveMutation.mutate(values);
@@ -201,6 +208,30 @@ function RouteComponent() {
             onChange={formik.handleChange}
             error={formik.touched.isu_id && Boolean(formik.errors.isu_id)}
             helperText={formik.touched.isu_id && formik.errors.isu_id}
+            sx={{ mb: 2 }}
+          />
+
+          <TextField
+            fullWidth
+            label="Phone"
+            name="phone"
+            type="tel"
+            value={formik.values.phone}
+            onChange={formik.handleChange}
+            error={formik.touched.phone && Boolean(formik.errors.phone)}
+            helperText={formik.touched.phone && formik.errors.phone}
+            sx={{ mb: 2 }}
+          />
+
+          <TextField
+            fullWidth
+            label="Email"
+            name="email"
+            type="email"
+            value={formik.values.email}
+            onChange={formik.handleChange}
+            error={formik.touched.email && Boolean(formik.errors.email)}
+            helperText={formik.touched.email && formik.errors.email}
             sx={{ mb: 3 }}
           />
 
