@@ -16,5 +16,6 @@
         "editor.defaultFormatter": "biomejs.biome"
     },
 
-    "biome.requireConfigFile": true
+    "biome.requireConfiguration": true,
+    "biome.configurationPath": "ui/",
 }

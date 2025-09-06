@@ -110,11 +110,10 @@ function RouteComponent() {
               full_name_en: regForm.values.full_name_en,
               patronymic_ru: regForm.values.patronymic_ru,
             });
-            navigate({ to: "/" });
           } else {
             await authStore.loginTelegram(telegramData);
-            navigate({ to: "/" });
           }
+          navigate({ to: "/" });
         } catch (error) {
           if (error instanceof UserNotFoundError) {
             setShouldRegister(true);
@@ -227,11 +226,11 @@ function RouteComponent() {
             minHeight: 40,
           }}
         >
-          {isLoading && <LinearProgress sx={{ width: "240px" }} />}
+          {isLoading && <LinearProgress sx={{ width: "200px" }} />}
           <iframe
             id="telegram-login-nerc_volunteers_bot"
             title="Telegram login"
-            src="https://oauth.telegram.org/embed/nerc_volunteers_bot?origin=https%3A%2F%2Fnerc-volunteers.itmo.ru&amp;return_to=https%3A%2F%2Fnerc-volunteers.itmo.ru%2F&amp;size=large&amp;request_access=write"
+            src="https://oauth.telegram.org/embed/nerc_volunteers_bot?origin=https%3A%2F%2Fnerc-volunteers.itmo.ru&amp;return_to=https%3A%2F%2Fnerc-volunteers.itmo.ru%2F&amp;size=medium&amp;request_access=write"
             height={40}
             seamless={true}
             style={{

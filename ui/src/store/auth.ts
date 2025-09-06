@@ -9,7 +9,7 @@ import type {
   TelegramLoginRequest,
   UserResponse,
 } from "@/client/types.gen";
-import { makeAutoObservable } from "mobx";
+import { action, makeAutoObservable } from "mobx";
 import { makePersistable } from "mobx-persist-store";
 import { client } from "../client/client.gen";
 
@@ -21,7 +21,7 @@ export class UserNotFoundError extends Error {
 }
 
 class AuthStore {
-  user: UserResponse | null = null;
+  private _user: UserResponse | null = null;
   private accessToken: string | null = null;
   refreshToken: string | null = null;
   private hydrationPromise: Promise<void> | null = null;
@@ -31,7 +31,7 @@ class AuthStore {
 
     this.hydrationPromise = makePersistable(this, {
       name: "AuthStore",
-      properties: ["user", "refreshToken"],
+      properties: ["refreshToken"],
       storage: window.localStorage,
     }).then(async () => {
       this.installMiddleware();
@@ -43,6 +43,10 @@ class AuthStore {
     });
   }
 
+  get user() {
+    return this._user;
+  }
+
   waitForHydration(): Promise<void> {
     if (this.hydrationPromise === null) {
       throw new Error("Hydration promise not found. This should never happen.");
@@ -50,6 +54,7 @@ class AuthStore {
     return this.hydrationPromise;
   }
 
+  @action
   async loginTelegram(data: TelegramLoginRequest) {
     const response = await loginApiV1AuthTelegramLoginPost({ body: data });
 
@@ -67,6 +72,7 @@ class AuthStore {
     await this.fetchUser();
   }
 
+  @action
   async registerTelegram(telegramData: RegistrationRequest) {
     const response = await registerApiV1AuthTelegramRegisterPost({
       body: telegramData,
@@ -94,7 +100,11 @@ class AuthStore {
       (response) => response,
       async (error) => {
         const originalRequest = error.config;
-        if (error.response?.status === 401 && !originalRequest._retry) {
+        if (
+          error.response?.status === 401 &&
+          !originalRequest._retry &&
+          !originalRequest.url?.includes("/api/v1/auth/refresh")
+        ) {
           originalRequest._retry = true;
           await this.refresh();
           return client.instance(originalRequest);
@@ -104,17 +114,20 @@ class AuthStore {
     );
   }
 
+  @action
   async fetchUser() {
     const { data } = await meApiV1AuthMeGet({ throwOnError: true });
-    this.user = data;
+    this._user = data;
   }
 
+  @action
   async logout() {
-    this.user = null;
+    this._user = null;
     this.accessToken = null;
     this.refreshToken = null;
   }
 
+  @action
   private async refresh() {
     if (!this.refreshToken) {
       throw new Error("No refresh token");

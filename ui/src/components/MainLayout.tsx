@@ -1,6 +1,5 @@
 import { getFormYearApiV1YearYearIdGet } from "@/client";
 import { useYears } from "@/data/use-years";
-import { routeTree } from "@/routeTree.gen";
 import { authStore } from "@/store/auth";
 import AssessmentIcon from "@mui/icons-material/Assessment";
 import AssignmentIcon from "@mui/icons-material/Assignment";
@@ -42,7 +41,6 @@ import {
   useChildMatches,
   useLocation,
   useMatch,
-  useMatches,
   useNavigate,
 } from "@tanstack/react-router";
 import type { RegisteredRouter } from "@tanstack/react-router";
