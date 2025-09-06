@@ -31,6 +31,10 @@ class User(Base, TimestampMixin):
     patronymic_ru: Mapped[str | None] = mapped_column(String, nullable=True)
     full_name_en: Mapped[str] = mapped_column(String)
 
+    phone: Mapped[str | None] = mapped_column(String, nullable=True)
+    email: Mapped[str | None] = mapped_column(String, nullable=True)
+    telegram_username: Mapped[str | None] = mapped_column(String, nullable=True)
+
     is_admin: Mapped[bool] = mapped_column(Boolean, default=False)
 
     application_forms: Mapped[set[ApplicationForm]] = relationship(

@@ -11,6 +11,9 @@ class UserIn(BaseModel):
 
     isu_id: int | None
     patronymic_ru: str | None
+    phone: str | None
+    email: str | None
+    telegram_username: str | None
 
 
 class UserUpdate(BaseModel):
@@ -19,3 +22,6 @@ class UserUpdate(BaseModel):
     full_name_en: str | None = None
     isu_id: int | None = None
     patronymic_ru: str | None = None
+    phone: str | None = None
+    email: str | None = None
+    telegram_username: str | None = None

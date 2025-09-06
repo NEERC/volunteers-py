@@ -69,6 +69,9 @@ async def register(
         full_name_en=request.full_name_en,
         isu_id=request.isu_id,
         patronymic_ru=request.patronymic_ru,
+        phone=request.phone,
+        email=request.email,
+        telegram_username=request.telegram_username,
         is_admin=False,
     )
     await user_service.create_user(user_in)
@@ -114,6 +117,13 @@ async def login(
     if not user:
         logger.warning("Detected an attempt to authorize a non-existent user")
         raise HTTPException(status_code=403, detail="User is not found")
+
+    # Update telegram username on each login
+    if user.telegram_username != request.telegram_username:
+        user_update = UserUpdate(telegram_username=request.telegram_username)
+        await user_service.update_user(telegram_id=request.telegram_id, user_update=user_update)
+        logger.info(f"Updated telegram username for user {request.telegram_id}")
+
     logger.info("User has been authorized")
 
     payload = JWTTokenPayload(user_id=request.telegram_id, role="user")
@@ -152,6 +162,9 @@ async def me(user: Annotated[User, Depends(with_user)]) -> UserResponse:
         is_admin=user.is_admin,
         isu_id=user.isu_id,
         patronymic_ru=user.patronymic_ru,
+        phone=user.phone,
+        email=user.email,
+        telegram_username=user.telegram_username,
     )
 
 
@@ -164,7 +177,7 @@ async def update_user(
 ) -> UserResponse:
     updated_user = await user_service.update_user(
         telegram_id=current_user.telegram_id,
-        user_update=UserUpdate(**user_update.dict()),
+        user_update=UserUpdate(**user_update.model_dump()),
     )
     if not updated_user:
         raise HTTPException(status_code=404, detail="User not found")
@@ -177,4 +190,7 @@ async def update_user(
         is_admin=updated_user.is_admin,
         isu_id=updated_user.isu_id,
         patronymic_ru=updated_user.patronymic_ru,
+        phone=updated_user.phone,
+        email=updated_user.email,
+        telegram_username=updated_user.telegram_username,
     )

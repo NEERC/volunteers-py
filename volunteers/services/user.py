@@ -20,6 +20,9 @@ class UserService(BaseService):
             full_name_en=user_in.full_name_en,
             isu_id=user_in.isu_id,
             patronymic_ru=user_in.patronymic_ru,
+            phone=user_in.phone,
+            email=user_in.email,
+            telegram_username=user_in.telegram_username,
             is_admin=user_in.is_admin,
         )
         async with self.session_scope() as session:
@@ -45,6 +48,12 @@ class UserService(BaseService):
                 user.isu_id = user_update.isu_id
             if user_update.patronymic_ru is not None:
                 user.patronymic_ru = user_update.patronymic_ru
+            if user_update.phone is not None:
+                user.phone = user_update.phone
+            if user_update.email is not None:
+                user.email = user_update.email
+            if user_update.telegram_username is not None:
+                user.telegram_username = user_update.telegram_username
 
             await session.commit()
             return user

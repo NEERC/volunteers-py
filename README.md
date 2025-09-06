@@ -56,3 +56,10 @@ volunteers/
 └── __main__.py
 
 ```
+
+
+## TODO:
+[ ] Add more fields in the registration form and gray it out if user have already filled the form, allowing to edit it with a click of a button
+[ ] Make a table of all the known users
+[ ] Day Position assignment table
+[ ] Scores
