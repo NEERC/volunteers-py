@@ -6,11 +6,11 @@
     "dev": "vite --port 3000",
     "start": "vite --port 3000",
     "build": "vite build && tsc",
-    "serve": "vite preview",
+    "serve": "vite preview --port 3000",
     "test": "vitest run",
-    "format": "biome format --config-path=../",
-    "lint": "biome lint --config-path=../",
-    "check": "biome check --config-path=../",
+    "format": "biome format",
+    "lint": "biome lint",
+    "check": "biome check",
     "openapi-ts": "openapi-ts"
   },
   "dependencies": {
@@ -38,7 +38,7 @@
     "yup": "^1.6.1"
   },
   "devDependencies": {
-    "@biomejs/biome": "1.9.4",
+    "@biomejs/biome": "2.0.6",
     "@hey-api/openapi-ts": "^0.67.4",
     "@testing-library/dom": "^10.4.0",
     "@testing-library/react": "^16.2.0",

@@ -15,9 +15,9 @@
     "[typescript]": {
         "editor.defaultFormatter": "biomejs.biome"
     },
-
-    "biome.requireConfiguration": true,
-    "biome.configurationPath": "ui/",
+    "biome.lsp": {
+        "configurationPath": "ui/",
+    },
     "editor.codeActionsOnSave": {
         "source.organizeImports.biome": "explicit"
     }
