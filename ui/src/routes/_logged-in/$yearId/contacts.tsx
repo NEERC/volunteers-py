@@ -7,12 +7,6 @@ import {
   InputAdornment,
   Link,
   Paper,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
   TextField,
   Typography,
 } from "@mui/material";
@@ -230,7 +224,7 @@ function RouteComponent() {
   const rowVirtualizer = useVirtualizer({
     count: rows.length,
     getScrollElement: () => tableContainerRef.current,
-    estimateSize: () => 40, // Estimated row height
+    estimateSize: () => 40, // Fixed row height
     overscan: 10, // Number of items to render outside of the visible area
   });
 
@@ -253,7 +247,16 @@ function RouteComponent() {
   const users = data?.users || [];
 
   return (
-    <Box p={2}>
+    <Box
+      sx={{
+        height: "100vh",
+        display: "flex",
+        flexDirection: "column",
+        p: 2,
+        flexShrink: 1,
+        overflow: "hidden",
+      }}
+    >
       <Typography variant="h5" gutterBottom>
         Contacts
       </Typography>
@@ -279,52 +282,72 @@ function RouteComponent() {
         />
       </Box>
 
-      <TableContainer component={Paper}>
-        <Table size="small">
-          <TableHead>
-            {table.getHeaderGroups().map((headerGroup) => (
-              <TableRow key={headerGroup.id}>
-                {headerGroup.headers.map((header) => (
-                  <TableCell
-                    key={header.id}
-                    onClick={header.column.getToggleSortingHandler()}
-                    sx={{
-                      cursor: header.column.getCanSort()
-                        ? "pointer"
-                        : "default",
-                      userSelect: "none",
-                      py: 1,
-                      px: 1.5,
-                      "&:hover": header.column.getCanSort()
-                        ? { backgroundColor: "action.hover" }
-                        : {},
-                    }}
-                  >
-                    <Box display="flex" alignItems="center" gap={1}>
-                      <Typography variant="subtitle2" fontWeight="medium">
-                        {flexRender(
-                          header.column.columnDef.header,
-                          header.getContext(),
-                        )}
-                      </Typography>
-                      {header.column.getIsSorted() === "asc" && "↑"}
-                      {header.column.getIsSorted() === "desc" && "↓"}
-                    </Box>
-                  </TableCell>
-                ))}
-              </TableRow>
-            ))}
-          </TableHead>
-        </Table>
-
-        {/* Virtual scrolling container */}
+      <Paper
+        sx={{
+          flex: 1,
+          display: "flex",
+          flexDirection: "column",
+          overflow: "hidden",
+        }}
+      >
         <Box
           ref={tableContainerRef}
           sx={{
-            height: "400px",
+            flex: 1,
             overflow: "auto",
           }}
         >
+          {/* Header */}
+          <Box
+            sx={{
+              display: "flex",
+              borderBottom: "2px solid",
+              borderColor: "divider",
+              position: "sticky",
+              top: 0,
+              backgroundColor: "background.paper",
+              zIndex: 1,
+            }}
+          >
+            {table.getHeaderGroups().map((headerGroup) =>
+              headerGroup.headers.map((header) => (
+                <Box
+                  key={header.id}
+                  onClick={header.column.getToggleSortingHandler()}
+                  sx={{
+                    cursor: header.column.getCanSort() ? "pointer" : "default",
+                    userSelect: "none",
+                    py: 1,
+                    px: 1.5,
+                    flex: "1 1 0",
+                    minWidth: 0,
+                    borderRight: "1px solid",
+                    borderColor: "divider",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 1,
+                    "&:last-child": {
+                      borderRight: "none",
+                    },
+                    "&:hover": header.column.getCanSort()
+                      ? { backgroundColor: "action.hover" }
+                      : {},
+                  }}
+                >
+                  <Typography variant="subtitle2" fontWeight="medium">
+                    {flexRender(
+                      header.column.columnDef.header,
+                      header.getContext(),
+                    )}
+                  </Typography>
+                  {header.column.getIsSorted() === "asc" && "↑"}
+                  {header.column.getIsSorted() === "desc" && "↓"}
+                </Box>
+              )),
+            )}
+          </Box>
+
+          {/* Virtualized Body */}
           <Box
             sx={{
               height: `${rowVirtualizer.getTotalSize()}px`,
@@ -344,28 +367,47 @@ function RouteComponent() {
                     width: "100%",
                     height: `${virtualRow.size}px`,
                     transform: `translateY(${virtualRow.start}px)`,
+                    display: "flex",
+                    minWidth: "100%",
+                    borderBottom: "1px solid",
+                    borderColor: "divider",
+                    "&:hover": {
+                      backgroundColor: "action.hover",
+                    },
                   }}
                 >
-                  <Table size="small">
-                    <TableBody>
-                      <TableRow>
-                        {row.getVisibleCells().map((cell) => (
-                          <TableCell key={cell.id} sx={{ py: 0.5, px: 1.5 }}>
-                            {flexRender(
-                              cell.column.columnDef.cell,
-                              cell.getContext(),
-                            )}
-                          </TableCell>
-                        ))}
-                      </TableRow>
-                    </TableBody>
-                  </Table>
+                  {row.getVisibleCells().map((cell) => (
+                    <Box
+                      key={cell.id}
+                      sx={{
+                        py: 0.5,
+                        px: 1.5,
+                        whiteSpace: "nowrap",
+                        overflow: "hidden",
+                        textOverflow: "ellipsis",
+                        flex: "1 1 0",
+                        minWidth: 0,
+                        borderRight: "1px solid",
+                        borderColor: "divider",
+                        display: "flex",
+                        alignItems: "center",
+                        "&:last-child": {
+                          borderRight: "none",
+                        },
+                      }}
+                    >
+                      {flexRender(
+                        cell.column.columnDef.cell,
+                        cell.getContext(),
+                      )}
+                    </Box>
+                  ))}
                 </Box>
               );
             })}
           </Box>
         </Box>
-      </TableContainer>
+      </Paper>
 
       {users.length === 0 && (
         <Box textAlign="center" py={4}>

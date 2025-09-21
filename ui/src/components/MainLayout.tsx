@@ -390,8 +390,10 @@ export default observer(function MainLayout({
         component="main"
         sx={{
           flexGrow: 1,
-          p: 3,
+          display: "flex",
+          flexDirection: "column",
           width: { sm: `calc(100% - ${drawerWidth}px)` },
+          height: "100vh",
         }}
       >
         <Toolbar />
