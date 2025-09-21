@@ -59,7 +59,15 @@ volunteers/
 
 
 ## TODO:
-[ ] Add more fields in the registration form and gray it out if user have already filled the form, allowing to edit it with a click of a button
-[ ] Make a table of all the known users
+[X] Add more fields in the registration form and gray it out if user have already filled the form, allowing to edit it with a click of a button
+[ ] Telegram user migration mechanism
 [ ] Day Position assignment table
 [ ] Scores
+[ ] Year specific positions should be copied from the previous year with theirs scores saved
+[ ] Diploma generation
+[ ] csv export
+
+
+Nice to haves:
+[ ] Badge generation
+[ ]
