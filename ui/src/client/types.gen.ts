@@ -25,6 +25,7 @@ export type AddDayResponse = {
 export type AddPositionRequest = {
     year_id: number;
     name: string;
+    can_desire?: boolean;
 };
 
 export type AddPositionResponse = {
@@ -89,6 +90,7 @@ export type EditDayRequest = {
 
 export type EditPositionRequest = {
     name?: string | null;
+    can_desire?: boolean;
 };
 
 export type EditUserDayRequest = {
@@ -113,6 +115,7 @@ export type HttpValidationError = {
 export type PositionOut = {
     year_id: number;
     name: string;
+    can_desire: boolean;
     position_id: number;
 };
 
@@ -508,6 +511,33 @@ export type GetUsersListApiV1AdminYearYearIdUsersGetResponses = {
 };
 
 export type GetUsersListApiV1AdminYearYearIdUsersGetResponse = GetUsersListApiV1AdminYearYearIdUsersGetResponses[keyof GetUsersListApiV1AdminYearYearIdUsersGetResponses];
+
+export type GetYearPositionsApiV1AdminYearYearIdPositionsGetData = {
+    body?: never;
+    path: {
+        year_id: number;
+    };
+    query?: never;
+    url: '/api/v1/admin/year/{year_id}/positions';
+};
+
+export type GetYearPositionsApiV1AdminYearYearIdPositionsGetErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type GetYearPositionsApiV1AdminYearYearIdPositionsGetError = GetYearPositionsApiV1AdminYearYearIdPositionsGetErrors[keyof GetYearPositionsApiV1AdminYearYearIdPositionsGetErrors];
+
+export type GetYearPositionsApiV1AdminYearYearIdPositionsGetResponses = {
+    /**
+     * Successful Response
+     */
+    200: Array<PositionOut>;
+};
+
+export type GetYearPositionsApiV1AdminYearYearIdPositionsGetResponse = GetYearPositionsApiV1AdminYearYearIdPositionsGetResponses[keyof GetYearPositionsApiV1AdminYearYearIdPositionsGetResponses];
 
 export type RegisterApiV1AuthTelegramRegisterPostData = {
     body: RegistrationRequest;

@@ -21,6 +21,7 @@ def upgrade() -> None:
     """Import data from volunteers schema into new schema."""
     # This migration reads data directly from the existing volunteers schema
     # and migrates it to the new schema structure with auto-generated IDs
+    op.execute("SET search_path TO public,volunteers")
 
     # Migrate data from volunteers schema to new schema
     _migrate_years()

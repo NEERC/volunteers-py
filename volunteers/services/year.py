@@ -107,7 +107,9 @@ class YearService(BaseService):
             await session.commit()
 
     async def add_position(self, position_in: PositionIn) -> Position:
-        created_position = Position(year_id=position_in.year_id, name=position_in.name)
+        created_position = Position(
+            year_id=position_in.year_id, name=position_in.name, can_desire=position_in.can_desire
+        )
         async with self.session_scope() as session:
             session.add(created_position)
             await session.commit()
@@ -127,6 +129,7 @@ class YearService(BaseService):
 
             if (name := position_edit_in.name) is not None:
                 updated_position.name = name
+            updated_position.can_desire = position_edit_in.can_desire
 
             await session.commit()
 

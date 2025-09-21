@@ -7,6 +7,7 @@ from loguru import logger
 from volunteers.auth.deps import with_admin
 from volunteers.core.di import Container
 from volunteers.models import User
+from volunteers.schemas.position import PositionOut
 from volunteers.schemas.year import YearEditIn, YearIn
 from volunteers.services.user import UserService
 from volunteers.services.year import YearService
@@ -92,3 +93,21 @@ async def get_users_list(
     ]
 
     return UserListResponse(users=user_list)
+
+
+@router.get(
+    "/{year_id}/positions",
+    response_model=list[PositionOut],
+    description="Get all positions for a year (admin only - includes non-desirable positions)",
+)
+@inject
+async def get_year_positions(
+    year_id: Annotated[int, Path(title="The ID of the year")],
+    _: Annotated[User, Depends(with_admin)],
+    year_service: Annotated[YearService, Depends(Provide[Container.year_service])],
+) -> list[PositionOut]:
+    positions = await year_service.get_positions_by_year_id(year_id=year_id)
+    return [
+        PositionOut(position_id=p.id, year_id=p.year_id, name=p.name, can_desire=p.can_desire)
+        for p in positions
+    ]

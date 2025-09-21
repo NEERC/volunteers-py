@@ -1,24 +1,29 @@
 import AddIcon from "@mui/icons-material/Add";
 import EditIcon from "@mui/icons-material/Edit";
+import VisibilityIcon from "@mui/icons-material/Visibility";
+import VisibilityOffIcon from "@mui/icons-material/VisibilityOff";
 import {
   Box,
   Button,
+  Checkbox,
   Dialog,
   DialogActions,
   DialogContent,
   DialogTitle,
+  FormControlLabel,
   IconButton,
   List,
   ListItem,
   ListItemText,
   Paper,
   TextField,
+  Tooltip,
   Typography,
 } from "@mui/material";
 import { createFileRoute, redirect } from "@tanstack/react-router";
 import { useState } from "react";
 import type { PositionOut } from "@/client/types.gen";
-import { useAddPosition, useEditPosition, useYearForm } from "@/data";
+import { useAddPosition, useEditPosition, useYearPositions } from "@/data";
 
 export const Route = createFileRoute("/_logged-in/$yearId/settings")({
   component: RouteComponent,
@@ -42,15 +47,17 @@ function RouteComponent() {
   );
   const [newPositionName, setNewPositionName] = useState("");
   const [editPositionName, setEditPositionName] = useState("");
+  const [newPositionCanDesire, setNewPositionCanDesire] = useState(false);
+  const [editPositionCanDesire, setEditPositionCanDesire] = useState(false);
 
-  // Fetch year data to get positions
-  const { data: yearData, isLoading } = useYearForm(yearId);
+  // Fetch all positions for admin (including non-desirable ones)
+  const { data: positions, isLoading } = useYearPositions(yearId);
 
   // Add position mutation
   const addPositionMutation = useAddPosition();
 
   // Edit position mutation
-  const editPositionMutation = useEditPosition();
+  const editPositionMutation = useEditPosition(yearId);
 
   const handleAddPosition = (e: React.FormEvent) => {
     e.preventDefault();
@@ -59,11 +66,13 @@ function RouteComponent() {
         {
           year_id: Number(yearId),
           name: newPositionName.trim(),
+          can_desire: newPositionCanDesire,
         },
         {
           onSuccess: () => {
             setIsAddDialogOpen(false);
             setNewPositionName("");
+            setNewPositionCanDesire(false);
           },
         },
       );
@@ -76,13 +85,17 @@ function RouteComponent() {
       editPositionMutation.mutate(
         {
           positionId: editingPosition.position_id,
-          data: { name: editPositionName.trim() },
+          data: {
+            name: editPositionName.trim(),
+            can_desire: editPositionCanDesire,
+          },
         },
         {
           onSuccess: () => {
             setIsEditDialogOpen(false);
             setEditingPosition(null);
             setEditPositionName("");
+            setEditPositionCanDesire(false);
           },
         },
       );
@@ -92,18 +105,21 @@ function RouteComponent() {
   const openEditDialog = (position: PositionOut) => {
     setEditingPosition(position);
     setEditPositionName(position.name);
+    setEditPositionCanDesire(position.can_desire);
     setIsEditDialogOpen(true);
   };
 
   const closeAddDialog = () => {
     setIsAddDialogOpen(false);
     setNewPositionName("");
+    setNewPositionCanDesire(false);
   };
 
   const closeEditDialog = () => {
     setIsEditDialogOpen(false);
     setEditingPosition(null);
     setEditPositionName("");
+    setEditPositionCanDesire(false);
   };
 
   if (isLoading) {
@@ -146,9 +162,9 @@ function RouteComponent() {
           </Button>
         </Box>
 
-        {yearData?.positions && yearData.positions.length > 0 ? (
+        {positions && positions.length > 0 ? (
           <List>
-            {yearData.positions.map((position) => (
+            {positions.map((position) => (
               <ListItem
                 key={position.position_id}
                 sx={{
@@ -161,7 +177,25 @@ function RouteComponent() {
                   },
                 }}
               >
-                <ListItemText primary={position.name} />
+                <ListItemText
+                  primary={
+                    <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                      {position.name}
+                      {position.can_desire ? (
+                        <Tooltip title="Available for registration">
+                          <VisibilityIcon color="success" fontSize="small" />
+                        </Tooltip>
+                      ) : (
+                        <Tooltip title="Hidden from registration">
+                          <VisibilityOffIcon
+                            color="disabled"
+                            fontSize="small"
+                          />
+                        </Tooltip>
+                      )}
+                    </Box>
+                  }
+                />
                 <IconButton
                   onClick={() => openEditDialog(position)}
                   color="primary"
@@ -200,6 +234,17 @@ function RouteComponent() {
               error={addPositionMutation.isError}
               helperText={addPositionMutation.error?.message}
               disabled={addPositionMutation.isPending}
+            />
+            <FormControlLabel
+              control={
+                <Checkbox
+                  checked={newPositionCanDesire}
+                  onChange={(e) => setNewPositionCanDesire(e.target.checked)}
+                  disabled={addPositionMutation.isPending}
+                />
+              }
+              label="Available for registration"
+              sx={{ mt: 1 }}
             />
           </DialogContent>
           <DialogActions>
@@ -243,6 +288,17 @@ function RouteComponent() {
               error={editPositionMutation.isError}
               helperText={editPositionMutation.error?.message}
               disabled={editPositionMutation.isPending}
+            />
+            <FormControlLabel
+              control={
+                <Checkbox
+                  checked={editPositionCanDesire}
+                  onChange={(e) => setEditPositionCanDesire(e.target.checked)}
+                  disabled={editPositionMutation.isPending}
+                />
+              }
+              label="Available for registration"
+              sx={{ mt: 1 }}
             />
           </DialogContent>
           <DialogActions>

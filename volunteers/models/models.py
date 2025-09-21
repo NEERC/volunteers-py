@@ -74,6 +74,7 @@ class Position(Base, TimestampMixin):
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     year_id: Mapped[int] = mapped_column(ForeignKey("years.id"))
     name: Mapped[str] = mapped_column(String, unique=True)
+    can_desire: Mapped[bool] = mapped_column(Boolean, default=False)
 
 
 class FormPositionAssociation(Base, TimestampMixin):

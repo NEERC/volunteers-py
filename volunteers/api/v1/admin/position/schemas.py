@@ -6,6 +6,7 @@ from volunteers.schemas.base import BaseSuccessResponse
 class AddPositionRequest(BaseModel):
     year_id: int
     name: str
+    can_desire: bool = False
 
 
 class AddPositionResponse(BaseSuccessResponse):
@@ -14,3 +15,4 @@ class AddPositionResponse(BaseSuccessResponse):
 
 class EditPositionRequest(BaseModel):
     name: str | None = None
+    can_desire: bool = False

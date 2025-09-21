@@ -30,7 +30,11 @@ target_metadata = metadata
 
 
 def do_run_migrations(connection: Connection) -> None:
-    context.configure(connection=connection, target_metadata=target_metadata)
+    context.configure(
+        connection=connection,
+        target_metadata=target_metadata,
+        include_schemas=False,
+    )
     with context.begin_transaction():
         context.run_migrations()
 

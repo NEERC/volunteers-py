@@ -11,6 +11,7 @@ import {
   editPositionApiV1AdminUserDayUserDayIdEditPost,
   editYearApiV1AdminYearYearIdEditPost,
   getUsersListApiV1AdminYearYearIdUsersGet,
+  getYearPositionsApiV1AdminYearYearIdPositionsGet,
 } from "@/client";
 import type {
   AddAssessmentRequest,
@@ -137,12 +138,15 @@ export const useAddPosition = () => {
         queryClient.invalidateQueries({
           queryKey: queryKeys.year.all(variables.year_id),
         });
+        queryClient.invalidateQueries({
+          queryKey: queryKeys.admin.positions.year(variables.year_id),
+        });
       }
     },
   });
 };
 
-export const useEditPosition = () => {
+export const useEditPosition = (yearId: string | number) => {
   const queryClient = useQueryClient();
 
   return useMutation({
@@ -160,9 +164,19 @@ export const useEditPosition = () => {
       });
       return response.data;
     },
-    onSuccess: () => {
+    onSuccess: (_) => {
       queryClient.invalidateQueries({
         queryKey: queryKeys.admin.positions.all(),
+      });
+      // Invalidate year positions queries for all years since we don't know which year this position belongs to
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.admin.positions.all(),
+        predicate: (query) => {
+          return query.queryKey.includes("year");
+        },
+      });
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.year.form(yearId),
       });
     },
   });
@@ -270,5 +284,19 @@ export const useUsersList = (yearId: string | number) => {
       });
       return response.data;
     },
+  });
+};
+
+export const useYearPositions = (yearId: string | number) => {
+  return useQuery({
+    queryKey: queryKeys.admin.positions.year(yearId),
+    queryFn: async () => {
+      const response = await getYearPositionsApiV1AdminYearYearIdPositionsGet({
+        path: { year_id: Number(yearId) },
+        throwOnError: true,
+      });
+      return response.data;
+    },
+    enabled: !!yearId,
   });
 };

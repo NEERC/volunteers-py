@@ -4,10 +4,12 @@ from pydantic import BaseModel
 class PositionIn(BaseModel):
     year_id: int
     name: str
+    can_desire: bool
 
 
 class PositionEditIn(BaseModel):
     name: str | None
+    can_desire: bool
 
 
 class PositionOut(PositionIn):
