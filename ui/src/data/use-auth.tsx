@@ -1,17 +1,19 @@
-import { useQuery } from "@tanstack/react-query";
-import { meApiV1AuthMeGet } from "@/client";
-import { queryKeys } from "./query-keys";
+import { useMutation } from "@tanstack/react-query";
+import { updateUserApiV1AuthUpdatePost } from "@/client";
+import type { UserUpdateRequest } from "@/client/types.gen";
+import { authStore } from "@/store/auth";
 
-// Auth query options
-export const meQueryOptions = {
-  queryKey: queryKeys.auth.me(),
-  queryFn: async () => {
-    const response = await meApiV1AuthMeGet({ throwOnError: true });
-    return response.data;
-  },
-};
-
-// Auth hooks
-export const useMe = () => {
-  return useQuery(meQueryOptions);
+export const useUpdateUser = () => {
+  return useMutation({
+    mutationFn: async (data: UserUpdateRequest) => {
+      await updateUserApiV1AuthUpdatePost({
+        body: data,
+        throwOnError: true,
+      });
+    },
+    onSuccess: () => {
+      // Update the MobX store (single source of truth for auth)
+      authStore.fetchUser();
+    },
+  });
 };

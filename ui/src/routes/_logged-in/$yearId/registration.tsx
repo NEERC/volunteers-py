@@ -14,16 +14,12 @@ import {
   TextField,
   Typography,
 } from "@mui/material";
-import { useMutation } from "@tanstack/react-query";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useFormik } from "formik";
 import { observer } from "mobx-react-lite";
 import { useId } from "react";
 import * as Yup from "yup";
-import {
-  saveFormYearApiV1YearYearIdPost,
-  updateUserApiV1AuthUpdatePost,
-} from "@/client";
+import { useSaveRegistration } from "@/data/use-year";
 import { authStore } from "@/store/auth";
 
 export const Route = createFileRoute("/_logged-in/$yearId/registration")({
@@ -35,49 +31,7 @@ function RouteComponent() {
   const { yearId } = Route.useParams();
   const navigate = useNavigate();
 
-  const saveMutation = useMutation({
-    mutationFn: async (values: {
-      desired_positions: number[];
-      itmo_group: string | null;
-      comments: string;
-      first_name_ru: string | null;
-      last_name_ru: string | null;
-      full_name_en: string | null;
-      isu_id: number | null;
-      patronymic_ru: string | null;
-      phone: string | null;
-      email: string | null;
-    }) => {
-      const [formResponse, userResponse] = await Promise.all([
-        saveFormYearApiV1YearYearIdPost({
-          path: { year_id: Number.parseInt(yearId, 10) },
-          body: {
-            desired_positions_ids: values.desired_positions,
-            itmo_group: values.itmo_group,
-            comments: values.comments,
-          },
-          throwOnError: true,
-        }),
-        updateUserApiV1AuthUpdatePost({
-          body: {
-            first_name_ru: values.first_name_ru,
-            last_name_ru: values.last_name_ru,
-            full_name_en: values.full_name_en,
-            isu_id: values.isu_id,
-            patronymic_ru: values.patronymic_ru,
-            phone: values.phone,
-            email: values.email,
-          },
-          throwOnError: true,
-        }),
-      ]);
-      return { formResponse, userResponse };
-    },
-    onSuccess: async () => {
-      await authStore.fetchUser();
-      navigate({ to: `/${yearId}` });
-    },
-  });
+  const saveMutation = useSaveRegistration();
 
   const formik = useFormik({
     initialValues: {
@@ -110,8 +64,31 @@ function RouteComponent() {
         .email("Invalid email format")
         .required("Email is required"),
     }),
-    onSubmit: (values) => {
-      saveMutation.mutate(values);
+    onSubmit: async (values) => {
+      try {
+        await saveMutation.mutateAsync({
+          yearId,
+          formData: {
+            desired_positions_ids: values.desired_positions,
+            itmo_group: values.itmo_group,
+            comments: values.comments,
+          },
+          userData: {
+            first_name_ru: values.first_name_ru,
+            last_name_ru: values.last_name_ru,
+            full_name_en: values.full_name_en,
+            isu_id: values.isu_id,
+            patronymic_ru: values.patronymic_ru,
+            phone: values.phone,
+            email: values.email,
+          },
+        });
+        // User data will be updated via the mutation's cache invalidation
+        // navigate({ to: `/${yearId}` });
+      } catch (error) {
+        // Error is handled by the mutation's error state
+        console.error("Registration failed:", error);
+      }
     },
   });
 
@@ -319,14 +296,36 @@ function RouteComponent() {
               disabled={
                 !formik.isValid || formik.isSubmitting || saveMutation.isPending
               }
+              startIcon={
+                saveMutation.isPending ? <CircularProgress size={20} /> : null
+              }
             >
-              Submit
+              {saveMutation.isPending ? "Saving..." : "Submit"}
             </Button>
           </Box>
 
+          {saveMutation.isSuccess && (
+            <Alert severity="success" sx={{ mt: 2 }}>
+              Registration saved successfully!
+            </Alert>
+          )}
+
           {saveMutation.isError && (
-            <Alert severity="error" sx={{ mt: 2 }}>
-              Failed to save registration. Please try again.
+            <Alert
+              severity="error"
+              sx={{ mt: 2 }}
+              action={
+                <Button
+                  color="inherit"
+                  size="small"
+                  onClick={() => saveMutation.reset()}
+                >
+                  Dismiss
+                </Button>
+              }
+            >
+              {saveMutation.error?.message ||
+                "Failed to save registration. Please try again."}
             </Alert>
           )}
         </form>
