@@ -1,6 +1,7 @@
 from sqlalchemy import select
+from sqlalchemy.orm import selectinload
 
-from volunteers.models import User
+from volunteers.models import ApplicationForm, User
 from volunteers.schemas.user import UserIn, UserUpdate
 
 from .base import BaseService
@@ -57,3 +58,39 @@ class UserService(BaseService):
 
             await session.commit()
             return user
+
+    async def get_users_with_registration_status(
+        self, year_id: int
+    ) -> list[tuple[User, bool, str | None]]:
+        """
+        Get all users with their registration status for a specific year.
+        Returns a list of tuples: (user, is_registered, itmo_group)
+        """
+        async with self.session_scope() as session:
+            # Get all users with their application forms
+            result = await session.execute(
+                select(User).options(selectinload(User.application_forms))
+            )
+            all_users = result.scalars().all()
+
+            # Get registered user IDs for this year
+            registered_result = await session.execute(
+                select(ApplicationForm.user_id).where(ApplicationForm.year_id == year_id)
+            )
+            registered_user_ids = set(registered_result.scalars())
+
+            # Build the response
+            user_data: list[tuple[User, bool, str | None]] = []
+            for user in all_users:
+                # Find the application form for this year if it exists
+                application_form = None
+                for app_form in user.application_forms:
+                    if app_form.year_id == year_id:
+                        application_form = app_form
+                        break
+
+                is_registered = user.id in registered_user_ids
+                itmo_group = application_form.itmo_group if application_form else None
+                user_data.append((user, is_registered, itmo_group))
+
+            return user_data

@@ -75,11 +75,19 @@ export const queryKeys = {
       detail: (id: string | number) =>
         [...queryKeys.admin.userDays.details(), id] as const,
     },
+
+    // Admin - Users
+    users: {
+      all: () => [...queryKeys.admin.all, "users"] as const,
+      lists: () => [...queryKeys.admin.users.all(), "list"] as const,
+      list: (yearId: string | number, filters: Record<string, unknown> = {}) =>
+        [...queryKeys.admin.users.lists(), { yearId, filters }] as const,
+    },
   },
 
   // Year-specific data (for year pages)
   year: {
-    all: (yearId: string | number) => ["year", yearId] as const,
+    all: (yearId: string | number) => ["year", String(yearId)] as const,
     form: (yearId: string | number) =>
       [...queryKeys.year.all(yearId), "form"] as const,
   },

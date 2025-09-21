@@ -6,10 +6,9 @@ import {
   TextField,
   Typography,
 } from "@mui/material";
-import { useMutation } from "@tanstack/react-query";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
-import { addDayApiV1AdminDayAddPost } from "@/client";
+import { useAddDay } from "@/data/use-admin";
 
 export const Route = createFileRoute("/_logged-in/$yearId/days/create")({
   component: RouteComponent,
@@ -21,25 +20,20 @@ function RouteComponent() {
   const [name, setName] = useState("");
   const [information, setInformation] = useState("");
 
-  const createDay = useMutation({
-    mutationFn: async () => {
-      const response = await addDayApiV1AdminDayAddPost({
-        body: {
-          year_id: Number(yearId),
-          name,
-          information,
-        },
-      });
-      return response.data;
-    },
-    onSuccess: () => {
-      navigate({ to: `/${yearId}` });
-    },
-  });
+  const createDay = useAddDay();
+
+  const handleAddDay = async () => {
+    await createDay.mutateAsync({
+      year_id: Number(yearId),
+      name,
+      information,
+    });
+    navigate({ to: `/${yearId}` });
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    createDay.mutate();
+    handleAddDay();
   };
 
   return (

@@ -1,4 +1,4 @@
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   addAssessmentApiV1AdminAssessmentAddPost,
   addDayApiV1AdminDayAddPost,
@@ -10,6 +10,7 @@ import {
   editPositionApiV1AdminPositionPositionIdEditPost,
   editPositionApiV1AdminUserDayUserDayIdEditPost,
   editYearApiV1AdminYearYearIdEditPost,
+  getUsersListApiV1AdminYearYearIdUsersGet,
 } from "@/client";
 import type {
   AddAssessmentRequest,
@@ -84,6 +85,7 @@ export const useAddDay = () => {
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: queryKeys.admin.days.all() });
       if (variables.year_id) {
+        console.log("variables.year_id", variables.year_id);
         queryClient.invalidateQueries({
           queryKey: queryKeys.year.all(variables.year_id),
         });
@@ -223,15 +225,10 @@ export const useAddUserDay = () => {
       });
       return response.data;
     },
-    onSuccess: (_, variables) => {
+    onSuccess: () => {
       queryClient.invalidateQueries({
         queryKey: queryKeys.admin.userDays.all(),
       });
-      if (variables.day_id) {
-        queryClient.invalidateQueries({
-          queryKey: queryKeys.year.days(variables.day_id),
-        });
-      }
     },
   });
 };
@@ -258,6 +255,20 @@ export const useEditUserDay = () => {
       queryClient.invalidateQueries({
         queryKey: queryKeys.admin.userDays.all(),
       });
+    },
+  });
+};
+
+// Query hooks
+export const useUsersList = (yearId: string | number) => {
+  return useQuery({
+    queryKey: queryKeys.admin.users.list(yearId),
+    queryFn: async () => {
+      const response = await getUsersListApiV1AdminYearYearIdUsersGet({
+        path: { year_id: Number(yearId) },
+        throwOnError: true,
+      });
+      return response.data;
     },
   });
 };

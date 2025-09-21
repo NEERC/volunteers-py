@@ -8,9 +8,16 @@ from volunteers.auth.deps import with_admin
 from volunteers.core.di import Container
 from volunteers.models import User
 from volunteers.schemas.year import YearEditIn, YearIn
+from volunteers.services.user import UserService
 from volunteers.services.year import YearService
 
-from .schemas import AddYearRequest, AddYearResponse, EditYearRequest
+from .schemas import (
+    AddYearRequest,
+    AddYearResponse,
+    EditYearRequest,
+    UserListItem,
+    UserListResponse,
+)
 
 router = APIRouter(tags=["year"])
 
@@ -53,3 +60,35 @@ async def edit_year(
     )
     await year_service.edit_year_by_year_id(year_id=year_id, year_edit_in=year_edit_in)
     logger.info("Year has been edited")
+
+
+@router.get(
+    "/{year_id}/users",
+    response_model=UserListResponse,
+    description="Get list of all users with their registration status for a specific year",
+)
+@inject
+async def get_users_list(
+    year_id: Annotated[int, Path(title="The ID of the year")],
+    _: Annotated[User, Depends(with_admin)],
+    user_service: Annotated[UserService, Depends(Provide[Container.user_service])],
+) -> UserListResponse:
+    user_data = await user_service.get_users_with_registration_status(year_id)
+
+    user_list = [
+        UserListItem(
+            id=user.id,
+            first_name_ru=user.first_name_ru,
+            last_name_ru=user.last_name_ru,
+            patronymic_ru=user.patronymic_ru,
+            full_name_en=user.full_name_en,
+            itmo_group=itmo_group,
+            email=user.email,
+            phone=user.phone,
+            telegram_username=user.telegram_username,
+            is_registered=is_registered,
+        )
+        for user, is_registered, itmo_group in user_data
+    ]
+
+    return UserListResponse(users=user_list)

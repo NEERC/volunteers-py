@@ -155,6 +155,23 @@ export type TelegramLoginRequest = {
     telegram_photo_url?: string | null;
 };
 
+export type UserListItem = {
+    id: number;
+    first_name_ru: string;
+    last_name_ru: string;
+    patronymic_ru: string | null;
+    full_name_en: string;
+    itmo_group: string | null;
+    email: string | null;
+    phone: string | null;
+    telegram_username: string | null;
+    is_registered: boolean;
+};
+
+export type UserListResponse = {
+    users: Array<UserListItem>;
+};
+
 export type UserResponse = {
     user_id: number;
     first_name_ru: string;
@@ -464,6 +481,33 @@ export type EditYearApiV1AdminYearYearIdEditPostResponses = {
      */
     200: unknown;
 };
+
+export type GetUsersListApiV1AdminYearYearIdUsersGetData = {
+    body?: never;
+    path: {
+        year_id: number;
+    };
+    query?: never;
+    url: '/api/v1/admin/year/{year_id}/users';
+};
+
+export type GetUsersListApiV1AdminYearYearIdUsersGetErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type GetUsersListApiV1AdminYearYearIdUsersGetError = GetUsersListApiV1AdminYearYearIdUsersGetErrors[keyof GetUsersListApiV1AdminYearYearIdUsersGetErrors];
+
+export type GetUsersListApiV1AdminYearYearIdUsersGetResponses = {
+    /**
+     * Successful Response
+     */
+    200: UserListResponse;
+};
+
+export type GetUsersListApiV1AdminYearYearIdUsersGetResponse = GetUsersListApiV1AdminYearYearIdUsersGetResponses[keyof GetUsersListApiV1AdminYearYearIdUsersGetResponses];
 
 export type RegisterApiV1AuthTelegramRegisterPostData = {
     body: RegistrationRequest;
