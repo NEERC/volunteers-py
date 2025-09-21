@@ -10,12 +10,6 @@ export const queryKeys = {
   // Years
   years: {
     all: ["years"] as const,
-    lists: () => [...queryKeys.years.all, "list"] as const,
-    list: (filters: Record<string, unknown> = {}) =>
-      [...queryKeys.years.lists(), { filters }] as const,
-    details: () => [...queryKeys.years.all, "detail"] as const,
-    detail: (id: string | number) =>
-      [...queryKeys.years.details(), id] as const,
   },
 
   // Auth
@@ -88,22 +82,6 @@ export const queryKeys = {
     all: (yearId: string | number) => ["year", yearId] as const,
     form: (yearId: string | number) =>
       [...queryKeys.year.all(yearId), "form"] as const,
-    positions: (yearId: string | number) =>
-      [...queryKeys.year.all(yearId), "positions"] as const,
-    days: (yearId: string | number) =>
-      [...queryKeys.year.all(yearId), "days"] as const,
-    users: (yearId: string | number) =>
-      [...queryKeys.year.all(yearId), "users"] as const,
-    contacts: (yearId: string | number) =>
-      [...queryKeys.year.all(yearId), "contacts"] as const,
-    medals: (yearId: string | number) =>
-      [...queryKeys.year.all(yearId), "medals"] as const,
-    results: (yearId: string | number) =>
-      [...queryKeys.year.all(yearId), "results"] as const,
-    registration: (yearId: string | number) =>
-      [...queryKeys.year.all(yearId), "registration"] as const,
-    settings: (yearId: string | number) =>
-      [...queryKeys.year.all(yearId), "settings"] as const,
   },
 } as const;
 

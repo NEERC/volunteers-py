@@ -1,6 +1,5 @@
-import { getYearsApiV1YearGet } from "@/client";
-import { yearsQueryOptions } from "@/data/use-years";
 import { createFileRoute } from "@tanstack/react-router";
+import { yearsQueryOptions } from "@/data/use-years";
 
 export const Route = createFileRoute("/_logged-in/$yearId/")({
   component: RouteComponent,

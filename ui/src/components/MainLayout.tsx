@@ -1,6 +1,3 @@
-import { getFormYearApiV1YearYearIdGet } from "@/client";
-import { queryKeys, useYears } from "@/data";
-import { authStore } from "@/store/auth";
 import AssessmentIcon from "@mui/icons-material/Assessment";
 import AssignmentIcon from "@mui/icons-material/Assignment";
 import CalendarMonthIcon from "@mui/icons-material/CalendarMonth";
@@ -29,10 +26,10 @@ import {
   MenuItem,
   Select,
   type SelectChangeEvent,
+  styled,
   type Theme,
   Toolbar,
   Typography,
-  styled,
 } from "@mui/material";
 import { useQuery } from "@tanstack/react-query";
 import {
@@ -42,7 +39,10 @@ import {
   useNavigate,
 } from "@tanstack/react-router";
 import { observer } from "mobx-react-lite";
-import { useState } from "react";
+import { useId, useState } from "react";
+import { getFormYearApiV1YearYearIdGet } from "@/client";
+import { queryKeys, useYears } from "@/data";
+import { authStore } from "@/store/auth";
 
 const drawerWidth = 240;
 
@@ -68,7 +68,10 @@ const StyledListItemButton = styled(ListItemButton)(({ theme }) => ({
 export default observer(function MainLayout({
   children,
   title,
-}: { children: React.ReactNode; title: string }) {
+}: {
+  children: React.ReactNode;
+  title: string;
+}) {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [isClosing, setIsClosing] = useState(false);
   const [daysOpen, setDaysOpen] = useState(true);
@@ -121,6 +124,8 @@ export default observer(function MainLayout({
     }
   };
 
+  const yearSelectorId = useId();
+
   const isLinkActive = (path: string) => {
     return location.pathname === path;
   };
@@ -129,10 +134,10 @@ export default observer(function MainLayout({
     <div>
       <Toolbar>
         <FormControl variant="standard" sx={{ minWidth: 120 }} fullWidth>
-          <InputLabel id="year-selector">Year</InputLabel>
+          <InputLabel id={yearSelectorId}>Year</InputLabel>
           <Select
-            labelId="year-selector"
-            id="year-selector"
+            labelId={yearSelectorId}
+            id={yearSelectorId}
             value={selectedYear}
             onChange={handleYearChange}
             label="Year"

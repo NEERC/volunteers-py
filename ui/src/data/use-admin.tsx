@@ -1,3 +1,4 @@
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   addAssessmentApiV1AdminAssessmentAddPost,
   addDayApiV1AdminDayAddPost,
@@ -22,7 +23,6 @@ import type {
   EditUserDayRequest,
   EditYearRequest,
 } from "@/client/types.gen";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { queryKeys } from "./query-keys";
 
 // Admin mutation hooks
@@ -227,9 +227,9 @@ export const useAddUserDay = () => {
       queryClient.invalidateQueries({
         queryKey: queryKeys.admin.userDays.all(),
       });
-      if (variables.year_id) {
+      if (variables.day_id) {
         queryClient.invalidateQueries({
-          queryKey: queryKeys.year.all(variables.year_id),
+          queryKey: queryKeys.year.days(variables.day_id),
         });
       }
     },

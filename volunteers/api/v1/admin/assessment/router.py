@@ -18,7 +18,10 @@ router = APIRouter(tags=["assessment"])
 @router.post(
     "/add",
     responses={
-        status.HTTP_201_CREATED: {"description": "Returned when assessment successfully added"},
+        status.HTTP_201_CREATED: {
+            "description": "Returned when assessment successfully added",
+            "model": AddAssessmentResponse,
+        },
     },
     description="Add new assessment",
 )

@@ -1,5 +1,5 @@
-import { meApiV1AuthMeGet } from "@/client";
 import { useQuery } from "@tanstack/react-query";
+import { meApiV1AuthMeGet } from "@/client";
 import { queryKeys } from "./query-keys";
 
 // Auth query options

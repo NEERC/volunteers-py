@@ -18,7 +18,10 @@ router = APIRouter(tags=["day"])
 @router.post(
     "/add",
     responses={
-        status.HTTP_201_CREATED: {"description": "Returned when day successfully added"},
+        status.HTTP_201_CREATED: {
+            "description": "Returned when day successfully added",
+            "model": AddDayResponse,
+        },
     },
     description="Add new day",
 )

@@ -1,6 +1,7 @@
 {
   "name": "volunteers",
   "private": true,
+  "root": false,
   "type": "module",
   "scripts": {
     "dev": "vite --port 3000",
@@ -38,7 +39,7 @@
     "yup": "^1.6.1"
   },
   "devDependencies": {
-    "@biomejs/biome": "2.0.6",
+    "@biomejs/biome": "2.2.4",
     "@hey-api/openapi-ts": "^0.67.4",
     "@testing-library/dom": "^10.4.0",
     "@testing-library/react": "^16.2.0",

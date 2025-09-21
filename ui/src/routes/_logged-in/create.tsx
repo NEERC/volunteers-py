@@ -1,4 +1,3 @@
-import { useAddYear } from "@/data";
 import {
   Box,
   Button,
@@ -8,9 +7,9 @@ import {
   TextField,
   Typography,
 } from "@mui/material";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute, redirect, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
+import { useAddYear } from "@/data";
 
 export const Route = createFileRoute("/_logged-in/create")({
   component: RouteComponent,
@@ -28,7 +27,6 @@ export const Route = createFileRoute("/_logged-in/create")({
 function RouteComponent() {
   const [yearName, setYearName] = useState("");
   const navigate = useNavigate();
-  const queryClient = useQueryClient();
 
   const createYearMutation = useAddYear();
 

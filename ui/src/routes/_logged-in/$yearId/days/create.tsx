@@ -1,4 +1,3 @@
-import { addDayApiV1AdminDayAddPost } from "@/client";
 import {
   Box,
   Button,
@@ -10,6 +9,7 @@ import {
 import { useMutation } from "@tanstack/react-query";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
+import { addDayApiV1AdminDayAddPost } from "@/client";
 
 export const Route = createFileRoute("/_logged-in/$yearId/days/create")({
   component: RouteComponent,

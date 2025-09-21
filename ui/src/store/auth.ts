@@ -1,3 +1,5 @@
+import { action, makeAutoObservable } from "mobx";
+import { makePersistable } from "mobx-persist-store";
 import {
   loginApiV1AuthTelegramLoginPost,
   meApiV1AuthMeGet,
@@ -9,8 +11,6 @@ import type {
   TelegramLoginRequest,
   UserResponse,
 } from "@/client/types.gen";
-import { action, makeAutoObservable } from "mobx";
-import { makePersistable } from "mobx-persist-store";
 import { client } from "../client/client.gen";
 
 export class UserNotFoundError extends Error {

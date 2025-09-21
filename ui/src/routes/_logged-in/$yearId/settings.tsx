@@ -1,5 +1,3 @@
-import type { PositionOut } from "@/client/types.gen";
-import { useAddPosition, useEditPosition, useYearForm } from "@/data";
 import AddIcon from "@mui/icons-material/Add";
 import EditIcon from "@mui/icons-material/Edit";
 import {
@@ -19,6 +17,8 @@ import {
 } from "@mui/material";
 import { createFileRoute, redirect } from "@tanstack/react-router";
 import { useState } from "react";
+import type { PositionOut } from "@/client/types.gen";
+import { useAddPosition, useEditPosition, useYearForm } from "@/data";
 
 export const Route = createFileRoute("/_logged-in/$yearId/settings")({
   component: RouteComponent,

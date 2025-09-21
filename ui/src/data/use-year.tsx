@@ -1,9 +1,9 @@
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   getFormYearApiV1YearYearIdGet,
   saveFormYearApiV1YearYearIdPost,
 } from "@/client";
 import type { ApplicationFormYearSaveRequest } from "@/client/types.gen";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { queryKeys } from "./query-keys";
 
 // Year query options
@@ -35,18 +35,14 @@ export const useSaveYearForm = () => {
       yearId: string | number;
       data: ApplicationFormYearSaveRequest;
     }) => {
-      const response = await saveFormYearApiV1YearYearIdPost({
+      await saveFormYearApiV1YearYearIdPost({
         path: { year_id: Number(yearId) },
         body: data,
         throwOnError: true,
-      });
-      return response.data;
+      }); // no response expected
     },
     onSuccess: (_, { yearId }) => {
-      // Invalidate year-specific queries
       queryClient.invalidateQueries({ queryKey: queryKeys.year.all(yearId) });
-      // Also invalidate years list
-      queryClient.invalidateQueries({ queryKey: queryKeys.years.all });
     },
   });
 };

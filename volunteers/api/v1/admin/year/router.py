@@ -18,7 +18,10 @@ router = APIRouter(tags=["year"])
 @router.post(
     "/add",
     responses={
-        status.HTTP_201_CREATED: {"description": "Returned when year successfully added"},
+        status.HTTP_201_CREATED: {
+            "description": "Returned when year successfully added",
+            "model": AddYearResponse,
+        },
     },
     description="Add new year",
 )

@@ -1,14 +1,14 @@
-import MainLayout from "@/components/MainLayout";
-import { authStore } from "@/store/auth";
 import {
-  Outlet,
   createFileRoute,
+  Outlet,
   redirect,
   useMatches,
   useNavigate,
 } from "@tanstack/react-router";
 import { observer } from "mobx-react-lite";
 import { useEffect } from "react";
+import MainLayout from "@/components/MainLayout";
+import { authStore } from "@/store/auth";
 
 const LoggedInLayout = observer(() => {
   const matches = useMatches();
@@ -26,11 +26,9 @@ const LoggedInLayout = observer(() => {
 
   const title = matchWithTitle?.context.title || "Volunteers";
   return (
-    <>
-      <MainLayout title={title}>
-        <Outlet />
-      </MainLayout>
-    </>
+    <MainLayout title={title}>
+      <Outlet />
+    </MainLayout>
   );
 });
 

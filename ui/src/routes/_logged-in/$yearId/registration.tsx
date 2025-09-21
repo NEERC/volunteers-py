@@ -1,6 +1,3 @@
-import { updateUserApiV1AuthUpdatePost } from "@/client";
-import { saveFormYearApiV1YearYearIdPost } from "@/client";
-import { authStore } from "@/store/auth";
 import {
   Alert,
   Box,
@@ -21,7 +18,13 @@ import { useMutation } from "@tanstack/react-query";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useFormik } from "formik";
 import { observer } from "mobx-react-lite";
+import { useId } from "react";
 import * as Yup from "yup";
+import {
+  saveFormYearApiV1YearYearIdPost,
+  updateUserApiV1AuthUpdatePost,
+} from "@/client";
+import { authStore } from "@/store/auth";
 
 export const Route = createFileRoute("/_logged-in/$yearId/registration")({
   component: observer(RouteComponent),
@@ -47,7 +50,7 @@ function RouteComponent() {
     }) => {
       const [formResponse, userResponse] = await Promise.all([
         saveFormYearApiV1YearYearIdPost({
-          path: { year_id: Number.parseInt(yearId) },
+          path: { year_id: Number.parseInt(yearId, 10) },
           body: {
             desired_positions_ids: values.desired_positions,
             itmo_group: values.itmo_group,
@@ -111,6 +114,8 @@ function RouteComponent() {
       saveMutation.mutate(values);
     },
   });
+
+  const positionId = useId();
 
   if (!year) {
     return (
@@ -242,9 +247,9 @@ function RouteComponent() {
           </Typography>
 
           <FormControl fullWidth sx={{ mb: 3 }}>
-            <InputLabel id="positions-label">Desired Positions</InputLabel>
+            <InputLabel id={positionId}>Desired Positions</InputLabel>
             <Select
-              labelId="positions-label"
+              labelId={positionId}
               multiple
               value={formik.values.desired_positions}
               onChange={(e) =>

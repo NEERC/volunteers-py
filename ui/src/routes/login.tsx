@@ -1,4 +1,3 @@
-import { UserNotFoundError, authStore } from "@/store/auth";
 import {
   Alert,
   Box,
@@ -14,6 +13,7 @@ import { Form, FormikProvider, useFormik } from "formik";
 import { observer } from "mobx-react-lite";
 import { useEffect, useRef, useState } from "react";
 import * as Yup from "yup";
+import { authStore, UserNotFoundError } from "@/store/auth";
 
 export const Route = createFileRoute("/login")({
   component: observer(RouteComponent),
@@ -227,6 +227,7 @@ function RouteComponent() {
           }}
         >
           {isLoading && <LinearProgress sx={{ width: "200px" }} />}
+          {/** biome-ignore lint/correctness/useUniqueElementIds: telegram needs this id for iframe */}
           <iframe
             id="telegram-login-nerc_volunteers_bot"
             title="Telegram login"

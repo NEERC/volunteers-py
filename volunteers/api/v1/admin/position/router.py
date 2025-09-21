@@ -18,7 +18,10 @@ router = APIRouter(tags=["position"])
 @router.post(
     "/add",
     responses={
-        status.HTTP_201_CREATED: {"description": "Returned when position successfully added"},
+        status.HTTP_201_CREATED: {
+            "description": "Returned when position successfully added",
+            "model": AddPositionResponse,
+        },
     },
     description="Add new position",
 )

@@ -219,7 +219,7 @@ export type AddAssessmentApiV1AdminAssessmentAddPostResponses = {
     /**
      * Returned when assessment successfully added
      */
-    201: unknown;
+    201: AddAssessmentResponse;
 };
 
 export type AddAssessmentApiV1AdminAssessmentAddPostResponse = AddAssessmentApiV1AdminAssessmentAddPostResponses[keyof AddAssessmentApiV1AdminAssessmentAddPostResponses];
@@ -273,7 +273,7 @@ export type AddDayApiV1AdminDayAddPostResponses = {
     /**
      * Returned when day successfully added
      */
-    201: unknown;
+    201: AddDayResponse;
 };
 
 export type AddDayApiV1AdminDayAddPostResponse = AddDayApiV1AdminDayAddPostResponses[keyof AddDayApiV1AdminDayAddPostResponses];
@@ -327,7 +327,7 @@ export type AddPositionApiV1AdminPositionAddPostResponses = {
     /**
      * Returned when position successfully added
      */
-    201: unknown;
+    201: AddPositionResponse;
 };
 
 export type AddPositionApiV1AdminPositionAddPostResponse = AddPositionApiV1AdminPositionAddPostResponses[keyof AddPositionApiV1AdminPositionAddPostResponses];
@@ -381,7 +381,7 @@ export type AddUserDayApiV1AdminUserDayAddPostResponses = {
     /**
      * Returned when user day successfully added
      */
-    201: unknown;
+    201: AddUserDayResponse;
 };
 
 export type AddUserDayApiV1AdminUserDayAddPostResponse = AddUserDayApiV1AdminUserDayAddPostResponses[keyof AddUserDayApiV1AdminUserDayAddPostResponses];
@@ -435,7 +435,7 @@ export type AddYearApiV1AdminYearAddPostResponses = {
     /**
      * Returned when year successfully added
      */
-    201: unknown;
+    201: AddYearResponse;
 };
 
 export type AddYearApiV1AdminYearAddPostResponse = AddYearApiV1AdminYearAddPostResponses[keyof AddYearApiV1AdminYearAddPostResponses];
