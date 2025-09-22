@@ -5,6 +5,8 @@ import {
   LinearProgress,
   Link,
   Paper,
+  Tab,
+  Tabs,
   TextField,
   Typography,
 } from "@mui/material";
@@ -45,7 +47,9 @@ function RouteComponent() {
   const telegramRef = useRef<HTMLIFrameElement>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [shouldRegister, setShouldRegister] = useState(false);
+  const [authFlow, setAuthFlow] = useState<"login" | "register" | "migrate">(
+    "login",
+  );
   const navigate = useNavigate();
 
   const regForm = useFormik({
@@ -62,6 +66,20 @@ function RouteComponent() {
       full_name_en: Yup.string().required("Full name in English is required"),
       isu_id: Yup.number().nullable(),
       patronymic_ru: Yup.string().nullable(),
+    }),
+    onSubmit: (values) => {
+      console.log(values);
+    },
+  });
+
+  const migrateForm = useFormik({
+    initialValues: {
+      email: "",
+      password: "",
+    },
+    validationSchema: Yup.object().shape({
+      email: Yup.string().email("Invalid email").required("Email is required"),
+      password: Yup.string().required("Password is required"),
     }),
     onSubmit: (values) => {
       console.log(values);
@@ -97,7 +115,7 @@ function RouteComponent() {
           telegram_hash: data.auth_data.hash,
         };
         try {
-          if (shouldRegister) {
+          if (authFlow === "register") {
             const errors = await regForm.validateForm();
             if (Object.keys(errors).length > 0) {
               return;
@@ -110,13 +128,23 @@ function RouteComponent() {
               full_name_en: regForm.values.full_name_en,
               patronymic_ru: regForm.values.patronymic_ru,
             });
+          } else if (authFlow === "migrate") {
+            const errors = await migrateForm.validateForm();
+            if (Object.keys(errors).length > 0) {
+              return;
+            }
+            await authStore.migrateTelegram({
+              ...telegramData,
+              email: migrateForm.values.email,
+              password: migrateForm.values.password,
+            });
           } else {
             await authStore.loginTelegram(telegramData);
           }
           navigate({ to: "/" });
         } catch (error) {
           if (error instanceof UserNotFoundError) {
-            setShouldRegister(true);
+            setAuthFlow("migrate");
           } else {
             console.error(error);
             setError(error instanceof Error ? error.message : "Unknown error");
@@ -128,18 +156,25 @@ function RouteComponent() {
     return () => {
       window.removeEventListener("message", listener);
     };
-  }, [regForm, shouldRegister, navigate]);
+  }, [regForm, migrateForm, authFlow, navigate]);
 
   return (
     <Container
       maxWidth="sm"
-      sx={{ height: "100vh", display: "flex", alignItems: "center" }}
+      sx={{
+        height: "100vh",
+        display: "flex",
+        justifyContent: "center",
+        alignItems: "center",
+        flexDirection: "column",
+        gap: 2,
+      }}
     >
       <Paper elevation={3} sx={{ p: 4, width: "100%", textAlign: "center" }}>
         <Typography variant="h4" component="h1" gutterBottom>
           Login with Telegram
         </Typography>
-        {!shouldRegister ? (
+        {authFlow === "login" ? (
           <>
             <Typography variant="body1" gutterBottom>
               Click the button below to authenticate
@@ -158,62 +193,97 @@ function RouteComponent() {
         ) : (
           <>
             <Typography variant="body1" gutterBottom>
-              It looks like you don't have an account yet. Please register.
+              We couldn't find your account. Either migrate your email and
+              password account, or create a new one.
             </Typography>
-            <FormikProvider value={regForm}>
-              <Form>
-                <TextField
-                  name="first_name_ru"
-                  label="Имя на русском"
-                  fullWidth
-                  margin="dense"
-                  onChange={regForm.handleChange}
-                  value={regForm.values.first_name_ru}
-                  error={!!regForm.errors.first_name_ru}
-                  helperText={regForm.errors.first_name_ru}
-                />
-                <TextField
-                  name="last_name_ru"
-                  label="Фамилия на русском"
-                  fullWidth
-                  margin="dense"
-                  onChange={regForm.handleChange}
-                  value={regForm.values.last_name_ru}
-                  error={!!regForm.errors.last_name_ru}
-                  helperText={regForm.errors.last_name_ru}
-                />
-                <TextField
-                  name="patronymic_ru"
-                  label="Отчество на русском"
-                  fullWidth
-                  margin="dense"
-                  onChange={regForm.handleChange}
-                  value={regForm.values.patronymic_ru}
-                  error={!!regForm.errors.patronymic_ru}
-                  helperText={regForm.errors.patronymic_ru}
-                />
-                <TextField
-                  name="full_name_en"
-                  label="Full name in English"
-                  fullWidth
-                  margin="dense"
-                  onChange={regForm.handleChange}
-                  value={regForm.values.full_name_en}
-                  error={!!regForm.errors.full_name_en}
-                  helperText={regForm.errors.full_name_en}
-                />
-                <TextField
-                  name="isu_id"
-                  label="Номер ИСУ"
-                  fullWidth
-                  margin="dense"
-                  onChange={regForm.handleChange}
-                  value={regForm.values.isu_id}
-                  error={!!regForm.errors.isu_id}
-                  helperText={regForm.errors.isu_id}
-                />
-              </Form>
-            </FormikProvider>
+            <Tabs value={authFlow} onChange={(_, value) => setAuthFlow(value)}>
+              <Tab label="Migrate" value="migrate" />
+              <Tab label="Register" value="register" />
+              <Tab label="Login" value="login" />
+            </Tabs>
+            {authFlow === "register" && (
+              <FormikProvider value={regForm}>
+                <Form>
+                  <TextField
+                    name="first_name_ru"
+                    label="Имя на русском"
+                    fullWidth
+                    margin="dense"
+                    onChange={regForm.handleChange}
+                    value={regForm.values.first_name_ru}
+                    error={!!regForm.errors.first_name_ru}
+                    helperText={regForm.errors.first_name_ru}
+                  />
+                  <TextField
+                    name="last_name_ru"
+                    label="Фамилия на русском"
+                    fullWidth
+                    margin="dense"
+                    onChange={regForm.handleChange}
+                    value={regForm.values.last_name_ru}
+                    error={!!regForm.errors.last_name_ru}
+                    helperText={regForm.errors.last_name_ru}
+                  />
+                  <TextField
+                    name="patronymic_ru"
+                    label="Отчество на русском"
+                    fullWidth
+                    margin="dense"
+                    onChange={regForm.handleChange}
+                    value={regForm.values.patronymic_ru}
+                    error={!!regForm.errors.patronymic_ru}
+                    helperText={regForm.errors.patronymic_ru}
+                  />
+                  <TextField
+                    name="full_name_en"
+                    label="Full name in English"
+                    fullWidth
+                    margin="dense"
+                    onChange={regForm.handleChange}
+                    value={regForm.values.full_name_en}
+                    error={!!regForm.errors.full_name_en}
+                    helperText={regForm.errors.full_name_en}
+                  />
+                  <TextField
+                    name="isu_id"
+                    label="Номер ИСУ"
+                    fullWidth
+                    margin="dense"
+                    onChange={regForm.handleChange}
+                    value={regForm.values.isu_id}
+                    error={!!regForm.errors.isu_id}
+                    helperText={regForm.errors.isu_id}
+                  />
+                </Form>
+              </FormikProvider>
+            )}
+            {authFlow === "migrate" && (
+              <FormikProvider value={migrateForm}>
+                <Form>
+                  <TextField
+                    name="email"
+                    label="Email"
+                    fullWidth
+                    margin="dense"
+                    onChange={migrateForm.handleChange}
+                    value={migrateForm.values.email}
+                    error={!!migrateForm.errors.email}
+                    helperText={migrateForm.errors.email}
+                  />
+                  <TextField
+                    name="password"
+                    label="Password"
+                    type="password"
+                    fullWidth
+                    margin="dense"
+                    onChange={migrateForm.handleChange}
+                    value={migrateForm.values.password}
+                    error={!!migrateForm.errors.password}
+                    helperText={migrateForm.errors.password}
+                  />
+                </Form>
+              </FormikProvider>
+            )}
           </>
         )}
         <Box

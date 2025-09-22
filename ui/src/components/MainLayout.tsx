@@ -26,8 +26,10 @@ import {
   MenuItem,
   Select,
   type SelectChangeEvent,
+  Switch,
   styled,
   type Theme,
+  ToggleButton,
   Toolbar,
   Typography,
 } from "@mui/material";
@@ -78,6 +80,7 @@ export default observer(function MainLayout({
 
   const years = useYears();
   const location = useLocation();
+  const user = authStore.user;
 
   const selectedYear =
     useMatch({
@@ -161,7 +164,7 @@ export default observer(function MainLayout({
                   {year.year_name}
                 </MenuItem>
               ))}
-            {authStore.user?.is_admin && (
+            {user?.is_admin && (
               <MenuItem
                 value="create"
                 sx={{

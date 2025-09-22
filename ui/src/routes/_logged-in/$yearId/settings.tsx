@@ -1,5 +1,6 @@
 import AddIcon from "@mui/icons-material/Add";
 import EditIcon from "@mui/icons-material/Edit";
+import SaveIcon from "@mui/icons-material/Save";
 import VisibilityIcon from "@mui/icons-material/Visibility";
 import VisibilityOffIcon from "@mui/icons-material/VisibilityOff";
 import {
@@ -16,14 +17,21 @@ import {
   ListItem,
   ListItemText,
   Paper,
+  Switch,
   TextField,
   Tooltip,
   Typography,
 } from "@mui/material";
 import { createFileRoute, redirect } from "@tanstack/react-router";
-import { useState } from "react";
+import React, { useState } from "react";
 import type { PositionOut } from "@/client/types.gen";
-import { useAddPosition, useEditPosition, useYearPositions } from "@/data";
+import {
+  useAddPosition,
+  useEditPosition,
+  useEditYear,
+  useYearPositions,
+  useYears,
+} from "@/data";
 
 export const Route = createFileRoute("/_logged-in/$yearId/settings")({
   component: RouteComponent,
@@ -50,14 +58,64 @@ function RouteComponent() {
   const [newPositionCanDesire, setNewPositionCanDesire] = useState(false);
   const [editPositionCanDesire, setEditPositionCanDesire] = useState(false);
 
+  // Year settings state
+  const [yearName, setYearName] = useState("");
+  const [openForRegistration, setOpenForRegistration] = useState(false);
+  const [isYearSettingsEditing, setIsYearSettingsEditing] = useState(false);
+
   // Fetch all positions for admin (including non-desirable ones)
   const { data: positions, isLoading } = useYearPositions(yearId);
+
+  // Fetch years data to get current year info
+  const { data: yearsData } = useYears();
+  const currentYear = yearsData?.years?.find(
+    (y) => y.year_id === Number(yearId),
+  );
 
   // Add position mutation
   const addPositionMutation = useAddPosition();
 
   // Edit position mutation
   const editPositionMutation = useEditPosition(yearId);
+
+  // Edit year mutation
+  const editYearMutation = useEditYear();
+
+  // Initialize year settings when current year data is available
+  React.useEffect(() => {
+    if (currentYear) {
+      setYearName(currentYear.year_name);
+      setOpenForRegistration(currentYear.open_for_registration);
+    }
+  }, [currentYear]);
+
+  const handleYearSettingsSave = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (yearName.trim()) {
+      editYearMutation.mutate(
+        {
+          yearId: Number(yearId),
+          data: {
+            year_name: yearName.trim(),
+            open_for_registration: openForRegistration,
+          },
+        },
+        {
+          onSuccess: () => {
+            setIsYearSettingsEditing(false);
+          },
+        },
+      );
+    }
+  };
+
+  const handleYearSettingsCancel = () => {
+    if (currentYear) {
+      setYearName(currentYear.year_name);
+      setOpenForRegistration(currentYear.open_for_registration);
+    }
+    setIsYearSettingsEditing(false);
+  };
 
   const handleAddPosition = (e: React.FormEvent) => {
     e.preventDefault();
@@ -140,6 +198,98 @@ function RouteComponent() {
       <Typography variant="h4" component="h1" gutterBottom>
         Year Settings
       </Typography>
+
+      {/* Year Settings Form */}
+      <Paper sx={{ p: 3, mb: 3 }}>
+        <Box
+          sx={{
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            mb: 2,
+          }}
+        >
+          <Typography variant="h6" component="h2">
+            Year Information
+          </Typography>
+          {!isYearSettingsEditing && (
+            <Button
+              variant="outlined"
+              startIcon={<EditIcon />}
+              onClick={() => setIsYearSettingsEditing(true)}
+            >
+              Edit
+            </Button>
+          )}
+        </Box>
+
+        {isYearSettingsEditing ? (
+          <form onSubmit={handleYearSettingsSave}>
+            <TextField
+              fullWidth
+              label="Year Name"
+              value={yearName}
+              onChange={(e) => setYearName(e.target.value)}
+              error={editYearMutation.isError}
+              helperText={editYearMutation.error?.message}
+              disabled={editYearMutation.isPending}
+              sx={{ mb: 2 }}
+            />
+            <FormControlLabel
+              control={
+                <Switch
+                  checked={openForRegistration}
+                  onChange={(e) => setOpenForRegistration(e.target.checked)}
+                  disabled={editYearMutation.isPending}
+                />
+              }
+              label="Open for Registration"
+              sx={{ mb: 2 }}
+            />
+            <Box sx={{ display: "flex", gap: 1 }}>
+              <Button
+                type="submit"
+                variant="contained"
+                startIcon={<SaveIcon />}
+                disabled={!yearName.trim() || editYearMutation.isPending}
+              >
+                {editYearMutation.isPending ? "Saving..." : "Save Changes"}
+              </Button>
+              <Button
+                variant="outlined"
+                onClick={handleYearSettingsCancel}
+                disabled={editYearMutation.isPending}
+              >
+                Cancel
+              </Button>
+            </Box>
+          </form>
+        ) : (
+          <Box>
+            <Typography variant="body1" sx={{ mb: 1 }}>
+              <strong>Year Name:</strong>{" "}
+              {currentYear?.year_name || "Loading..."}
+            </Typography>
+            <Typography
+              variant="body1"
+              sx={{ display: "flex", alignItems: "center", gap: 1 }}
+            >
+              <strong>Registration Status:</strong>
+              {currentYear?.open_for_registration ? (
+                <>
+                  <VisibilityIcon color="success" fontSize="small" />
+                  Open for Registration
+                </>
+              ) : (
+                <>
+                  <VisibilityOffIcon color="disabled" fontSize="small" />
+                  Closed for Registration
+                </>
+              )}
+            </Typography>
+          </Box>
+        )}
+      </Paper>
 
       <Paper sx={{ p: 3, mb: 3 }}>
         <Box

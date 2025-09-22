@@ -1,7 +1,7 @@
 from typing import Annotated
 
 from dependency_injector.wiring import Provide, inject
-from fastapi import APIRouter, Depends, Path, Response, status
+from fastapi import APIRouter, Depends, HTTPException, Path, Response, status
 from loguru import logger
 
 from volunteers.auth.deps import with_user
@@ -48,12 +48,18 @@ async def get_form_year(
     user: Annotated[User, Depends(with_user)],
     year_service: Annotated[YearService, Depends(Provide[Container.year_service])],
 ) -> ApplicationFormYearSavedResponse:
+    year = await year_service.get_year_by_year_id(year_id=year_id)
+
+    if not year:
+        raise HTTPException(status_code=404, detail="Year not found")
+
     form = await year_service.get_form_by_year_id_and_user_id(year_id=year_id, user_id=user.id)
     positions = await year_service.get_positions_by_year_id(year_id=year_id)
     days = await year_service.get_days_by_year_id(year_id=year_id)
 
     logger.debug(f"{DB_PREFIX} Got user form and year positions")
     return ApplicationFormYearSavedResponse(
+        open_for_registration=year.open_for_registration,
         positions=[
             PositionOut(position_id=p.id, year_id=p.year_id, name=p.name, can_desire=p.can_desire)
             for p in positions
@@ -92,6 +98,14 @@ async def save_form_year(
     user: Annotated[User, Depends(with_user)],
     year_service: Annotated[YearService, Depends(Provide[Container.year_service])],
 ) -> None:
+    year = await year_service.get_year_by_year_id(year_id=year_id)
+
+    if not year:
+        raise HTTPException(status_code=404, detail="Year not found")
+
+    if not year.open_for_registration:
+        raise HTTPException(status_code=403, detail="Year is not open for registration")
+
     form = await year_service.get_form_by_year_id_and_user_id(year_id=year_id, user_id=user.id)
     logger.debug(f"{DB_PREFIX} Got user form for sign up")
     form_in = ApplicationFormIn(

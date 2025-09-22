@@ -18,7 +18,7 @@ async def with_user(
     user_service: Annotated[UserService, Depends(Provide[Container.user_service])],
 ) -> User:
     payload = await verify_access_token(token.credentials)
-    user = await user_service.get_user_by_telegram_id(payload.user_id)
+    user = await user_service.get_user_by_id(payload.user_id)
     if not user:
         raise HTTPException(status_code=401, detail="User not found")
     return user

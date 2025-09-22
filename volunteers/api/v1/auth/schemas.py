@@ -13,6 +13,12 @@ class TelegramLoginRequest(BaseModel):
     telegram_photo_url: str | None = None
 
 
+class TelegramMigrateRequest(TelegramLoginRequest):
+    telegram_id: int
+    email: str
+    password: str
+
+
 class RegistrationRequest(TelegramLoginRequest):
     first_name_ru: str
     last_name_ru: str

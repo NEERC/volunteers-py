@@ -12,7 +12,7 @@ from alembic import op
 
 # revision identifiers, used by Alembic.
 revision: str = "252ee2774277"
-down_revision: str | None = "ffef4006794c"
+down_revision: str | None = "d0b6e64e702c"
 branch_labels: str | Sequence[str] | None = None
 depends_on: str | Sequence[str] | None = None
 
@@ -65,45 +65,58 @@ def _migrate_years() -> None:
 
 def _migrate_users() -> None:
     """Migrate user data from volunteers schema to new schema."""
-    # Create mapping table for old_id -> new_id
-    op.execute("""
-        CREATE TEMPORARY TABLE user_id_mapping (
-            old_id INTEGER,
-            new_id INTEGER
-        )
-    """)
 
     # Insert users with auto-generated IDs and create mapping
     op.execute("""
+        WITH to_insert AS (
+        SELECT
+            CASE
+            WHEN v.itmo_id IS NOT NULL
+                AND v.itmo_id ~ '^[0-9]+$'
+                AND v.itmo_id::BIGINT <= 2147483647
+            THEN v.itmo_id::INTEGER
+            ELSE NULL
+            END AS isu_id,
+            COALESCE(v.first_name_cyr, '') AS first_name_ru,
+            COALESCE(v.last_name_cyr, '') AS last_name_ru,
+            '' AS patronymic_ru,
+            (COALESCE(v.first_name, '') || ' ' || COALESCE(v.last_name, '')) AS full_name_en,
+            v.phone,
+            v.email,
+            v.telegram AS telegram_username,
+            (CASE WHEN v.role_id = 1 THEN TRUE ELSE FALSE END) AS is_admin,
+            v.id AS old_id,
+            v.password
+        FROM volunteers.user v
+        WHERE v.email IS NOT NULL AND v.email <> ''
+        ORDER BY v.id
+        ),
+        inserted AS (
         INSERT INTO users (
-            telegram_id, isu_id, first_name_ru, last_name_ru, patronymic_ru,
+            isu_id, first_name_ru, last_name_ru, patronymic_ru,
             full_name_en, phone, email, telegram_username, is_admin
         )
         SELECT
-            v.id as telegram_id,  -- Using old id as telegram_id for now
-            CASE
-                WHEN v.itmo_id IS NOT NULL AND v.itmo_id ~ '^[0-9]+$' AND v.itmo_id::BIGINT <= 2147483647 THEN v.itmo_id::INTEGER
-                ELSE NULL
-            END as isu_id,
-            COALESCE(v.first_name_cyr, '') as first_name_ru,
-            COALESCE(v.last_name_cyr, '') as last_name_ru,
-            '' as patronymic_ru,
-            (COALESCE(v.first_name, '') || ' ' || COALESCE(v.last_name, '')) as full_name_en,
-            v.phone,
-            v.email,
-            v.telegram as telegram_username,
-            (CASE WHEN v.role_id = 1 THEN TRUE ELSE FALSE END) as is_admin
-        FROM volunteers.user v
-        WHERE v.email IS NOT NULL AND v.email != ''
-        ORDER BY v.id
+            isu_id, first_name_ru, last_name_ru, patronymic_ru,
+            full_name_en, phone, email, telegram_username, is_admin
+        FROM to_insert
+        RETURNING id AS new_user_id, email
+        )
+        INSERT INTO legacy_users (id, new_user_id, email, password)
+        SELECT t.old_id, i.new_user_id, t.email, t.password
+        FROM inserted i
+        JOIN to_insert t
+        ON i.email = t.email;
     """)
 
     # Create mapping between old and new IDs
     op.execute("""
-        INSERT INTO user_id_mapping (old_id, new_id)
+        INSERT INTO legacy_users (id, new_user_id, email, password)
         SELECT
-            v.id as old_id,
-            u.id as new_id
+            v.id as id,
+            u.id as new_user_id,
+            v.email as email,
+            v.password as password
         FROM volunteers.user v
         JOIN users u ON u.email = v.email AND u.telegram_id = v.id
         WHERE v.email IS NOT NULL AND v.email != ''
@@ -163,12 +176,12 @@ def _migrate_application_forms() -> None:
         INSERT INTO application_forms (year_id, user_id, itmo_group, comments)
         SELECT
             yim.new_id as year_id,
-            uim.new_id as user_id,
+            uim.new_user_id as user_id,
             COALESCE(af."group", '') as itmo_group,
             COALESCE(af.suggestions, '') as comments
         FROM volunteers.application_form af
         JOIN year_id_mapping yim ON af.year = yim.old_id
-        JOIN user_id_mapping uim ON af.user_id = uim.old_id
+        JOIN legacy_users uim ON af.user_id = uim.id
         WHERE af.user_id IS NOT NULL AND af.year IS NOT NULL
         ORDER BY af.id
     """)
@@ -181,8 +194,8 @@ def _migrate_application_forms() -> None:
             af_new.id as new_id
         FROM volunteers.application_form af
         JOIN year_id_mapping yim ON af.year = yim.old_id
-        JOIN user_id_mapping uim ON af.user_id = uim.old_id
-        JOIN application_forms af_new ON af_new.year_id = yim.new_id AND af_new.user_id = uim.new_id
+        JOIN legacy_users uim ON af.user_id = uim.id
+        JOIN application_forms af_new ON af_new.year_id = yim.new_id AND af_new.user_id = uim.new_user_id
         WHERE af.user_id IS NOT NULL AND af.year IS NOT NULL
         ORDER BY af.id
     """)
@@ -277,7 +290,7 @@ def _migrate_positions() -> None:
 
     # Insert positions with auto-generated IDs and create mapping
     op.execute("""
-        INSERT INTO positions (year_id, name)
+        INSERT INTO positions (year_id, name, can_desire)
         SELECT
             yim.new_id as year_id,
             CASE
@@ -293,7 +306,8 @@ def _migrate_positions() -> None:
                     AND pv3.id != pv.id
                 ) THEN pv.name || ' (ID: ' || pv.id || ')'
                 ELSE pv.name
-            END as name
+            END as name,
+            pv.in_form as can_desire
         FROM volunteers.position_value pv
         JOIN volunteers.year y ON pv.year_id = y.id
         JOIN year_id_mapping yim ON pv.year_id = yim.old_id
@@ -340,5 +354,6 @@ def downgrade() -> None:
     op.execute("DELETE FROM application_forms")
     op.execute("DELETE FROM days")
     op.execute("DELETE FROM positions")
+    op.execute("DELETE FROM legacy_users")
     op.execute("DELETE FROM users")
     op.execute("DELETE FROM years")

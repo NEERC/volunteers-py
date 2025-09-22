@@ -66,8 +66,3 @@ volunteers/
 [ ] Year specific positions should be copied from the previous year with theirs scores saved
 [ ] Diploma generation
 [ ] csv export
-
-
-Nice to haves:
-[ ] Badge generation
-[ ]

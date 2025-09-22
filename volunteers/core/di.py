@@ -3,6 +3,7 @@ import dependency_injector.providers as providers
 
 from volunteers.core.config import Config
 from volunteers.core.db import create_engine
+from volunteers.services.legacy_user import LegacyUserService
 from volunteers.services.user import UserService
 from volunteers.services.year import YearService
 
@@ -14,3 +15,4 @@ class Container(containers.DeclarativeContainer):
     # telegram = providers.Singleton(Telegram)
     user_service = providers.Singleton(UserService, db=db)
     year_service = providers.Singleton(YearService, db=db)
+    legacy_user_service = providers.Singleton(LegacyUserService, db=db)

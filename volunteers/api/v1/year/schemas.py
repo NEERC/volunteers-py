@@ -12,6 +12,7 @@ class ApplicationFormYearSavedResponse(BaseSuccessResponse):
     desired_positions: list[PositionOut]
     itmo_group: str | None = ""
     comments: str = ""
+    open_for_registration: bool
 
 
 class ApplicationFormYearSaveRequest(BaseModel):

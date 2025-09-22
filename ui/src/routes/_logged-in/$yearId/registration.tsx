@@ -11,6 +11,7 @@ import {
   MenuItem,
   Paper,
   Select,
+  Switch,
   TextField,
   Typography,
 } from "@mui/material";
@@ -30,6 +31,7 @@ function RouteComponent() {
   const year = Route.useRouteContext().year;
   const { yearId } = Route.useParams();
   const navigate = useNavigate();
+  const user = authStore.user;
 
   const saveMutation = useSaveRegistration();
 
@@ -39,13 +41,13 @@ function RouteComponent() {
         year?.desired_positions?.map((p) => p.position_id) ?? [],
       itmo_group: year?.itmo_group ?? "",
       comments: year?.comments ?? "",
-      first_name_ru: authStore.user?.first_name_ru ?? "",
-      last_name_ru: authStore.user?.last_name_ru ?? "",
-      full_name_en: authStore.user?.full_name_en ?? "",
-      isu_id: authStore.user?.isu_id ?? null,
-      patronymic_ru: authStore.user?.patronymic_ru ?? "",
-      phone: authStore.user?.phone ?? "",
-      email: authStore.user?.email ?? "",
+      first_name_ru: user?.first_name_ru ?? "",
+      last_name_ru: user?.last_name_ru ?? "",
+      full_name_en: user?.full_name_en ?? "",
+      isu_id: user?.isu_id ?? null,
+      patronymic_ru: user?.patronymic_ru ?? "",
+      phone: user?.phone ?? "",
+      email: user?.email ?? "",
     },
     enableReinitialize: true,
     validationSchema: Yup.object({
@@ -125,6 +127,7 @@ function RouteComponent() {
             name="first_name_ru"
             value={formik.values.first_name_ru}
             onChange={formik.handleChange}
+            disabled={!year.open_for_registration}
             error={
               formik.touched.first_name_ru &&
               Boolean(formik.errors.first_name_ru)
@@ -141,6 +144,7 @@ function RouteComponent() {
             name="last_name_ru"
             value={formik.values.last_name_ru}
             onChange={formik.handleChange}
+            disabled={!year.open_for_registration}
             error={
               formik.touched.last_name_ru && Boolean(formik.errors.last_name_ru)
             }
@@ -156,6 +160,7 @@ function RouteComponent() {
             name="patronymic_ru"
             value={formik.values.patronymic_ru}
             onChange={formik.handleChange}
+            disabled={!year.open_for_registration}
             error={
               formik.touched.patronymic_ru &&
               Boolean(formik.errors.patronymic_ru)
@@ -172,6 +177,7 @@ function RouteComponent() {
             name="full_name_en"
             value={formik.values.full_name_en}
             onChange={formik.handleChange}
+            disabled={!year.open_for_registration}
             error={
               formik.touched.full_name_en && Boolean(formik.errors.full_name_en)
             }
@@ -188,6 +194,7 @@ function RouteComponent() {
             type="number"
             value={formik.values.isu_id || ""}
             onChange={formik.handleChange}
+            disabled={!year.open_for_registration}
             error={formik.touched.isu_id && Boolean(formik.errors.isu_id)}
             helperText={formik.touched.isu_id && formik.errors.isu_id}
             sx={{ mb: 2 }}
@@ -200,6 +207,7 @@ function RouteComponent() {
             type="tel"
             value={formik.values.phone}
             onChange={formik.handleChange}
+            disabled={!year.open_for_registration}
             error={formik.touched.phone && Boolean(formik.errors.phone)}
             helperText={formik.touched.phone && formik.errors.phone}
             sx={{ mb: 2 }}
@@ -212,6 +220,7 @@ function RouteComponent() {
             type="email"
             value={formik.values.email}
             onChange={formik.handleChange}
+            disabled={!year.open_for_registration}
             error={formik.touched.email && Boolean(formik.errors.email)}
             helperText={formik.touched.email && formik.errors.email}
             sx={{ mb: 3 }}
@@ -229,6 +238,7 @@ function RouteComponent() {
               labelId={positionId}
               multiple
               value={formik.values.desired_positions}
+              disabled={!year.open_for_registration}
               onChange={(e) =>
                 formik.setFieldValue("desired_positions", e.target.value)
               }
@@ -266,6 +276,7 @@ function RouteComponent() {
             name="itmo_group"
             value={formik.values.itmo_group}
             onChange={formik.handleChange}
+            disabled={!year.open_for_registration}
             error={
               formik.touched.itmo_group && Boolean(formik.errors.itmo_group)
             }
@@ -281,6 +292,7 @@ function RouteComponent() {
             rows={4}
             value={formik.values.comments}
             onChange={formik.handleChange}
+            disabled={!year.open_for_registration}
             error={formik.touched.comments && Boolean(formik.errors.comments)}
             helperText={formik.touched.comments && formik.errors.comments}
             sx={{ mb: 3 }}
@@ -294,7 +306,10 @@ function RouteComponent() {
               type="submit"
               variant="contained"
               disabled={
-                !formik.isValid || formik.isSubmitting || saveMutation.isPending
+                !formik.isValid ||
+                formik.isSubmitting ||
+                saveMutation.isPending ||
+                !year.open_for_registration
               }
               startIcon={
                 saveMutation.isPending ? <CircularProgress size={20} /> : null

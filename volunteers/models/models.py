@@ -23,7 +23,7 @@ class Year(Base, TimestampMixin):
 class User(Base, TimestampMixin):
     __tablename__ = "users"
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
-    telegram_id: Mapped[int] = mapped_column(Integer, unique=True)
+    telegram_id: Mapped[int | None] = mapped_column(Integer, unique=True, nullable=True)
 
     isu_id: Mapped[int | None] = mapped_column(Integer, nullable=True)
     first_name_ru: Mapped[str] = mapped_column(String)
@@ -128,3 +128,13 @@ class Assessment(Base, TimestampMixin):
 
     comment: Mapped[str] = mapped_column(String)
     value: Mapped[float] = mapped_column(Double)
+
+
+class LegacyUser(Base):
+    __tablename__ = "legacy_users"
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    new_user_id: Mapped[int] = mapped_column(ForeignKey("users.id"))
+    new_user: Mapped[User] = relationship()
+
+    email: Mapped[str] = mapped_column(String)
+    password: Mapped[str] = mapped_column(String)

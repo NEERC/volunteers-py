@@ -67,6 +67,7 @@ export type ApplicationFormYearSavedResponse = {
     desired_positions: Array<PositionOut>;
     itmo_group?: string | null;
     comments?: string;
+    open_for_registration: boolean;
 };
 
 export type Attendance = 'yes' | 'no' | 'late' | 'sick' | 'unknown';
@@ -156,6 +157,18 @@ export type TelegramLoginRequest = {
     telegram_last_name?: string | null;
     telegram_username?: string | null;
     telegram_photo_url?: string | null;
+};
+
+export type TelegramMigrateRequest = {
+    telegram_id: number;
+    telegram_auth_date: number;
+    telegram_first_name: string;
+    telegram_hash: string;
+    telegram_last_name?: string | null;
+    telegram_username?: string | null;
+    telegram_photo_url?: string | null;
+    email: string;
+    password: string;
 };
 
 export type UserListItem = {
@@ -563,6 +576,31 @@ export type RegisterApiV1AuthTelegramRegisterPostResponses = {
 };
 
 export type RegisterApiV1AuthTelegramRegisterPostResponse = RegisterApiV1AuthTelegramRegisterPostResponses[keyof RegisterApiV1AuthTelegramRegisterPostResponses];
+
+export type MigrateApiV1AuthTelegramMigratePostData = {
+    body: TelegramMigrateRequest;
+    path?: never;
+    query?: never;
+    url: '/api/v1/auth/telegram/migrate';
+};
+
+export type MigrateApiV1AuthTelegramMigratePostErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type MigrateApiV1AuthTelegramMigratePostError = MigrateApiV1AuthTelegramMigratePostErrors[keyof MigrateApiV1AuthTelegramMigratePostErrors];
+
+export type MigrateApiV1AuthTelegramMigratePostResponses = {
+    /**
+     * Successful Response
+     */
+    200: SuccessfulLoginResponse;
+};
+
+export type MigrateApiV1AuthTelegramMigratePostResponse = MigrateApiV1AuthTelegramMigratePostResponses[keyof MigrateApiV1AuthTelegramMigratePostResponses];
 
 export type LoginApiV1AuthTelegramLoginPostData = {
     body: TelegramLoginRequest;

@@ -3,12 +3,14 @@ import { makePersistable } from "mobx-persist-store";
 import {
   loginApiV1AuthTelegramLoginPost,
   meApiV1AuthMeGet,
+  migrateApiV1AuthTelegramMigratePost,
   refreshApiV1AuthRefreshPost,
   registerApiV1AuthTelegramRegisterPost,
 } from "@/client/sdk.gen";
 import type {
   RegistrationRequest,
   TelegramLoginRequest,
+  TelegramMigrateRequest,
   UserResponse,
 } from "@/client/types.gen";
 import { client } from "../client/client.gen";
@@ -63,7 +65,7 @@ class AuthStore {
     }
 
     if (!response.data || response.data.success !== true) {
-      throw new Error("Failed to login");
+      throw new Error(`Failed to login: ${response.error?.detail}`);
     }
 
     this.accessToken = response.data.token;
@@ -79,7 +81,23 @@ class AuthStore {
     });
 
     if (!response.data || response.data.success !== true) {
-      throw new Error(`${response.error?.detail}Failed to register`);
+      throw new Error(`Failed to register: ${response.error?.detail}`);
+    }
+
+    this.accessToken = response.data.token;
+    this.refreshToken = response.data.refresh_token;
+
+    await this.fetchUser();
+  }
+
+  @action
+  async migrateTelegram(telegramData: TelegramMigrateRequest) {
+    const response = await migrateApiV1AuthTelegramMigratePost({
+      body: telegramData,
+    });
+
+    if (!response.data || response.data.success !== true) {
+      throw new Error(`Failed to migrate: ${response.error?.detail}`);
     }
 
     this.accessToken = response.data.token;
