@@ -24,9 +24,15 @@ from .errors import DomainError
 class ApplicationFormNotFound(DomainError):
     """Application form not found"""
 
+    def __init__(self) -> None:
+        super().__init__("Application form not found")
+
 
 class YearNotFound(DomainError):
     """Year not found"""
+
+    def __init__(self) -> None:
+        super().__init__("Year not found")
 
 
 class PositionNotFound(DomainError):

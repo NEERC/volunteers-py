@@ -1,0 +1,19 @@
+{
+    "Something went wrong": "Что-то пошло не так",
+    "Application form not found": "Форма заявки не найдена",
+    "Year not found": "Год не найден",
+    "User not found": "Пользователь не найден",
+    "Invalid Telegram login": "Неверный вход через Telegram",
+    "User is already registered": "Пользователь уже зарегистрирован",
+    "Year is not open for registration": "Регистрация на этот год закрыта",
+    "Invalid email": "Неверный email",
+    "Email is required": "Email обязателен",
+    "Password is required": "Пароль обязателен",
+    "First name on Russian is required": "Имя на русском обязательно",
+    "Last name on Russian is required": "Фамилия на русском обязательна",
+    "Full name in English is required": "Полное имя на английском обязательно",
+    "Phone is required": "Телефон обязателен",
+    "Please select at least one position": "Выберите хотя бы одну позицию",
+    "Required": "Обязательно",
+    "Invalid email format": "Неверный формат email"
+}

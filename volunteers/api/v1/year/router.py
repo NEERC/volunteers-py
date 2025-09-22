@@ -11,6 +11,7 @@ from volunteers.schemas.application_form import ApplicationFormIn
 from volunteers.schemas.day import DayOut
 from volunteers.schemas.position import PositionOut
 from volunteers.schemas.year import YearOut
+from volunteers.services.i18n import I18nService
 from volunteers.services.year import YearService
 
 from .schemas import (
@@ -97,14 +98,17 @@ async def save_form_year(
     response: Response,
     user: Annotated[User, Depends(with_user)],
     year_service: Annotated[YearService, Depends(Provide[Container.year_service])],
+    i18n: Annotated[I18nService, Depends(Provide[Container.i18n_service])],
 ) -> None:
     year = await year_service.get_year_by_year_id(year_id=year_id)
 
     if not year:
-        raise HTTPException(status_code=404, detail="Year not found")
+        raise HTTPException(status_code=404, detail=i18n.translate("Year not found"))
 
     if not year.open_for_registration:
-        raise HTTPException(status_code=403, detail="Year is not open for registration")
+        raise HTTPException(
+            status_code=403, detail=i18n.translate("Year is not open for registration")
+        )
 
     form = await year_service.get_form_by_year_id_and_user_id(year_id=year_id, user_id=user.id)
     logger.debug(f"{DB_PREFIX} Got user form for sign up")

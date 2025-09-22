@@ -26,10 +26,8 @@ import {
   MenuItem,
   Select,
   type SelectChangeEvent,
-  Switch,
   styled,
   type Theme,
-  ToggleButton,
   Toolbar,
   Typography,
 } from "@mui/material";
@@ -42,9 +40,11 @@ import {
 } from "@tanstack/react-router";
 import { observer } from "mobx-react-lite";
 import { useId, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { getFormYearApiV1YearYearIdGet } from "@/client";
 import { queryKeys, useYears } from "@/data";
 import { authStore } from "@/store/auth";
+import LanguageSwitcher from "./LanguageSwitcher";
 
 const drawerWidth = 240;
 
@@ -74,6 +74,7 @@ export default observer(function MainLayout({
   children: React.ReactNode;
   title: string;
 }) {
+  const { t } = useTranslation();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [isClosing, setIsClosing] = useState(false);
   const [daysOpen, setDaysOpen] = useState(true);
@@ -137,15 +138,15 @@ export default observer(function MainLayout({
     <div>
       <Toolbar>
         <FormControl variant="standard" sx={{ minWidth: 120 }} fullWidth>
-          <InputLabel id={yearSelectorId}>Year</InputLabel>
+          <InputLabel id={yearSelectorId}>{t("Year")}</InputLabel>
           <Select
             labelId={yearSelectorId}
             id={yearSelectorId}
             value={selectedYear}
             onChange={handleYearChange}
-            label="Year"
+            label={t("Year")}
           >
-            <MenuItem value={""}>Main</MenuItem>
+            <MenuItem value={""}>{t("Main")}</MenuItem>
             <MenuItem
               disabled
               sx={{
@@ -156,7 +157,7 @@ export default observer(function MainLayout({
                 pointerEvents: "none",
               }}
             >
-              Years
+              {t("Years")}
             </MenuItem>
             {years.isSuccess &&
               years.data.years.map((year) => (
@@ -174,7 +175,7 @@ export default observer(function MainLayout({
                   color: "primary.main",
                 }}
               >
-                + Create Year
+                + {t("Create Year")}
               </MenuItem>
             )}
           </Select>
@@ -194,7 +195,7 @@ export default observer(function MainLayout({
                 <ListItemIcon>
                   <AssignmentIcon />
                 </ListItemIcon>
-                <ListItemText primary="Registration Form" />
+                <ListItemText primary={t("Registration Form")} />
               </ListItemButton>
             </StyledLink>
           </ListItem>
@@ -209,7 +210,7 @@ export default observer(function MainLayout({
                 <ListItemIcon>
                   <ContactsIcon />
                 </ListItemIcon>
-                <ListItemText primary="Contacts" />
+                <ListItemText primary={t("Contacts")} />
               </ListItemButton>
             </StyledLink>
           </ListItem>
@@ -218,7 +219,7 @@ export default observer(function MainLayout({
               <ListItemIcon>
                 <CalendarMonthIcon />
               </ListItemIcon>
-              <ListItemText primary="Days" />
+              <ListItemText primary={t("Days")} />
               {daysOpen ? <ExpandLess /> : <ExpandMore />}
             </StyledListItemButton>
           </ListItem>
@@ -248,7 +249,7 @@ export default observer(function MainLayout({
                   }
                 >
                   <ListItemButton sx={{ pl: 4, color: "primary.main" }}>
-                    <ListItemText primary="+ Create Day" />
+                    <ListItemText primary={`+ ${t("Create Day")}`} />
                   </ListItemButton>
                 </StyledLink>
               )}
@@ -265,7 +266,7 @@ export default observer(function MainLayout({
                 <ListItemIcon>
                   <AssessmentIcon />
                 </ListItemIcon>
-                <ListItemText primary="Results" />
+                <ListItemText primary={t("Results")} />
               </ListItemButton>
             </StyledLink>
           </ListItem>
@@ -280,7 +281,7 @@ export default observer(function MainLayout({
                 <ListItemIcon>
                   <EmojiEventsIcon />
                 </ListItemIcon>
-                <ListItemText primary="User Medals" />
+                <ListItemText primary={t("User Medals")} />
               </ListItemButton>
             </StyledLink>
           </ListItem>
@@ -295,7 +296,7 @@ export default observer(function MainLayout({
                 <ListItemIcon>
                   <SettingsIcon />
                 </ListItemIcon>
-                <ListItemText primary="Settings" />
+                <ListItemText primary={t("Settings")} />
               </ListItemButton>
             </StyledLink>
           </ListItem>
@@ -308,7 +309,7 @@ export default observer(function MainLayout({
                 <ListItemIcon>
                   <GroupIcon />
                 </ListItemIcon>
-                <ListItemText primary="Users" />
+                <ListItemText primary={t("Users")} />
               </ListItemButton>
             </StyledLink>
           </ListItem>
@@ -337,8 +338,9 @@ export default observer(function MainLayout({
             <MenuIcon />
           </IconButton>
           <Typography variant="h6" noWrap component="div" sx={{ flexGrow: 1 }}>
-            {title}
+            {t(title)}
           </Typography>
+          <LanguageSwitcher />
           <Button
             color="inherit"
             onClick={() => {
@@ -346,7 +348,7 @@ export default observer(function MainLayout({
               navigate({ to: "/login" });
             }}
           >
-            Logout
+            {t("Logout")}
           </Button>
         </Toolbar>
       </AppBar>

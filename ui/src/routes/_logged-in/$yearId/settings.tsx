@@ -24,6 +24,7 @@ import {
 } from "@mui/material";
 import { createFileRoute, redirect } from "@tanstack/react-router";
 import React, { useState } from "react";
+import { useTranslation } from "react-i18next";
 import type { PositionOut } from "@/client/types.gen";
 import {
   useAddPosition,
@@ -47,6 +48,7 @@ export const Route = createFileRoute("/_logged-in/$yearId/settings")({
 });
 
 function RouteComponent() {
+  const { t } = useTranslation();
   const { yearId } = Route.useParams();
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
@@ -188,7 +190,7 @@ function RouteComponent() {
         alignItems="center"
         minHeight="50vh"
       >
-        <Typography>Loading...</Typography>
+        <Typography>{t("Loading...")}</Typography>
       </Box>
     );
   }
@@ -196,7 +198,7 @@ function RouteComponent() {
   return (
     <Box sx={{ p: 3 }}>
       <Typography variant="h4" component="h1" gutterBottom>
-        Year Settings
+        {t("Year Settings")}
       </Typography>
 
       {/* Year Settings Form */}
@@ -210,7 +212,7 @@ function RouteComponent() {
           }}
         >
           <Typography variant="h6" component="h2">
-            Year Information
+            {t("Year Information")}
           </Typography>
           {!isYearSettingsEditing && (
             <Button
@@ -218,7 +220,7 @@ function RouteComponent() {
               startIcon={<EditIcon />}
               onClick={() => setIsYearSettingsEditing(true)}
             >
-              Edit
+              {t("Edit")}
             </Button>
           )}
         </Box>
@@ -227,7 +229,7 @@ function RouteComponent() {
           <form onSubmit={handleYearSettingsSave}>
             <TextField
               fullWidth
-              label="Year Name"
+              label={t("Year Name")}
               value={yearName}
               onChange={(e) => setYearName(e.target.value)}
               error={editYearMutation.isError}
@@ -243,7 +245,7 @@ function RouteComponent() {
                   disabled={editYearMutation.isPending}
                 />
               }
-              label="Open for Registration"
+              label={t("Open for Registration")}
               sx={{ mb: 2 }}
             />
             <Box sx={{ display: "flex", gap: 1 }}>
@@ -253,37 +255,39 @@ function RouteComponent() {
                 startIcon={<SaveIcon />}
                 disabled={!yearName.trim() || editYearMutation.isPending}
               >
-                {editYearMutation.isPending ? "Saving..." : "Save Changes"}
+                {editYearMutation.isPending
+                  ? t("Saving...")
+                  : t("Save Changes")}
               </Button>
               <Button
                 variant="outlined"
                 onClick={handleYearSettingsCancel}
                 disabled={editYearMutation.isPending}
               >
-                Cancel
+                {t("Cancel")}
               </Button>
             </Box>
           </form>
         ) : (
           <Box>
             <Typography variant="body1" sx={{ mb: 1 }}>
-              <strong>Year Name:</strong>{" "}
-              {currentYear?.year_name || "Loading..."}
+              <strong>{t("Year Name")}:</strong>{" "}
+              {currentYear?.year_name || t("Loading...")}
             </Typography>
             <Typography
               variant="body1"
               sx={{ display: "flex", alignItems: "center", gap: 1 }}
             >
-              <strong>Registration Status:</strong>
+              <strong>{t("Registration Status:")}</strong>
               {currentYear?.open_for_registration ? (
                 <>
                   <VisibilityIcon color="success" fontSize="small" />
-                  Open for Registration
+                  {t("Open")}
                 </>
               ) : (
                 <>
                   <VisibilityOffIcon color="disabled" fontSize="small" />
-                  Closed for Registration
+                  {t("Closed")}
                 </>
               )}
             </Typography>
@@ -301,14 +305,14 @@ function RouteComponent() {
           }}
         >
           <Typography variant="h6" component="h2">
-            Positions
+            {t("Positions")}
           </Typography>
           <Button
             variant="contained"
             startIcon={<AddIcon />}
             onClick={() => setIsAddDialogOpen(true)}
           >
-            Add Position
+            {t("Add Position")}
           </Button>
         </Box>
 
@@ -332,11 +336,11 @@ function RouteComponent() {
                     <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
                       {position.name}
                       {position.can_desire ? (
-                        <Tooltip title="Available for registration">
+                        <Tooltip title={t("Available for registration")}>
                           <VisibilityIcon color="success" fontSize="small" />
                         </Tooltip>
                       ) : (
-                        <Tooltip title="Hidden from registration">
+                        <Tooltip title={t("Hidden from registration")}>
                           <VisibilityOffIcon
                             color="disabled"
                             fontSize="small"
@@ -358,7 +362,7 @@ function RouteComponent() {
           </List>
         ) : (
           <Typography color="text.secondary" sx={{ fontStyle: "italic" }}>
-            No positions found. Add your first position to get started.
+            {t("No positions found. Add your first position to get started.")}
           </Typography>
         )}
       </Paper>
@@ -371,12 +375,12 @@ function RouteComponent() {
         fullWidth
       >
         <form onSubmit={handleAddPosition}>
-          <DialogTitle>Add New Position</DialogTitle>
+          <DialogTitle>{t("Add New Position")}</DialogTitle>
           <DialogContent>
             <TextField
               autoFocus
               margin="dense"
-              label="Position Name"
+              label={t("Position Name")}
               fullWidth
               variant="outlined"
               value={newPositionName}
@@ -393,7 +397,7 @@ function RouteComponent() {
                   disabled={addPositionMutation.isPending}
                 />
               }
-              label="Available for registration"
+              label={t("Available for registration")}
               sx={{ mt: 1 }}
             />
           </DialogContent>
@@ -402,7 +406,7 @@ function RouteComponent() {
               onClick={closeAddDialog}
               disabled={addPositionMutation.isPending}
             >
-              Cancel
+              {t("Cancel")}
             </Button>
             <Button
               type="submit"
@@ -411,7 +415,9 @@ function RouteComponent() {
                 !newPositionName.trim() || addPositionMutation.isPending
               }
             >
-              {addPositionMutation.isPending ? "Adding..." : "Add Position"}
+              {addPositionMutation.isPending
+                ? t("Adding...")
+                : t("Add Position")}
             </Button>
           </DialogActions>
         </form>
@@ -425,12 +431,12 @@ function RouteComponent() {
         fullWidth
       >
         <form onSubmit={handleEditPosition}>
-          <DialogTitle>Edit Position</DialogTitle>
+          <DialogTitle>{t("Edit Position")}</DialogTitle>
           <DialogContent>
             <TextField
               autoFocus
               margin="dense"
-              label="Position Name"
+              label={t("Position Name")}
               fullWidth
               variant="outlined"
               value={editPositionName}
@@ -447,7 +453,7 @@ function RouteComponent() {
                   disabled={editPositionMutation.isPending}
                 />
               }
-              label="Available for registration"
+              label={t("Available for registration")}
               sx={{ mt: 1 }}
             />
           </DialogContent>
@@ -456,7 +462,7 @@ function RouteComponent() {
               onClick={closeEditDialog}
               disabled={editPositionMutation.isPending}
             >
-              Cancel
+              {t("Cancel")}
             </Button>
             <Button
               type="submit"
@@ -465,7 +471,9 @@ function RouteComponent() {
                 !editPositionName.trim() || editPositionMutation.isPending
               }
             >
-              {editPositionMutation.isPending ? "Saving..." : "Save Changes"}
+              {editPositionMutation.isPending
+                ? t("Saving...")
+                : t("Save Changes")}
             </Button>
           </DialogActions>
         </form>

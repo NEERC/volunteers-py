@@ -14,6 +14,7 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { Form, FormikProvider, useFormik } from "formik";
 import { observer } from "mobx-react-lite";
 import { useEffect, useRef, useState } from "react";
+import { useTranslation } from "react-i18next";
 import * as Yup from "yup";
 import { authStore, UserNotFoundError } from "@/store/auth";
 
@@ -44,6 +45,7 @@ type TelegramEvent =
     };
 
 function RouteComponent() {
+  const { t } = useTranslation();
   const telegramRef = useRef<HTMLIFrameElement>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -61,9 +63,15 @@ function RouteComponent() {
       isu_id: null,
     },
     validationSchema: Yup.object().shape({
-      first_name_ru: Yup.string().required("Имя на русском обязательно"),
-      last_name_ru: Yup.string().required("Фамилия на русском обязательна"),
-      full_name_en: Yup.string().required("Full name in English is required"),
+      first_name_ru: Yup.string().required(
+        t("First name on Russian is required"),
+      ),
+      last_name_ru: Yup.string().required(
+        t("Last name on Russian is required"),
+      ),
+      full_name_en: Yup.string().required(
+        t("Full name in English is required"),
+      ),
       isu_id: Yup.number().nullable(),
       patronymic_ru: Yup.string().nullable(),
     }),
@@ -78,8 +86,10 @@ function RouteComponent() {
       password: "",
     },
     validationSchema: Yup.object().shape({
-      email: Yup.string().email("Invalid email").required("Email is required"),
-      password: Yup.string().required("Password is required"),
+      email: Yup.string()
+        .email(t("Invalid email"))
+        .required(t("Email is required")),
+      password: Yup.string().required(t("Password is required")),
     }),
     onSubmit: (values) => {
       console.log(values);
@@ -172,41 +182,42 @@ function RouteComponent() {
     >
       <Paper elevation={3} sx={{ p: 4, width: "100%", textAlign: "center" }}>
         <Typography variant="h4" component="h1" gutterBottom>
-          Login with Telegram
+          {t("Login with Telegram")}
         </Typography>
         {authFlow === "login" ? (
           <>
             <Typography variant="body1" gutterBottom>
-              Click the button below to authenticate
+              {t("Click the button below to authenticate")}
             </Typography>
             <Typography variant="body2">
-              Don't have Telegram?{" "}
+              {t("Don't have Telegram?")}{" "}
               <Link
                 href="https://telegram.org/"
                 target="_blank"
                 underline="hover"
               >
-                Download it here
+                {t("Download it here")}
               </Link>
             </Typography>
           </>
         ) : (
           <>
             <Typography variant="body1" gutterBottom>
-              We couldn't find your account. Either migrate your email and
-              password account, or create a new one.
+              {t(
+                "We couldn't find your account. Either migrate your email and password account, or create a new one.",
+              )}
             </Typography>
             <Tabs value={authFlow} onChange={(_, value) => setAuthFlow(value)}>
-              <Tab label="Migrate" value="migrate" />
-              <Tab label="Register" value="register" />
-              <Tab label="Login" value="login" />
+              <Tab label={t("Migrate")} value="migrate" />
+              <Tab label={t("Register")} value="register" />
+              <Tab label={t("Login")} value="login" />
             </Tabs>
             {authFlow === "register" && (
               <FormikProvider value={regForm}>
                 <Form>
                   <TextField
                     name="first_name_ru"
-                    label="Имя на русском"
+                    label={t("Name on Russian")}
                     fullWidth
                     margin="dense"
                     onChange={regForm.handleChange}
@@ -216,7 +227,7 @@ function RouteComponent() {
                   />
                   <TextField
                     name="last_name_ru"
-                    label="Фамилия на русском"
+                    label={t("Surname on Russian")}
                     fullWidth
                     margin="dense"
                     onChange={regForm.handleChange}
@@ -226,7 +237,7 @@ function RouteComponent() {
                   />
                   <TextField
                     name="patronymic_ru"
-                    label="Отчество на русском"
+                    label={t("Patronymic on Russian")}
                     fullWidth
                     margin="dense"
                     onChange={regForm.handleChange}
@@ -236,7 +247,7 @@ function RouteComponent() {
                   />
                   <TextField
                     name="full_name_en"
-                    label="Full name in English"
+                    label={t("Full name in English")}
                     fullWidth
                     margin="dense"
                     onChange={regForm.handleChange}
@@ -246,7 +257,7 @@ function RouteComponent() {
                   />
                   <TextField
                     name="isu_id"
-                    label="Номер ИСУ"
+                    label={t("ISU Number")}
                     fullWidth
                     margin="dense"
                     onChange={regForm.handleChange}
@@ -262,7 +273,7 @@ function RouteComponent() {
                 <Form>
                   <TextField
                     name="email"
-                    label="Email"
+                    label={t("Email")}
                     fullWidth
                     margin="dense"
                     onChange={migrateForm.handleChange}
@@ -272,7 +283,7 @@ function RouteComponent() {
                   />
                   <TextField
                     name="password"
-                    label="Password"
+                    label={t("Password")}
                     type="password"
                     fullWidth
                     margin="dense"

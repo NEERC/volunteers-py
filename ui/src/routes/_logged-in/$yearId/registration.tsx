@@ -11,7 +11,6 @@ import {
   MenuItem,
   Paper,
   Select,
-  Switch,
   TextField,
   Typography,
 } from "@mui/material";
@@ -19,6 +18,7 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useFormik } from "formik";
 import { observer } from "mobx-react-lite";
 import { useId } from "react";
+import { useTranslation } from "react-i18next";
 import * as Yup from "yup";
 import { useSaveRegistration } from "@/data/use-year";
 import { authStore } from "@/store/auth";
@@ -28,6 +28,7 @@ export const Route = createFileRoute("/_logged-in/$yearId/registration")({
 });
 
 function RouteComponent() {
+  const { t } = useTranslation();
   const year = Route.useRouteContext().year;
   const { yearId } = Route.useParams();
   const navigate = useNavigate();
@@ -53,18 +54,18 @@ function RouteComponent() {
     validationSchema: Yup.object({
       desired_positions: Yup.array()
         .of(Yup.number())
-        .min(1, "Please select at least one position"),
+        .min(1, t("Please select at least one position")),
       itmo_group: Yup.string().nullable(),
       comments: Yup.string(),
-      first_name_ru: Yup.string().required("Required"),
-      last_name_ru: Yup.string().required("Required"),
-      full_name_en: Yup.string().required("Required"),
+      first_name_ru: Yup.string().required(t("Required")),
+      last_name_ru: Yup.string().required(t("Required")),
+      full_name_en: Yup.string().required(t("Required")),
       isu_id: Yup.number().nullable(),
       patronymic_ru: Yup.string().nullable(),
-      phone: Yup.string().required("Phone is required"),
+      phone: Yup.string().required(t("Phone is required")),
       email: Yup.string()
-        .email("Invalid email format")
-        .required("Email is required"),
+        .email(t("Invalid email format"))
+        .required(t("Email is required")),
     }),
     onSubmit: async (values) => {
       try {
@@ -113,17 +114,17 @@ function RouteComponent() {
     <Container maxWidth="md" sx={{ py: 4 }}>
       <Paper elevation={3} sx={{ p: 4 }}>
         <Typography variant="h4" component="h1" gutterBottom>
-          Registration Form
+          {t("Registration Form")}
         </Typography>
 
         <form onSubmit={formik.handleSubmit}>
           <Typography variant="h6" gutterBottom sx={{ mt: 3 }}>
-            Personal Information
+            {t("Personal Information")}
           </Typography>
 
           <TextField
             fullWidth
-            label="First Name (RU)"
+            label={t("First Name (RU)")}
             name="first_name_ru"
             value={formik.values.first_name_ru}
             onChange={formik.handleChange}
@@ -140,7 +141,7 @@ function RouteComponent() {
 
           <TextField
             fullWidth
-            label="Last Name (RU)"
+            label={t("Last Name (RU)")}
             name="last_name_ru"
             value={formik.values.last_name_ru}
             onChange={formik.handleChange}
@@ -156,7 +157,7 @@ function RouteComponent() {
 
           <TextField
             fullWidth
-            label="Patronymic (RU)"
+            label={t("Patronymic (RU)")}
             name="patronymic_ru"
             value={formik.values.patronymic_ru}
             onChange={formik.handleChange}
@@ -173,7 +174,7 @@ function RouteComponent() {
 
           <TextField
             fullWidth
-            label="Full Name (EN)"
+            label={t("Full Name (EN)")}
             name="full_name_en"
             value={formik.values.full_name_en}
             onChange={formik.handleChange}
@@ -189,7 +190,7 @@ function RouteComponent() {
 
           <TextField
             fullWidth
-            label="ISU ID"
+            label={t("ISU ID")}
             name="isu_id"
             type="number"
             value={formik.values.isu_id || ""}
@@ -202,7 +203,7 @@ function RouteComponent() {
 
           <TextField
             fullWidth
-            label="Phone"
+            label={t("Phone")}
             name="phone"
             type="tel"
             value={formik.values.phone}
@@ -215,7 +216,7 @@ function RouteComponent() {
 
           <TextField
             fullWidth
-            label="Email"
+            label={t("Email")}
             name="email"
             type="email"
             value={formik.values.email}
@@ -229,11 +230,11 @@ function RouteComponent() {
           <Divider sx={{ my: 3 }} />
 
           <Typography variant="h6" gutterBottom>
-            Registration Details
+            {t("Registration Details")}
           </Typography>
 
           <FormControl fullWidth sx={{ mb: 3 }}>
-            <InputLabel id={positionId}>Desired Positions</InputLabel>
+            <InputLabel id={positionId}>{t("Desired Positions")}</InputLabel>
             <Select
               labelId={positionId}
               multiple
@@ -272,7 +273,7 @@ function RouteComponent() {
 
           <TextField
             fullWidth
-            label="ITMO Group"
+            label={t("ITMO Group")}
             name="itmo_group"
             value={formik.values.itmo_group}
             onChange={formik.handleChange}
@@ -286,7 +287,7 @@ function RouteComponent() {
 
           <TextField
             fullWidth
-            label="Comments"
+            label={t("Comments")}
             name="comments"
             multiline
             rows={4}
@@ -300,7 +301,7 @@ function RouteComponent() {
 
           <Box sx={{ display: "flex", gap: 2, justifyContent: "flex-end" }}>
             <Button onClick={() => navigate({ to: `/${yearId}` })}>
-              Cancel
+              {t("Cancel")}
             </Button>
             <Button
               type="submit"
@@ -315,13 +316,13 @@ function RouteComponent() {
                 saveMutation.isPending ? <CircularProgress size={20} /> : null
               }
             >
-              {saveMutation.isPending ? "Saving..." : "Submit"}
+              {saveMutation.isPending ? t("Saving...") : t("Submit")}
             </Button>
           </Box>
 
           {saveMutation.isSuccess && (
             <Alert severity="success" sx={{ mt: 2 }}>
-              Registration saved successfully!
+              {t("Registration saved successfully!")}
             </Alert>
           )}
 
@@ -335,12 +336,12 @@ function RouteComponent() {
                   size="small"
                   onClick={() => saveMutation.reset()}
                 >
-                  Dismiss
+                  {t("Dismiss")}
                 </Button>
               }
             >
               {saveMutation.error?.message ||
-                "Failed to save registration. Please try again."}
+                t("Failed to save registration. Please try again.")}
             </Alert>
           )}
         </form>

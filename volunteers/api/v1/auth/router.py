@@ -31,6 +31,7 @@ from volunteers.core.config import Config
 from volunteers.core.di import Container
 from volunteers.models import User
 from volunteers.schemas.user import UserIn, UserUpdate
+from volunteers.services.i18n import I18nService
 from volunteers.services.legacy_user import LegacyUserService
 from volunteers.services.user import UserService
 
@@ -43,6 +44,7 @@ async def register(
     request: RegistrationRequest,
     user_service: Annotated[UserService, Depends(Provide[Container.user_service])],
     config: Annotated[Config, Depends(Provide[Container.config])],
+    i18n: Annotated[I18nService, Depends(Provide[Container.i18n_service])],
 ) -> SuccessfulLoginResponse:
     if not verify_telegram_login(
         data=TelegramLoginData(
@@ -59,11 +61,11 @@ async def register(
         ),
     ):
         logger.info("Invalid Telegram login")
-        raise HTTPException(status_code=401, detail="Invalid Telegram login")
+        raise HTTPException(status_code=401, detail=i18n.translate("Invalid Telegram login"))
 
     if _ := await user_service.get_user_by_telegram_id(telegram_id=request.telegram_id):
         logger.warning("Detected an attempt to register an existing user again")
-        raise HTTPException(status_code=409, detail="User is already registered")
+        raise HTTPException(status_code=409, detail=i18n.translate("User is already registered"))
 
     user_in = UserIn(
         telegram_id=request.telegram_id,

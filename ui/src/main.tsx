@@ -14,6 +14,9 @@ import "./styles.css";
 import { observer } from "mobx-react-lite";
 import reportWebVitals from "./reportWebVitals.ts";
 
+// Initialize i18n
+import "./i18n";
+
 // Create a new router instance
 const router = createRouter({
   routeTree,

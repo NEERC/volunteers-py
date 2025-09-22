@@ -1,0 +1,21 @@
+{
+  "Something went wrong": "Something went wrong",
+  "Application form not found": "Application form not found",
+  "Year not found": "Year not found",
+  "User not found": "User not found",
+  "Invalid Telegram login": "Invalid Telegram login",
+  "User is already registered": "User is already registered",
+  "Year is not open for registration": "Year is not open for registration",
+  "Invalid email": "Invalid email",
+  "Email is required": "Email is required",
+  "Password is required": "Password is required",
+  "First name on Russian is required": "First name on Russian is required",
+  "Last name on Russian is required": "Last name on Russian is required",
+  "Full name in English is required": "Full name in English is required",
+  "Phone is required": "Phone is required",
+  "Please select at least one position": "Please select at least one position",
+  "Required": "Required",
+  "Invalid email format": "Invalid email format",
+  "Year": "Год",
+  "English": "English"
+}

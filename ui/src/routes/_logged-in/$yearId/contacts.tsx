@@ -23,6 +23,7 @@ import {
 } from "@tanstack/react-table";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import { useRef, useState } from "react";
+import { useTranslation } from "react-i18next";
 import type { UserListItem } from "@/client/types.gen";
 import { useUsersList } from "@/data/use-admin";
 
@@ -31,6 +32,7 @@ export const Route = createFileRoute("/_logged-in/$yearId/contacts")({
 });
 
 function RouteComponent() {
+  const { t } = useTranslation();
   const { yearId } = Route.useParams();
   const { data, isLoading, error } = useUsersList(yearId);
 
@@ -42,7 +44,7 @@ function RouteComponent() {
   const columns: ColumnDef<UserListItem>[] = [
     {
       id: "name_ru",
-      header: "Name (Russian)",
+      header: t("Name (Russian)"),
       accessorFn: (row) =>
         `${row.last_name_ru} ${row.first_name_ru}${row.patronymic_ru ? ` ${row.patronymic_ru}` : ""}`,
       cell: (info) => (
@@ -53,7 +55,7 @@ function RouteComponent() {
     },
     {
       id: "name_en",
-      header: "Name (English)",
+      header: t("Name (English)"),
       accessorKey: "full_name_en",
       cell: (info) => (
         <Typography variant="body2" fontSize="0.875rem">
@@ -63,7 +65,7 @@ function RouteComponent() {
     },
     {
       id: "group",
-      header: "Group",
+      header: t("Group"),
       accessorKey: "itmo_group",
       cell: (info) => {
         const group = info.getValue() as string | null;
@@ -87,7 +89,7 @@ function RouteComponent() {
     },
     {
       id: "email",
-      header: "Email",
+      header: t("Email"),
       accessorKey: "email",
       cell: (info) => {
         const email = info.getValue() as string | null;
@@ -119,7 +121,7 @@ function RouteComponent() {
     },
     {
       id: "phone",
-      header: "Phone",
+      header: t("Phone"),
       accessorKey: "phone",
       cell: (info) => {
         const phone = info.getValue() as string | null;
@@ -151,7 +153,7 @@ function RouteComponent() {
     },
     {
       id: "telegram",
-      header: "Telegram",
+      header: t("Telegram"),
       accessorKey: "telegram_username",
       cell: (info) => {
         const username = info.getValue() as string | null;
@@ -183,13 +185,13 @@ function RouteComponent() {
     },
     {
       id: "status",
-      header: "Status",
+      header: t("Status"),
       accessorKey: "is_registered",
       cell: (info) => {
         const isRegistered = info.getValue() as boolean;
         return (
           <Chip
-            label={isRegistered ? "Registered" : "Not Registered"}
+            label={isRegistered ? t("Registered") : t("Not Registered")}
             size="small"
             color={isRegistered ? "success" : "default"}
             variant={isRegistered ? "filled" : "outlined"}
@@ -258,16 +260,16 @@ function RouteComponent() {
       }}
     >
       <Typography variant="h5" gutterBottom>
-        Contacts
+        {t("Contacts")}
       </Typography>
       <Typography variant="body2" color="text.secondary" gutterBottom>
-        List of all users and their registration status for this year
+        {t("List of all users and their registration status for this year")}
       </Typography>
 
       {/* Search and filters */}
       <Box sx={{ mt: 1.5, mb: 1.5 }}>
         <TextField
-          placeholder="Search users..."
+          placeholder={t("Search users...")}
           value={globalFilter}
           onChange={(e) => setGlobalFilter(e.target.value)}
           InputProps={{
@@ -412,7 +414,7 @@ function RouteComponent() {
       {users.length === 0 && (
         <Box textAlign="center" py={4}>
           <Typography variant="body1" color="text.secondary">
-            No users found
+            {t("No users found")}
           </Typography>
         </Box>
       )}
