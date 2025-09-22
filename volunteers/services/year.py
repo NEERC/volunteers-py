@@ -48,7 +48,7 @@ class AssessmentNotFound(DomainError):
 class YearService(BaseService):
     async def get_years(self) -> list[Year]:
         async with self.session_scope() as session:
-            result = await session.execute(select(Year))
+            result = await session.execute(select(Year).order_by(Year.id))
             return list(result.scalars().all())
 
     async def get_year_by_year_id(self, year_id: int) -> Year | None:
@@ -56,15 +56,19 @@ class YearService(BaseService):
             result = await session.execute(select(Year).where(Year.id == year_id))
             return result.scalar_one_or_none()
 
-    async def get_positions_by_year_id(self, year_id: int) -> set[Position]:
+    async def get_positions_by_year_id(self, year_id: int) -> list[Position]:
         async with self.session_scope() as session:
-            result = await session.execute(select(Position).where(Position.year_id == year_id))
-            return set(result.scalars().all())
+            result = await session.execute(
+                select(Position).where(Position.year_id == year_id).order_by(Position.id)
+            )
+            return list(result.scalars().all())
 
-    async def get_days_by_year_id(self, year_id: int) -> set[Day]:
+    async def get_days_by_year_id(self, year_id: int) -> list[Day]:
         async with self.session_scope() as session:
-            result = await session.execute(select(Day).where(Day.year_id == year_id))
-            return set(result.scalars().all())
+            result = await session.execute(
+                select(Day).where(Day.year_id == year_id).order_by(Day.id)
+            )
+            return list(result.scalars().all())
 
     async def get_form_by_year_id_and_user_id(
         self, year_id: int, user_id: int

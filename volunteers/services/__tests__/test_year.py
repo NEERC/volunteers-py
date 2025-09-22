@@ -73,8 +73,8 @@ async def test_get_positions_by_year_id(year_service: YearService) -> None:
     mock_session: MagicMock = MagicMock()
     mock_session.execute = AsyncMock(return_value=mock_result)
     with patch.object(year_service, "session_scope", return_value=make_async_cm(mock_session)):
-        positions: set[Position] = await year_service.get_positions_by_year_id(4)
-        assert positions == set(dummy_positions)
+        positions: list[Position] = await year_service.get_positions_by_year_id(4)
+        assert positions == dummy_positions
 
 
 @pytest.mark.asyncio
@@ -85,8 +85,8 @@ async def test_get_days_by_year_id(year_service: YearService) -> None:
     mock_session: MagicMock = MagicMock()
     mock_session.execute = AsyncMock(return_value=mock_result)
     with patch.object(year_service, "session_scope", return_value=make_async_cm(mock_session)):
-        days: set[Day] = await year_service.get_days_by_year_id(3)
-        assert days == set(dummy_days)
+        days: list[Day] = await year_service.get_days_by_year_id(3)
+        assert days == dummy_days
 
 
 @pytest.mark.asyncio
@@ -104,7 +104,7 @@ async def test_get_form_by_year_id_and_user_id(year_service: YearService) -> Non
 @pytest.mark.asyncio
 async def test_create_form(year_service: YearService) -> None:
     form_data: ApplicationFormIn = ApplicationFormIn(
-        year_id=1, user_id=2, itmo_group="A", comments="test", desired_positions_ids=[7, 9]
+        year_id=1, user_id=2, itmo_group="A", comments="test", desired_positions_ids={7, 9}
     )
     mock_session: MagicMock = MagicMock()
     mock_session.add = MagicMock()
@@ -120,7 +120,7 @@ async def test_create_form(year_service: YearService) -> None:
 @pytest.mark.asyncio
 async def test_update_form_success(year_service: YearService) -> None:
     form_data: ApplicationFormIn = ApplicationFormIn(
-        year_id=1, user_id=2, itmo_group="G2", comments="updated", desired_positions_ids=[4, 5]
+        year_id=1, user_id=2, itmo_group="G2", comments="updated", desired_positions_ids={4, 5}
     )
     dummy_form: ApplicationForm = ApplicationForm(
         id=100, year_id=1, user_id=2, itmo_group="A", comments="old"
@@ -144,7 +144,7 @@ async def test_update_form_success(year_service: YearService) -> None:
 @pytest.mark.asyncio
 async def test_update_form_not_found(year_service: YearService) -> None:
     form_data: ApplicationFormIn = ApplicationFormIn(
-        year_id=1, user_id=2, itmo_group="G2", comments="updated", desired_positions_ids=[4, 5]
+        year_id=1, user_id=2, itmo_group="G2", comments="updated", desired_positions_ids={4, 5}
     )
     mock_result: MagicMock = MagicMock()
     mock_result.scalar_one_or_none.return_value = None
@@ -203,7 +203,7 @@ async def test_edit_year_by_year_id_not_found(year_service: YearService) -> None
 
 @pytest.mark.asyncio
 async def test_add_position(year_service: YearService) -> None:
-    position_in = PositionIn(year_id=1, name="Engineer")
+    position_in = PositionIn(year_id=1, name="Engineer", can_desire=True)
     mock_session = MagicMock()
     mock_session.add = MagicMock()
     mock_session.commit = AsyncMock()
@@ -217,7 +217,7 @@ async def test_add_position(year_service: YearService) -> None:
 
 @pytest.mark.asyncio
 async def test_edit_position_by_position_id_success(year_service: YearService) -> None:
-    position_edit = PositionEditIn(name="Manager")
+    position_edit = PositionEditIn(name="Manager", can_desire=False)
     dummy_position = Position(id=1, name="OldName")
     mock_result = MagicMock()
     mock_result.scalar_one_or_none.return_value = dummy_position
@@ -232,7 +232,7 @@ async def test_edit_position_by_position_id_success(year_service: YearService) -
 
 @pytest.mark.asyncio
 async def test_edit_position_by_position_id_not_found(year_service: YearService) -> None:
-    position_edit = PositionEditIn(name="Manager")
+    position_edit = PositionEditIn(name="Manager", can_desire=False)
     mock_result = MagicMock()
     mock_result.scalar_one_or_none.return_value = None
     mock_session = MagicMock()

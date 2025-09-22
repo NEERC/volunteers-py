@@ -71,7 +71,7 @@ async def get_form_year(
         ],
         desired_positions=[
             PositionOut(position_id=p.id, year_id=p.year_id, name=p.name, can_desire=p.can_desire)
-            for p in form.desired_positions
+            for p in sorted(form.desired_positions, key=lambda x: x.id)
         ]
         if form
         else [],

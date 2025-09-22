@@ -75,9 +75,9 @@ class UserService(BaseService):
         Returns a list of tuples: (user, is_registered, itmo_group)
         """
         async with self.session_scope() as session:
-            # Get all users with their application forms
+            # Get all users with their application forms, ordered by id
             result = await session.execute(
-                select(User).options(selectinload(User.application_forms))
+                select(User).options(selectinload(User.application_forms)).order_by(User.id)
             )
             all_users = result.scalars().all()
 
