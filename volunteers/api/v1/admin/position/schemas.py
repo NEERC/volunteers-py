@@ -7,6 +7,7 @@ class AddPositionRequest(BaseModel):
     year_id: int
     name: str
     can_desire: bool = False
+    has_halls: bool = False
 
 
 class AddPositionResponse(BaseSuccessResponse):
@@ -15,4 +16,5 @@ class AddPositionResponse(BaseSuccessResponse):
 
 class EditPositionRequest(BaseModel):
     name: str | None = None
-    can_desire: bool = False
+    can_desire: bool | None = None
+    has_halls: bool | None = None

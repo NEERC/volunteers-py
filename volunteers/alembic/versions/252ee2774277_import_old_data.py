@@ -12,7 +12,7 @@ from alembic import op
 
 # revision identifiers, used by Alembic.
 revision: str = "252ee2774277"
-down_revision: str | None = "d0b6e64e702c"
+down_revision: str | None = "74464f9f93c5"
 branch_labels: str | Sequence[str] | None = None
 depends_on: str | Sequence[str] | None = None
 
@@ -27,6 +27,7 @@ def upgrade() -> None:
     _migrate_years()
     _migrate_users()
     _migrate_days()
+    _migrate_halls()
     _migrate_positions()
     _migrate_application_forms()
     _migrate_user_days()
@@ -161,6 +162,43 @@ def _migrate_days() -> None:
     """)
 
 
+def _migrate_halls() -> None:
+    """Migrate hall data from volunteers schema to new schema."""
+    # Create mapping table for old_id -> new_id
+    op.execute("""
+        CREATE TEMPORARY TABLE hall_id_mapping (
+            old_id INTEGER,
+            new_id INTEGER
+        )
+    """)
+
+    # Insert halls with auto-generated IDs and create mapping
+    op.execute("""
+        INSERT INTO halls (year_id, name, description)
+        SELECT
+            yim.new_id as year_id,
+            h.name,
+            COALESCE(h.description, '') as description
+        FROM volunteers.hall h
+        JOIN year_id_mapping yim ON h.year_id = yim.old_id
+        WHERE h.year_id IS NOT NULL
+        ORDER BY h.id
+    """)
+
+    # Create mapping between old and new IDs
+    op.execute("""
+        INSERT INTO hall_id_mapping (old_id, new_id)
+        SELECT
+            h.id as old_id,
+            nh.id as new_id
+        FROM volunteers.hall h
+        JOIN year_id_mapping yim ON h.year_id = yim.old_id
+        JOIN halls nh ON nh.year_id = yim.new_id AND nh.name = h.name
+        WHERE h.year_id IS NOT NULL
+        ORDER BY h.id
+    """)
+
+
 def _migrate_application_forms() -> None:
     """Migrate application form data from volunteers schema to new schema."""
     # Create mapping table for old_id -> new_id
@@ -228,7 +266,7 @@ def _migrate_user_days() -> None:
 
     # Insert user days with auto-generated IDs and create mapping
     op.execute("""
-        INSERT INTO user_days (application_form_id, day_id, information, attendance)
+        INSERT INTO user_days (application_form_id, day_id, information, attendance, position_id, hall_id)
         SELECT
             afim.new_id as application_form_id,
             dim.new_id as day_id,
@@ -239,10 +277,14 @@ def _migrate_user_days() -> None:
                 WHEN ud.attendance = 'late' THEN 'LATE'::attendance_enum
                 WHEN ud.attendance = 'sick' THEN 'SICK'::attendance_enum
                 ELSE 'UNKNOWN'::attendance_enum
-            END as attendance
+            END as attendance,
+            pim.new_id as position_id,
+            him.new_id as hall_id
         FROM volunteers.user_day ud
         JOIN application_form_id_mapping afim ON ud.user_year = afim.old_id
         JOIN day_id_mapping dim ON ud.day = dim.old_id
+        JOIN position_id_mapping pim ON ud.position = pim.old_id
+        LEFT JOIN hall_id_mapping him ON ud.hall_id = him.old_id
         WHERE ud.user_year IS NOT NULL AND ud.day IS NOT NULL
         ORDER BY ud.id
     """)
@@ -290,7 +332,7 @@ def _migrate_positions() -> None:
 
     # Insert positions with auto-generated IDs and create mapping
     op.execute("""
-        INSERT INTO positions (year_id, name, can_desire)
+        INSERT INTO positions (year_id, name, can_desire, has_halls)
         SELECT
             yim.new_id as year_id,
             CASE
@@ -307,7 +349,8 @@ def _migrate_positions() -> None:
                 ) THEN pv.name || ' (ID: ' || pv.id || ')'
                 ELSE pv.name
             END as name,
-            pv.in_form as can_desire
+            pv.in_form as can_desire,
+            true as has_halls
         FROM volunteers.position_value pv
         JOIN volunteers.year y ON pv.year_id = y.id
         JOIN year_id_mapping yim ON pv.year_id = yim.old_id
@@ -353,6 +396,7 @@ def downgrade() -> None:
     op.execute("DELETE FROM application_form_position_association")
     op.execute("DELETE FROM application_forms")
     op.execute("DELETE FROM days")
+    op.execute("DELETE FROM halls")
     op.execute("DELETE FROM positions")
     op.execute("DELETE FROM legacy_users")
     op.execute("DELETE FROM users")

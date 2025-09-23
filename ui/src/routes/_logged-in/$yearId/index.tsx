@@ -1,4 +1,6 @@
+import { Box, Paper, Typography } from "@mui/material";
 import { createFileRoute } from "@tanstack/react-router";
+import { useTranslation } from "react-i18next";
 import { yearsQueryOptions } from "@/data/use-years";
 
 export const Route = createFileRoute("/_logged-in/$yearId/")({
@@ -14,6 +16,12 @@ export const Route = createFileRoute("/_logged-in/$yearId/")({
 });
 
 function RouteComponent() {
-  const { yearId } = Route.useParams();
-  return <div>Hello "/_logged-in/$yearId/"! {yearId}</div>;
+  const { t } = useTranslation();
+  return (
+    <Box sx={{ p: 2 }}>
+      <Typography variant="h5" component="div" gutterBottom>
+        {t("Use the sidebar to navigate to the desired page.")}
+      </Typography>
+    </Box>
+  );
 }

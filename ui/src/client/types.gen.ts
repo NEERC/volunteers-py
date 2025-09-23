@@ -22,10 +22,22 @@ export type AddDayResponse = {
     day_id: number;
 };
 
+export type AddHallRequest = {
+    year_id: number;
+    name: string;
+    description?: string | null;
+};
+
+export type AddHallResponse = {
+    success?: true;
+    hall_id: number;
+};
+
 export type AddPositionRequest = {
     year_id: number;
     name: string;
     can_desire?: boolean;
+    has_halls?: boolean;
 };
 
 export type AddPositionResponse = {
@@ -38,6 +50,8 @@ export type AddUserDayRequest = {
     day_id: number;
     information: string;
     attendance?: Attendance;
+    position_id?: number | null;
+    hall_id?: number | null;
 };
 
 export type AddUserDayResponse = {
@@ -70,6 +84,35 @@ export type ApplicationFormYearSavedResponse = {
     open_for_registration: boolean;
 };
 
+export type AssignmentItem = {
+    user_day_id: number;
+    user_id: number;
+    application_form_id: number;
+    first_name_ru: string;
+    last_name_ru: string;
+    patronymic_ru: string | null;
+    full_name_en: string;
+    isu_id: number | null;
+    phone: string | null;
+    email: string | null;
+    telegram_username: string | null;
+    itmo_group: string | null;
+    comments: string;
+    day_id: number;
+    day_name: string;
+    position: PositionOut | null;
+    hall_id: number | null;
+    hall_name: string | null;
+    information: string;
+    attendance: string;
+    created_at: string;
+    updated_at: string;
+};
+
+export type AssignmentsResponse = {
+    assignments: Array<AssignmentItem>;
+};
+
 export type Attendance = 'yes' | 'no' | 'late' | 'sick' | 'unknown';
 
 export type DayOut = {
@@ -89,14 +132,22 @@ export type EditDayRequest = {
     information?: string | null;
 };
 
+export type EditHallRequest = {
+    name?: string | null;
+    description?: string | null;
+};
+
 export type EditPositionRequest = {
     name?: string | null;
-    can_desire?: boolean;
+    can_desire?: boolean | null;
+    has_halls?: boolean | null;
 };
 
 export type EditUserDayRequest = {
     information?: string | null;
     attendance?: Attendance | null;
+    position_id?: number | null;
+    hall_id?: number | null;
 };
 
 export type EditYearRequest = {
@@ -113,15 +164,45 @@ export type HttpValidationError = {
     detail?: Array<ValidationError>;
 };
 
+export type HallOut = {
+    year_id: number;
+    name: string;
+    description?: string | null;
+    hall_id: number;
+};
+
 export type PositionOut = {
     year_id: number;
     name: string;
     can_desire: boolean;
+    has_halls: boolean;
     position_id: number;
 };
 
 export type RefreshTokenRequest = {
     refresh_token: string;
+};
+
+export type RegistrationFormItem = {
+    form_id: number;
+    user_id: number;
+    first_name_ru: string;
+    last_name_ru: string;
+    patronymic_ru: string | null;
+    full_name_en: string;
+    isu_id: number | null;
+    phone: string | null;
+    email: string | null;
+    telegram_username: string | null;
+    itmo_group: string | null;
+    comments: string;
+    desired_positions: Array<PositionOut>;
+    created_at: string;
+    updated_at: string;
+};
+
+export type RegistrationFormsResponse = {
+    forms: Array<RegistrationFormItem>;
 };
 
 export type RegistrationRequest = {
@@ -336,6 +417,87 @@ export type EditDayApiV1AdminDayDayIdEditPostResponses = {
     200: unknown;
 };
 
+export type AddHallApiV1AdminHallAddPostData = {
+    body: AddHallRequest;
+    path?: never;
+    query?: never;
+    url: '/api/v1/admin/hall/add';
+};
+
+export type AddHallApiV1AdminHallAddPostErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type AddHallApiV1AdminHallAddPostError = AddHallApiV1AdminHallAddPostErrors[keyof AddHallApiV1AdminHallAddPostErrors];
+
+export type AddHallApiV1AdminHallAddPostResponses = {
+    /**
+     * Successful Response
+     */
+    200: AddHallResponse;
+    /**
+     * Returned when hall successfully added
+     */
+    201: AddHallResponse;
+};
+
+export type AddHallApiV1AdminHallAddPostResponse = AddHallApiV1AdminHallAddPostResponses[keyof AddHallApiV1AdminHallAddPostResponses];
+
+export type EditHallApiV1AdminHallHallIdEditPostData = {
+    body: EditHallRequest;
+    path: {
+        hall_id: number;
+    };
+    query?: never;
+    url: '/api/v1/admin/hall/{hall_id}/edit';
+};
+
+export type EditHallApiV1AdminHallHallIdEditPostErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type EditHallApiV1AdminHallHallIdEditPostError = EditHallApiV1AdminHallHallIdEditPostErrors[keyof EditHallApiV1AdminHallHallIdEditPostErrors];
+
+export type EditHallApiV1AdminHallHallIdEditPostResponses = {
+    /**
+     * Successful Response
+     */
+    200: unknown;
+};
+
+export type GetYearHallsApiV1AdminHallYearYearIdGetData = {
+    body?: never;
+    path: {
+        year_id: number;
+    };
+    query?: never;
+    url: '/api/v1/admin/hall/year/{year_id}';
+};
+
+export type GetYearHallsApiV1AdminHallYearYearIdGetErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type GetYearHallsApiV1AdminHallYearYearIdGetError = GetYearHallsApiV1AdminHallYearYearIdGetErrors[keyof GetYearHallsApiV1AdminHallYearYearIdGetErrors];
+
+export type GetYearHallsApiV1AdminHallYearYearIdGetResponses = {
+    /**
+     * Successful Response
+     */
+    200: Array<HallOut>;
+};
+
+export type GetYearHallsApiV1AdminHallYearYearIdGetResponse = GetYearHallsApiV1AdminHallYearYearIdGetResponses[keyof GetYearHallsApiV1AdminHallYearYearIdGetResponses];
+
 export type AddPositionApiV1AdminPositionAddPostData = {
     body: AddPositionRequest;
     path?: never;
@@ -444,6 +606,60 @@ export type EditPositionApiV1AdminUserDayUserDayIdEditPostResponses = {
     200: unknown;
 };
 
+export type DeleteUserDayApiV1AdminUserDayUserDayIdDeleteData = {
+    body?: never;
+    path: {
+        user_day_id: number;
+    };
+    query?: never;
+    url: '/api/v1/admin/user-day/{user_day_id}';
+};
+
+export type DeleteUserDayApiV1AdminUserDayUserDayIdDeleteErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type DeleteUserDayApiV1AdminUserDayUserDayIdDeleteError = DeleteUserDayApiV1AdminUserDayUserDayIdDeleteErrors[keyof DeleteUserDayApiV1AdminUserDayUserDayIdDeleteErrors];
+
+export type DeleteUserDayApiV1AdminUserDayUserDayIdDeleteResponses = {
+    /**
+     * Successful Response
+     */
+    204: void;
+};
+
+export type DeleteUserDayApiV1AdminUserDayUserDayIdDeleteResponse = DeleteUserDayApiV1AdminUserDayUserDayIdDeleteResponses[keyof DeleteUserDayApiV1AdminUserDayUserDayIdDeleteResponses];
+
+export type GetDayAssignmentsApiV1AdminUserDayDayDayIdAssignmentsGetData = {
+    body?: never;
+    path: {
+        day_id: number;
+    };
+    query?: never;
+    url: '/api/v1/admin/user-day/day/{day_id}/assignments';
+};
+
+export type GetDayAssignmentsApiV1AdminUserDayDayDayIdAssignmentsGetErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type GetDayAssignmentsApiV1AdminUserDayDayDayIdAssignmentsGetError = GetDayAssignmentsApiV1AdminUserDayDayDayIdAssignmentsGetErrors[keyof GetDayAssignmentsApiV1AdminUserDayDayDayIdAssignmentsGetErrors];
+
+export type GetDayAssignmentsApiV1AdminUserDayDayDayIdAssignmentsGetResponses = {
+    /**
+     * Successful Response
+     */
+    200: AssignmentsResponse;
+};
+
+export type GetDayAssignmentsApiV1AdminUserDayDayDayIdAssignmentsGetResponse = GetDayAssignmentsApiV1AdminUserDayDayDayIdAssignmentsGetResponses[keyof GetDayAssignmentsApiV1AdminUserDayDayDayIdAssignmentsGetResponses];
+
 export type AddYearApiV1AdminYearAddPostData = {
     body: AddYearRequest;
     path?: never;
@@ -551,6 +767,33 @@ export type GetYearPositionsApiV1AdminYearYearIdPositionsGetResponses = {
 };
 
 export type GetYearPositionsApiV1AdminYearYearIdPositionsGetResponse = GetYearPositionsApiV1AdminYearYearIdPositionsGetResponses[keyof GetYearPositionsApiV1AdminYearYearIdPositionsGetResponses];
+
+export type GetRegistrationFormsApiV1AdminYearYearIdRegistrationFormsGetData = {
+    body?: never;
+    path: {
+        year_id: number;
+    };
+    query?: never;
+    url: '/api/v1/admin/year/{year_id}/registration-forms';
+};
+
+export type GetRegistrationFormsApiV1AdminYearYearIdRegistrationFormsGetErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type GetRegistrationFormsApiV1AdminYearYearIdRegistrationFormsGetError = GetRegistrationFormsApiV1AdminYearYearIdRegistrationFormsGetErrors[keyof GetRegistrationFormsApiV1AdminYearYearIdRegistrationFormsGetErrors];
+
+export type GetRegistrationFormsApiV1AdminYearYearIdRegistrationFormsGetResponses = {
+    /**
+     * Successful Response
+     */
+    200: RegistrationFormsResponse;
+};
+
+export type GetRegistrationFormsApiV1AdminYearYearIdRegistrationFormsGetResponse = GetRegistrationFormsApiV1AdminYearYearIdRegistrationFormsGetResponses[keyof GetRegistrationFormsApiV1AdminYearYearIdRegistrationFormsGetResponses];
 
 export type RegisterApiV1AuthTelegramRegisterPostData = {
     body: RegistrationRequest;

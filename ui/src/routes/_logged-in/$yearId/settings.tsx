@@ -25,11 +25,14 @@ import {
 import { createFileRoute, redirect } from "@tanstack/react-router";
 import React, { useState } from "react";
 import { useTranslation } from "react-i18next";
-import type { PositionOut } from "@/client/types.gen";
+import type { HallOut, PositionOut } from "@/client/types.gen";
 import {
+  useAddHall,
   useAddPosition,
+  useEditHall,
   useEditPosition,
   useEditYear,
+  useYearHalls,
   useYearPositions,
   useYears,
 } from "@/data";
@@ -59,6 +62,17 @@ function RouteComponent() {
   const [editPositionName, setEditPositionName] = useState("");
   const [newPositionCanDesire, setNewPositionCanDesire] = useState(false);
   const [editPositionCanDesire, setEditPositionCanDesire] = useState(false);
+  const [newPositionHasHalls, setNewPositionHasHalls] = useState(false);
+  const [editPositionHasHalls, setEditPositionHasHalls] = useState(false);
+
+  // Hall management state
+  const [isAddHallDialogOpen, setIsAddHallDialogOpen] = useState(false);
+  const [isEditHallDialogOpen, setIsEditHallDialogOpen] = useState(false);
+  const [editingHall, setEditingHall] = useState<HallOut | null>(null);
+  const [newHallName, setNewHallName] = useState("");
+  const [editHallName, setEditHallName] = useState("");
+  const [newHallDescription, setNewHallDescription] = useState("");
+  const [editHallDescription, setEditHallDescription] = useState("");
 
   // Year settings state
   const [yearName, setYearName] = useState("");
@@ -67,6 +81,9 @@ function RouteComponent() {
 
   // Fetch all positions for admin (including non-desirable ones)
   const { data: positions, isLoading } = useYearPositions(yearId);
+
+  // Fetch all halls for admin
+  const { data: halls } = useYearHalls(yearId);
 
   // Fetch years data to get current year info
   const { data: yearsData } = useYears();
@@ -79,6 +96,12 @@ function RouteComponent() {
 
   // Edit position mutation
   const editPositionMutation = useEditPosition(yearId);
+
+  // Add hall mutation
+  const addHallMutation = useAddHall();
+
+  // Edit hall mutation
+  const editHallMutation = useEditHall();
 
   // Edit year mutation
   const editYearMutation = useEditYear();
@@ -127,12 +150,14 @@ function RouteComponent() {
           year_id: Number(yearId),
           name: newPositionName.trim(),
           can_desire: newPositionCanDesire,
+          has_halls: newPositionHasHalls,
         },
         {
           onSuccess: () => {
             setIsAddDialogOpen(false);
             setNewPositionName("");
             setNewPositionCanDesire(false);
+            setNewPositionHasHalls(false);
           },
         },
       );
@@ -148,6 +173,7 @@ function RouteComponent() {
           data: {
             name: editPositionName.trim(),
             can_desire: editPositionCanDesire,
+            has_halls: editPositionHasHalls,
           },
         },
         {
@@ -156,6 +182,7 @@ function RouteComponent() {
             setEditingPosition(null);
             setEditPositionName("");
             setEditPositionCanDesire(false);
+            setEditPositionHasHalls(false);
           },
         },
       );
@@ -166,7 +193,59 @@ function RouteComponent() {
     setEditingPosition(position);
     setEditPositionName(position.name);
     setEditPositionCanDesire(position.can_desire);
+    setEditPositionHasHalls(position.has_halls);
     setIsEditDialogOpen(true);
+  };
+
+  // Hall management functions
+  const handleAddHall = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (newHallName.trim()) {
+      addHallMutation.mutate(
+        {
+          year_id: Number(yearId),
+          name: newHallName.trim(),
+          description: newHallDescription.trim() || null,
+        },
+        {
+          onSuccess: () => {
+            setIsAddHallDialogOpen(false);
+            setNewHallName("");
+            setNewHallDescription("");
+          },
+        },
+      );
+    }
+  };
+
+  const handleEditHall = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (editingHall && editHallName.trim()) {
+      editHallMutation.mutate(
+        {
+          hallId: editingHall.hall_id,
+          data: {
+            name: editHallName.trim(),
+            description: editHallDescription.trim() || null,
+          },
+        },
+        {
+          onSuccess: () => {
+            setIsEditHallDialogOpen(false);
+            setEditingHall(null);
+            setEditHallName("");
+            setEditHallDescription("");
+          },
+        },
+      );
+    }
+  };
+
+  const openEditHallDialog = (hall: HallOut) => {
+    setEditingHall(hall);
+    setEditHallName(hall.name);
+    setEditHallDescription(hall.description || "");
+    setIsEditHallDialogOpen(true);
   };
 
   const closeAddDialog = () => {
@@ -367,6 +446,64 @@ function RouteComponent() {
         )}
       </Paper>
 
+      {/* Halls Section */}
+      <Paper sx={{ p: 3, mb: 3 }}>
+        <Box
+          sx={{
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            mb: 2,
+          }}
+        >
+          <Typography variant="h6" component="h2">
+            {t("Halls")}
+          </Typography>
+          <Button
+            variant="contained"
+            startIcon={<AddIcon />}
+            onClick={() => setIsAddHallDialogOpen(true)}
+          >
+            {t("Add Hall")}
+          </Button>
+        </Box>
+
+        {halls && halls.length > 0 ? (
+          <List>
+            {halls.map((hall) => (
+              <ListItem
+                key={hall.hall_id}
+                sx={{
+                  border: "1px solid",
+                  borderColor: "divider",
+                  borderRadius: 1,
+                  mb: 1,
+                  "&:hover": {
+                    backgroundColor: "action.hover",
+                  },
+                }}
+              >
+                <ListItemText
+                  primary={hall.name}
+                  secondary={hall.description || t("No description")}
+                />
+                <IconButton
+                  onClick={() => openEditHallDialog(hall)}
+                  color="primary"
+                  size="small"
+                >
+                  <EditIcon />
+                </IconButton>
+              </ListItem>
+            ))}
+          </List>
+        ) : (
+          <Typography color="text.secondary" sx={{ fontStyle: "italic" }}>
+            {t("No halls found. Add your first hall to get started.")}
+          </Typography>
+        )}
+      </Paper>
+
       {/* Add Position Dialog */}
       <Dialog
         open={isAddDialogOpen}
@@ -398,6 +535,17 @@ function RouteComponent() {
                 />
               }
               label={t("Available for registration")}
+              sx={{ mt: 1 }}
+            />
+            <FormControlLabel
+              control={
+                <Checkbox
+                  checked={newPositionHasHalls}
+                  onChange={(e) => setNewPositionHasHalls(e.target.checked)}
+                  disabled={addPositionMutation.isPending}
+                />
+              }
+              label={t("Has halls")}
               sx={{ mt: 1 }}
             />
           </DialogContent>
@@ -456,6 +604,17 @@ function RouteComponent() {
               label={t("Available for registration")}
               sx={{ mt: 1 }}
             />
+            <FormControlLabel
+              control={
+                <Checkbox
+                  checked={editPositionHasHalls}
+                  onChange={(e) => setEditPositionHasHalls(e.target.checked)}
+                  disabled={editPositionMutation.isPending}
+                />
+              }
+              label={t("Has halls")}
+              sx={{ mt: 1 }}
+            />
           </DialogContent>
           <DialogActions>
             <Button
@@ -474,6 +633,112 @@ function RouteComponent() {
               {editPositionMutation.isPending
                 ? t("Saving...")
                 : t("Save Changes")}
+            </Button>
+          </DialogActions>
+        </form>
+      </Dialog>
+
+      {/* Add Hall Dialog */}
+      <Dialog
+        open={isAddHallDialogOpen}
+        onClose={() => setIsAddHallDialogOpen(false)}
+        maxWidth="sm"
+        fullWidth
+      >
+        <form onSubmit={handleAddHall}>
+          <DialogTitle>{t("Add New Hall")}</DialogTitle>
+          <DialogContent>
+            <TextField
+              autoFocus
+              margin="dense"
+              label={t("Hall Name")}
+              fullWidth
+              variant="outlined"
+              value={newHallName}
+              onChange={(e) => setNewHallName(e.target.value)}
+              error={addHallMutation.isError}
+              helperText={addHallMutation.error?.message}
+              disabled={addHallMutation.isPending}
+              required
+            />
+            <TextField
+              margin="dense"
+              label={t("Description")}
+              fullWidth
+              variant="outlined"
+              value={newHallDescription}
+              onChange={(e) => setNewHallDescription(e.target.value)}
+              multiline
+              rows={3}
+              disabled={addHallMutation.isPending}
+            />
+          </DialogContent>
+          <DialogActions>
+            <Button
+              onClick={() => setIsAddHallDialogOpen(false)}
+              disabled={addHallMutation.isPending}
+            >
+              {t("Cancel")}
+            </Button>
+            <Button
+              type="submit"
+              variant="contained"
+              disabled={!newHallName.trim() || addHallMutation.isPending}
+            >
+              {addHallMutation.isPending ? t("Adding...") : t("Add Hall")}
+            </Button>
+          </DialogActions>
+        </form>
+      </Dialog>
+
+      {/* Edit Hall Dialog */}
+      <Dialog
+        open={isEditHallDialogOpen}
+        onClose={() => setIsEditHallDialogOpen(false)}
+        maxWidth="sm"
+        fullWidth
+      >
+        <form onSubmit={handleEditHall}>
+          <DialogTitle>{t("Edit Hall")}</DialogTitle>
+          <DialogContent>
+            <TextField
+              autoFocus
+              margin="dense"
+              label={t("Hall Name")}
+              fullWidth
+              variant="outlined"
+              value={editHallName}
+              onChange={(e) => setEditHallName(e.target.value)}
+              error={editHallMutation.isError}
+              helperText={editHallMutation.error?.message}
+              disabled={editHallMutation.isPending}
+              required
+            />
+            <TextField
+              margin="dense"
+              label={t("Description")}
+              fullWidth
+              variant="outlined"
+              value={editHallDescription}
+              onChange={(e) => setEditHallDescription(e.target.value)}
+              multiline
+              rows={3}
+              disabled={editHallMutation.isPending}
+            />
+          </DialogContent>
+          <DialogActions>
+            <Button
+              onClick={() => setIsEditHallDialogOpen(false)}
+              disabled={editHallMutation.isPending}
+            >
+              {t("Cancel")}
+            </Button>
+            <Button
+              type="submit"
+              variant="contained"
+              disabled={!editHallName.trim() || editHallMutation.isPending}
+            >
+              {editHallMutation.isPending ? t("Saving...") : t("Save Changes")}
             </Button>
           </DialogActions>
         </form>

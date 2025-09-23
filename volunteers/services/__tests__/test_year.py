@@ -203,7 +203,7 @@ async def test_edit_year_by_year_id_not_found(year_service: YearService) -> None
 
 @pytest.mark.asyncio
 async def test_add_position(year_service: YearService) -> None:
-    position_in = PositionIn(year_id=1, name="Engineer", can_desire=True)
+    position_in = PositionIn(year_id=1, name="Engineer", can_desire=True, has_halls=True)
     mock_session = MagicMock()
     mock_session.add = MagicMock()
     mock_session.commit = AsyncMock()
@@ -217,7 +217,7 @@ async def test_add_position(year_service: YearService) -> None:
 
 @pytest.mark.asyncio
 async def test_edit_position_by_position_id_success(year_service: YearService) -> None:
-    position_edit = PositionEditIn(name="Manager", can_desire=False)
+    position_edit = PositionEditIn(name="Manager", can_desire=False, has_halls=True)
     dummy_position = Position(id=1, name="OldName")
     mock_result = MagicMock()
     mock_result.scalar_one_or_none.return_value = dummy_position
@@ -232,7 +232,7 @@ async def test_edit_position_by_position_id_success(year_service: YearService) -
 
 @pytest.mark.asyncio
 async def test_edit_position_by_position_id_not_found(year_service: YearService) -> None:
-    position_edit = PositionEditIn(name="Manager", can_desire=False)
+    position_edit = PositionEditIn(name="Manager", can_desire=False, has_halls=True)
     mock_result = MagicMock()
     mock_result.scalar_one_or_none.return_value = None
     mock_session = MagicMock()
@@ -309,8 +309,12 @@ async def test_add_user_day(year_service: YearService) -> None:
 
 @pytest.mark.asyncio
 async def test_edit_user_day_by_user_day_id_success(year_service: YearService) -> None:
-    user_day_edit = UserDayEditIn(information="updated", attendance=Attendance.NO)
-    dummy_user_day = UserDay(id=1, information="old", attendance=Attendance.YES)
+    user_day_edit = UserDayEditIn(
+        information="updated", attendance=Attendance.NO, position_id=1, hall_id=1
+    )
+    dummy_user_day = UserDay(
+        id=1, information="old", attendance=Attendance.YES, position_id=1, hall_id=1
+    )
     mock_result = MagicMock()
     mock_result.scalar_one_or_none.return_value = dummy_user_day
     mock_session = MagicMock()
@@ -325,7 +329,9 @@ async def test_edit_user_day_by_user_day_id_success(year_service: YearService) -
 
 @pytest.mark.asyncio
 async def test_edit_user_day_by_user_day_id_not_found(year_service: YearService) -> None:
-    user_day_edit = UserDayEditIn(information="nope", attendance=Attendance.NO)
+    user_day_edit = UserDayEditIn(
+        information="nope", attendance=Attendance.NO, position_id=1, hall_id=1
+    )
     mock_result = MagicMock()
     mock_result.scalar_one_or_none.return_value = None
     mock_session = MagicMock()

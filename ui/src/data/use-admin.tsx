@@ -2,25 +2,33 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   addAssessmentApiV1AdminAssessmentAddPost,
   addDayApiV1AdminDayAddPost,
+  addHallApiV1AdminHallAddPost,
   addPositionApiV1AdminPositionAddPost,
   addUserDayApiV1AdminUserDayAddPost,
   addYearApiV1AdminYearAddPost,
+  deleteUserDayApiV1AdminUserDayUserDayIdDelete,
   editAssessmentApiV1AdminAssessmentAssessmentIdEditPost,
   editDayApiV1AdminDayDayIdEditPost,
+  editHallApiV1AdminHallHallIdEditPost,
   editPositionApiV1AdminPositionPositionIdEditPost,
   editPositionApiV1AdminUserDayUserDayIdEditPost,
   editYearApiV1AdminYearYearIdEditPost,
+  getDayAssignmentsApiV1AdminUserDayDayDayIdAssignmentsGet,
+  getRegistrationFormsApiV1AdminYearYearIdRegistrationFormsGet,
   getUsersListApiV1AdminYearYearIdUsersGet,
+  getYearHallsApiV1AdminHallYearYearIdGet,
   getYearPositionsApiV1AdminYearYearIdPositionsGet,
 } from "@/client";
 import type {
   AddAssessmentRequest,
   AddDayRequest,
+  AddHallRequest,
   AddPositionRequest,
   AddUserDayRequest,
   AddYearRequest,
   EditAssessmentRequest,
   EditDayRequest,
+  EditHallRequest,
   EditPositionRequest,
   EditUserDayRequest,
   EditYearRequest,
@@ -239,9 +247,13 @@ export const useAddUserDay = () => {
       });
       return response.data;
     },
-    onSuccess: () => {
+    onSuccess: (_, variables) => {
       queryClient.invalidateQueries({
         queryKey: queryKeys.admin.userDays.all(),
+      });
+      // Also invalidate assignments for the specific day
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.admin.assignments.day(variables.day_id),
       });
     },
   });
@@ -268,6 +280,33 @@ export const useEditUserDay = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({
         queryKey: queryKeys.admin.userDays.all(),
+      });
+      // Invalidate all assignment queries since we don't know which day this affects
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.admin.assignments.all(),
+      });
+    },
+  });
+};
+
+export const useDeleteUserDay = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (userDayId: string | number) => {
+      const response = await deleteUserDayApiV1AdminUserDayUserDayIdDelete({
+        path: { user_day_id: Number(userDayId) },
+        throwOnError: true,
+      });
+      return response.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.admin.userDays.all(),
+      });
+      // Invalidate all assignment queries since we don't know which day this affects
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.admin.assignments.all(),
       });
     },
   });
@@ -298,5 +337,86 @@ export const useYearPositions = (yearId: string | number) => {
       return response.data;
     },
     enabled: !!yearId,
+  });
+};
+
+export const useYearHalls = (yearId: string | number) => {
+  return useQuery({
+    queryKey: queryKeys.admin.halls.year(yearId),
+    queryFn: async () => {
+      const response = await getYearHallsApiV1AdminHallYearYearIdGet({
+        path: { year_id: Number(yearId) },
+        throwOnError: true,
+      });
+      return response.data;
+    },
+    enabled: !!yearId,
+  });
+};
+
+export const useAddHall = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (data: AddHallRequest) => {
+      const response = await addHallApiV1AdminHallAddPost({
+        body: data,
+        throwOnError: true,
+      });
+      return response.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.admin.halls.all(),
+      });
+    },
+  });
+};
+
+export const useEditHall = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (data: { hallId: number; data: EditHallRequest }) => {
+      const response = await editHallApiV1AdminHallHallIdEditPost({
+        path: { hall_id: data.hallId },
+        body: data.data,
+        throwOnError: true,
+      });
+      return response.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.admin.halls.all(),
+      });
+    },
+  });
+};
+
+export const useRegistrationForms = (yearId: string | number) => {
+  return useQuery({
+    queryKey: queryKeys.admin.registrationForms.year(yearId),
+    queryFn: async () => {
+      const response =
+        await getRegistrationFormsApiV1AdminYearYearIdRegistrationFormsGet({
+          path: { year_id: Number(yearId) },
+          throwOnError: true,
+        });
+      return response.data;
+    },
+    enabled: !!yearId,
+  });
+};
+
+export const useDayAssignments = (dayId: string | number) => {
+  return useQuery({
+    queryKey: queryKeys.admin.assignments.day(dayId),
+    queryFn: async () => {
+      const response =
+        await getDayAssignmentsApiV1AdminUserDayDayDayIdAssignmentsGet({
+          path: { day_id: Number(dayId) },
+          throwOnError: true,
+        });
+      return response.data;
+    },
+    enabled: !!dayId,
   });
 };

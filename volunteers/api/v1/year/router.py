@@ -62,7 +62,13 @@ async def get_form_year(
     return ApplicationFormYearSavedResponse(
         open_for_registration=year.open_for_registration,
         positions=[
-            PositionOut(position_id=p.id, year_id=p.year_id, name=p.name, can_desire=p.can_desire)
+            PositionOut(
+                position_id=p.id,
+                year_id=p.year_id,
+                name=p.name,
+                can_desire=p.can_desire,
+                has_halls=p.has_halls,
+            )
             for p in positions
             if p.can_desire
         ],
@@ -71,7 +77,13 @@ async def get_form_year(
             for d in days
         ],
         desired_positions=[
-            PositionOut(position_id=p.id, year_id=p.year_id, name=p.name, can_desire=p.can_desire)
+            PositionOut(
+                position_id=p.id,
+                year_id=p.year_id,
+                name=p.name,
+                can_desire=p.can_desire,
+                has_halls=p.has_halls,
+            )
             for p in sorted(form.desired_positions, key=lambda x: x.id)
         ]
         if form

@@ -7,10 +7,17 @@ from loguru import logger
 from volunteers.auth.deps import with_admin
 from volunteers.core.di import Container
 from volunteers.models import User
+from volunteers.schemas.position import PositionOut
 from volunteers.schemas.user_day import UserDayEditIn, UserDayIn
-from volunteers.services.year import YearService
+from volunteers.services.year import HallNotFound, PositionNotFound, YearService
 
-from .schemas import AddUserDayRequest, AddUserDayResponse, EditUserDayRequest
+from .schemas import (
+    AddUserDayRequest,
+    AddUserDayResponse,
+    AssignmentItem,
+    AssignmentsResponse,
+    EditUserDayRequest,
+)
 
 router = APIRouter(tags=["user-day"])
 
@@ -32,11 +39,20 @@ async def add_user_day(
     _: Annotated[User, Depends(with_admin)],
     year_service: Annotated[YearService, Depends(Provide[Container.year_service])],
 ) -> AddUserDayResponse:
+    position = await year_service.get_position_by_id(position_id=request.position_id)
+    if not position:
+        raise PositionNotFound()
+
+    if not position.has_halls and request.hall_id:
+        raise HallNotFound()
+
     user_day_in = UserDayIn(
         application_form_id=request.application_form_id,
         day_id=request.day_id,
         information=request.information,
         attendance=request.attendance,
+        position_id=request.position_id,
+        hall_id=request.hall_id,
     )
     user_day = await year_service.add_user_day(user_day_in=user_day_in)
     logger.info("Added user day")
@@ -53,8 +69,85 @@ async def edit_position(
     _: Annotated[User, Depends(with_admin)],
     year_service: Annotated[YearService, Depends(Provide[Container.year_service])],
 ) -> None:
-    user_day_edit_in = UserDayEditIn(information=request.information, attendance=request.attendance)
+    position = await year_service.get_position_by_id(position_id=request.position_id)
+    if not position:
+        raise PositionNotFound()
+
+    if not position.has_halls and request.hall_id:
+        raise HallNotFound()
+
+    user_day_edit_in = UserDayEditIn(
+        information=request.information,
+        attendance=request.attendance,
+        position_id=request.position_id,
+        hall_id=request.hall_id,
+    )
     await year_service.edit_user_day_by_user_day_id(
         user_day_id=user_day_id, user_day_edit_in=user_day_edit_in
     )
     logger.info("User day has been edited")
+
+
+@router.delete(
+    "/{user_day_id}",
+    status_code=status.HTTP_204_NO_CONTENT,
+    description="Delete a user day assignment",
+)
+@inject
+async def delete_user_day(
+    user_day_id: Annotated[int, Path(title="The ID of the user day")],
+    _: Annotated[User, Depends(with_admin)],
+    year_service: Annotated[YearService, Depends(Provide[Container.year_service])],
+) -> None:
+    await year_service.delete_user_day_by_user_day_id(user_day_id=user_day_id)
+    logger.info("User day has been deleted")
+
+
+@router.get(
+    "/day/{day_id}/assignments",
+    response_model=AssignmentsResponse,
+    description="Get all assignments for a day (admin only)",
+)
+@inject
+async def get_day_assignments(
+    day_id: Annotated[int, Path(title="The ID of the day")],
+    _: Annotated[User, Depends(with_admin)],
+    year_service: Annotated[YearService, Depends(Provide[Container.year_service])],
+) -> AssignmentsResponse:
+    assignments = await year_service.get_all_assignments_by_day_id(day_id=day_id)
+
+    assignment_items = [
+        AssignmentItem(
+            user_day_id=assignment.id,
+            user_id=assignment.application_form.user.id,
+            application_form_id=assignment.application_form.id,
+            first_name_ru=assignment.application_form.user.first_name_ru,
+            last_name_ru=assignment.application_form.user.last_name_ru,
+            patronymic_ru=assignment.application_form.user.patronymic_ru,
+            full_name_en=assignment.application_form.user.full_name_en,
+            isu_id=assignment.application_form.user.isu_id,
+            phone=assignment.application_form.user.phone,
+            email=assignment.application_form.user.email,
+            telegram_username=assignment.application_form.user.telegram_username,
+            itmo_group=assignment.application_form.itmo_group,
+            comments=assignment.application_form.comments,
+            day_id=assignment.day.id,
+            day_name=assignment.day.name,
+            position=PositionOut(
+                position_id=assignment.position.id,
+                year_id=assignment.position.year_id,
+                name=assignment.position.name,
+                can_desire=assignment.position.can_desire,
+                has_halls=assignment.position.has_halls,
+            ),
+            hall_id=assignment.hall.id if assignment.hall else None,
+            hall_name=assignment.hall.name if assignment.hall else None,
+            information=assignment.information,
+            attendance=assignment.attendance.value,
+            created_at=assignment.created_at.isoformat(),
+            updated_at=assignment.updated_at.isoformat(),
+        )
+        for assignment in assignments
+    ]
+
+    return AssignmentsResponse(assignments=assignment_items)

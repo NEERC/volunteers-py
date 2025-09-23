@@ -18,6 +18,7 @@ class Year(Base, TimestampMixin):
     )
 
     days: Mapped[set[Day]] = relationship(back_populates="year", cascade="all, delete-orphan")
+    halls: Mapped[set[Hall]] = relationship(back_populates="year", cascade="all, delete-orphan")
 
 
 class User(Base, TimestampMixin):
@@ -75,6 +76,11 @@ class Position(Base, TimestampMixin):
     year_id: Mapped[int] = mapped_column(ForeignKey("years.id"))
     name: Mapped[str] = mapped_column(String, unique=True)
     can_desire: Mapped[bool] = mapped_column(Boolean, default=False)
+    has_halls: Mapped[bool] = mapped_column(Boolean, default=False)
+
+    user_days: Mapped[set[UserDay]] = relationship(
+        back_populates="position", cascade="all, delete-orphan"
+    )
 
 
 class FormPositionAssociation(Base, TimestampMixin):
@@ -99,6 +105,21 @@ class Day(Base, TimestampMixin):
     )
 
 
+class Hall(Base, TimestampMixin):
+    __tablename__ = "halls"
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+
+    year_id: Mapped[int] = mapped_column(ForeignKey("years.id"))
+    year: Mapped[Year] = relationship(back_populates="halls")
+
+    name: Mapped[str] = mapped_column(String)
+    description: Mapped[str | None] = mapped_column(String, nullable=True)
+
+    user_days: Mapped[set[UserDay]] = relationship(
+        back_populates="hall", cascade="all, delete-orphan"
+    )
+
+
 class UserDay(Base, TimestampMixin):
     __tablename__ = "user_days"
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
@@ -108,6 +129,16 @@ class UserDay(Base, TimestampMixin):
 
     day_id: Mapped[int] = mapped_column(ForeignKey("days.id"))
     day: Mapped[Day] = relationship(back_populates="user_days")
+
+    __table_args__ = (
+        UniqueConstraint("application_form_id", "day_id", name="uq_user_day_application_form_day"),
+    )
+
+    position_id: Mapped[int] = mapped_column(ForeignKey("positions.id"))
+    position: Mapped[Position] = relationship(back_populates="user_days")
+
+    hall_id: Mapped[int | None] = mapped_column(ForeignKey("halls.id"), nullable=True)
+    hall: Mapped[Hall | None] = relationship(back_populates="user_days")
 
     information: Mapped[str] = mapped_column(String)
     attendance: Mapped[Attendance] = mapped_column(

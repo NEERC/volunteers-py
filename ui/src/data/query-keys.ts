@@ -56,6 +56,19 @@ export const queryKeys = {
         [...queryKeys.admin.positions.all(), "year", String(yearId)] as const,
     },
 
+    // Admin - Halls
+    halls: {
+      all: () => [...queryKeys.admin.all, "halls"] as const,
+      lists: () => [...queryKeys.admin.halls.all(), "list"] as const,
+      list: (filters: Record<string, unknown> = {}) =>
+        [...queryKeys.admin.halls.lists(), { filters }] as const,
+      details: () => [...queryKeys.admin.halls.all(), "detail"] as const,
+      detail: (id: string | number) =>
+        [...queryKeys.admin.halls.details(), id] as const,
+      year: (yearId: string | number) =>
+        [...queryKeys.admin.halls.all(), "year", String(yearId)] as const,
+    },
+
     // Admin - Assessments
     assessments: {
       all: () => [...queryKeys.admin.all, "assessments"] as const,
@@ -84,6 +97,31 @@ export const queryKeys = {
       lists: () => [...queryKeys.admin.users.all(), "list"] as const,
       list: (yearId: string | number, filters: Record<string, unknown> = {}) =>
         [...queryKeys.admin.users.lists(), { yearId, filters }] as const,
+    },
+
+    // Admin - Registration Forms
+    registrationForms: {
+      all: () => [...queryKeys.admin.all, "registrationForms"] as const,
+      lists: () =>
+        [...queryKeys.admin.registrationForms.all(), "list"] as const,
+      list: (filters: Record<string, unknown> = {}) =>
+        [...queryKeys.admin.registrationForms.lists(), { filters }] as const,
+      year: (yearId: string | number) =>
+        [
+          ...queryKeys.admin.registrationForms.all(),
+          "year",
+          String(yearId),
+        ] as const,
+    },
+
+    // Admin - Assignments
+    assignments: {
+      all: () => [...queryKeys.admin.all, "assignments"] as const,
+      lists: () => [...queryKeys.admin.assignments.all(), "list"] as const,
+      list: (filters: Record<string, unknown> = {}) =>
+        [...queryKeys.admin.assignments.lists(), { filters }] as const,
+      day: (dayId: string | number) =>
+        [...queryKeys.admin.assignments.all(), "day", String(dayId)] as const,
     },
   },
 

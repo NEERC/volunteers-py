@@ -60,8 +60,10 @@ volunteers/
 
 ## TODO:
 [X] Add more fields in the registration form and gray it out if user have already filled the form, allowing to edit it with a click of a button
-[ ] Telegram user migration mechanism
-[ ] Day Position assignment table
+[X] Telegram user migration mechanism
+[X] Day Position assignment table
+[ ] Experience in the assignment table
+[ ] Experiment with a sliding drawer for the users
 [ ] Scores
 [ ] Year specific positions should be copied from the previous year with theirs scores saved
 [ ] Diploma generation

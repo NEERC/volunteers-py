@@ -16,6 +16,8 @@ from .schemas import (
     AddYearRequest,
     AddYearResponse,
     EditYearRequest,
+    RegistrationFormItem,
+    RegistrationFormsResponse,
     UserListItem,
     UserListResponse,
 )
@@ -108,6 +110,58 @@ async def get_year_positions(
 ) -> list[PositionOut]:
     positions = await year_service.get_positions_by_year_id(year_id=year_id)
     return [
-        PositionOut(position_id=p.id, year_id=p.year_id, name=p.name, can_desire=p.can_desire)
+        PositionOut(
+            position_id=p.id,
+            year_id=p.year_id,
+            name=p.name,
+            can_desire=p.can_desire,
+            has_halls=p.has_halls,
+        )
         for p in positions
     ]
+
+
+@router.get(
+    "/{year_id}/registration-forms",
+    response_model=RegistrationFormsResponse,
+    description="Get all registration forms for a year (admin only)",
+)
+@inject
+async def get_registration_forms(
+    year_id: Annotated[int, Path(title="The ID of the year")],
+    _: Annotated[User, Depends(with_admin)],
+    year_service: Annotated[YearService, Depends(Provide[Container.year_service])],
+) -> RegistrationFormsResponse:
+    forms = await year_service.get_all_forms_by_year_id(year_id=year_id)
+
+    form_items = [
+        RegistrationFormItem(
+            form_id=form.id,
+            user_id=form.user.id,
+            first_name_ru=form.user.first_name_ru,
+            last_name_ru=form.user.last_name_ru,
+            patronymic_ru=form.user.patronymic_ru,
+            full_name_en=form.user.full_name_en,
+            isu_id=form.user.isu_id,
+            phone=form.user.phone,
+            email=form.user.email,
+            telegram_username=form.user.telegram_username,
+            itmo_group=form.itmo_group,
+            comments=form.comments,
+            desired_positions=[
+                PositionOut(
+                    position_id=p.id,
+                    year_id=p.year_id,
+                    name=p.name,
+                    can_desire=p.can_desire,
+                    has_halls=p.has_halls,
+                )
+                for p in form.desired_positions
+            ],
+            created_at=form.created_at.isoformat(),
+            updated_at=form.updated_at.isoformat(),
+        )
+        for form in forms
+    ]
+
+    return RegistrationFormsResponse(forms=form_items)
