@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
+  getDayAssignmentsApiV1YearYearIdDaysDayIdAssignmentsGet,
   getFormYearApiV1YearYearIdGet,
   saveFormYearApiV1YearYearIdPost,
   updateUserApiV1AuthUpdatePost,
@@ -84,4 +85,29 @@ export const useSaveRegistration = () => {
       authStore.fetchUser();
     },
   });
+};
+
+// Day assignments query options
+export const dayAssignmentsQueryOptions = (
+  yearId: string | number,
+  dayId: string | number,
+) => ({
+  queryKey: queryKeys.year.dayAssignments(yearId, dayId),
+  queryFn: async () => {
+    const response =
+      await getDayAssignmentsApiV1YearYearIdDaysDayIdAssignmentsGet({
+        path: { year_id: Number(yearId), day_id: Number(dayId) },
+        throwOnError: true,
+      });
+    return response.data;
+  },
+  enabled: !!yearId && !!dayId,
+});
+
+// Day assignments hook
+export const useUserDayAssignments = (
+  yearId: string | number,
+  dayId: string | number,
+) => {
+  return useQuery(dayAssignmentsQueryOptions(yearId, dayId));
 };

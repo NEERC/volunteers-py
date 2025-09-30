@@ -25,7 +25,7 @@ import { Route as LoggedInYearIdRegistrationImport } from './routes/_logged-in/$
 import { Route as LoggedInYearIdMedalsImport } from './routes/_logged-in/$yearId/medals'
 import { Route as LoggedInYearIdContactsImport } from './routes/_logged-in/$yearId/contacts'
 import { Route as LoggedInYearIdDaysCreateImport } from './routes/_logged-in/$yearId/days/create'
-import { Route as LoggedInYearIdDaysDayIdRouteImport } from './routes/_logged-in/$yearId/days/$dayId/route'
+import { Route as LoggedInYearIdDaysDayIdIndexImport } from './routes/_logged-in/$yearId/days/$dayId/index'
 import { Route as LoggedInYearIdDaysDayIdEditImport } from './routes/_logged-in/$yearId/days/$dayId/edit'
 
 // Create/Update Routes
@@ -115,18 +115,18 @@ const LoggedInYearIdDaysCreateRoute = LoggedInYearIdDaysCreateImport.update({
   getParentRoute: () => LoggedInYearIdRoute,
 } as any)
 
-const LoggedInYearIdDaysDayIdRouteRoute =
-  LoggedInYearIdDaysDayIdRouteImport.update({
-    id: '/days/$dayId',
-    path: '/days/$dayId',
+const LoggedInYearIdDaysDayIdIndexRoute =
+  LoggedInYearIdDaysDayIdIndexImport.update({
+    id: '/days/$dayId/',
+    path: '/days/$dayId/',
     getParentRoute: () => LoggedInYearIdRoute,
   } as any)
 
 const LoggedInYearIdDaysDayIdEditRoute =
   LoggedInYearIdDaysDayIdEditImport.update({
-    id: '/edit',
-    path: '/edit',
-    getParentRoute: () => LoggedInYearIdDaysDayIdRouteRoute,
+    id: '/days/$dayId/edit',
+    path: '/days/$dayId/edit',
+    getParentRoute: () => LoggedInYearIdRoute,
   } as any)
 
 // Populate the FileRoutesByPath interface
@@ -224,13 +224,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LoggedInYearIdIndexImport
       parentRoute: typeof LoggedInYearIdImport
     }
-    '/_logged-in/$yearId/days/$dayId': {
-      id: '/_logged-in/$yearId/days/$dayId'
-      path: '/days/$dayId'
-      fullPath: '/$yearId/days/$dayId'
-      preLoaderRoute: typeof LoggedInYearIdDaysDayIdRouteImport
-      parentRoute: typeof LoggedInYearIdImport
-    }
     '/_logged-in/$yearId/days/create': {
       id: '/_logged-in/$yearId/days/create'
       path: '/days/create'
@@ -240,29 +233,22 @@ declare module '@tanstack/react-router' {
     }
     '/_logged-in/$yearId/days/$dayId/edit': {
       id: '/_logged-in/$yearId/days/$dayId/edit'
-      path: '/edit'
+      path: '/days/$dayId/edit'
       fullPath: '/$yearId/days/$dayId/edit'
       preLoaderRoute: typeof LoggedInYearIdDaysDayIdEditImport
-      parentRoute: typeof LoggedInYearIdDaysDayIdRouteImport
+      parentRoute: typeof LoggedInYearIdImport
+    }
+    '/_logged-in/$yearId/days/$dayId/': {
+      id: '/_logged-in/$yearId/days/$dayId/'
+      path: '/days/$dayId'
+      fullPath: '/$yearId/days/$dayId'
+      preLoaderRoute: typeof LoggedInYearIdDaysDayIdIndexImport
+      parentRoute: typeof LoggedInYearIdImport
     }
   }
 }
 
 // Create and export the route tree
-
-interface LoggedInYearIdDaysDayIdRouteRouteChildren {
-  LoggedInYearIdDaysDayIdEditRoute: typeof LoggedInYearIdDaysDayIdEditRoute
-}
-
-const LoggedInYearIdDaysDayIdRouteRouteChildren: LoggedInYearIdDaysDayIdRouteRouteChildren =
-  {
-    LoggedInYearIdDaysDayIdEditRoute: LoggedInYearIdDaysDayIdEditRoute,
-  }
-
-const LoggedInYearIdDaysDayIdRouteRouteWithChildren =
-  LoggedInYearIdDaysDayIdRouteRoute._addFileChildren(
-    LoggedInYearIdDaysDayIdRouteRouteChildren,
-  )
 
 interface LoggedInYearIdRouteChildren {
   LoggedInYearIdContactsRoute: typeof LoggedInYearIdContactsRoute
@@ -272,8 +258,9 @@ interface LoggedInYearIdRouteChildren {
   LoggedInYearIdSettingsRoute: typeof LoggedInYearIdSettingsRoute
   LoggedInYearIdUsersRoute: typeof LoggedInYearIdUsersRoute
   LoggedInYearIdIndexRoute: typeof LoggedInYearIdIndexRoute
-  LoggedInYearIdDaysDayIdRouteRoute: typeof LoggedInYearIdDaysDayIdRouteRouteWithChildren
   LoggedInYearIdDaysCreateRoute: typeof LoggedInYearIdDaysCreateRoute
+  LoggedInYearIdDaysDayIdEditRoute: typeof LoggedInYearIdDaysDayIdEditRoute
+  LoggedInYearIdDaysDayIdIndexRoute: typeof LoggedInYearIdDaysDayIdIndexRoute
 }
 
 const LoggedInYearIdRouteChildren: LoggedInYearIdRouteChildren = {
@@ -284,9 +271,9 @@ const LoggedInYearIdRouteChildren: LoggedInYearIdRouteChildren = {
   LoggedInYearIdSettingsRoute: LoggedInYearIdSettingsRoute,
   LoggedInYearIdUsersRoute: LoggedInYearIdUsersRoute,
   LoggedInYearIdIndexRoute: LoggedInYearIdIndexRoute,
-  LoggedInYearIdDaysDayIdRouteRoute:
-    LoggedInYearIdDaysDayIdRouteRouteWithChildren,
   LoggedInYearIdDaysCreateRoute: LoggedInYearIdDaysCreateRoute,
+  LoggedInYearIdDaysDayIdEditRoute: LoggedInYearIdDaysDayIdEditRoute,
+  LoggedInYearIdDaysDayIdIndexRoute: LoggedInYearIdDaysDayIdIndexRoute,
 }
 
 const LoggedInYearIdRouteWithChildren = LoggedInYearIdRoute._addFileChildren(
@@ -323,9 +310,9 @@ export interface FileRoutesByFullPath {
   '/$yearId/settings': typeof LoggedInYearIdSettingsRoute
   '/$yearId/users': typeof LoggedInYearIdUsersRoute
   '/$yearId/': typeof LoggedInYearIdIndexRoute
-  '/$yearId/days/$dayId': typeof LoggedInYearIdDaysDayIdRouteRouteWithChildren
   '/$yearId/days/create': typeof LoggedInYearIdDaysCreateRoute
   '/$yearId/days/$dayId/edit': typeof LoggedInYearIdDaysDayIdEditRoute
+  '/$yearId/days/$dayId': typeof LoggedInYearIdDaysDayIdIndexRoute
 }
 
 export interface FileRoutesByTo {
@@ -340,9 +327,9 @@ export interface FileRoutesByTo {
   '/$yearId/settings': typeof LoggedInYearIdSettingsRoute
   '/$yearId/users': typeof LoggedInYearIdUsersRoute
   '/$yearId': typeof LoggedInYearIdIndexRoute
-  '/$yearId/days/$dayId': typeof LoggedInYearIdDaysDayIdRouteRouteWithChildren
   '/$yearId/days/create': typeof LoggedInYearIdDaysCreateRoute
   '/$yearId/days/$dayId/edit': typeof LoggedInYearIdDaysDayIdEditRoute
+  '/$yearId/days/$dayId': typeof LoggedInYearIdDaysDayIdIndexRoute
 }
 
 export interface FileRoutesById {
@@ -360,9 +347,9 @@ export interface FileRoutesById {
   '/_logged-in/$yearId/settings': typeof LoggedInYearIdSettingsRoute
   '/_logged-in/$yearId/users': typeof LoggedInYearIdUsersRoute
   '/_logged-in/$yearId/': typeof LoggedInYearIdIndexRoute
-  '/_logged-in/$yearId/days/$dayId': typeof LoggedInYearIdDaysDayIdRouteRouteWithChildren
   '/_logged-in/$yearId/days/create': typeof LoggedInYearIdDaysCreateRoute
   '/_logged-in/$yearId/days/$dayId/edit': typeof LoggedInYearIdDaysDayIdEditRoute
+  '/_logged-in/$yearId/days/$dayId/': typeof LoggedInYearIdDaysDayIdIndexRoute
 }
 
 export interface FileRouteTypes {
@@ -381,9 +368,9 @@ export interface FileRouteTypes {
     | '/$yearId/settings'
     | '/$yearId/users'
     | '/$yearId/'
-    | '/$yearId/days/$dayId'
     | '/$yearId/days/create'
     | '/$yearId/days/$dayId/edit'
+    | '/$yearId/days/$dayId'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/forbidden'
@@ -397,9 +384,9 @@ export interface FileRouteTypes {
     | '/$yearId/settings'
     | '/$yearId/users'
     | '/$yearId'
-    | '/$yearId/days/$dayId'
     | '/$yearId/days/create'
     | '/$yearId/days/$dayId/edit'
+    | '/$yearId/days/$dayId'
   id:
     | '__root__'
     | '/_logged-in'
@@ -415,9 +402,9 @@ export interface FileRouteTypes {
     | '/_logged-in/$yearId/settings'
     | '/_logged-in/$yearId/users'
     | '/_logged-in/$yearId/'
-    | '/_logged-in/$yearId/days/$dayId'
     | '/_logged-in/$yearId/days/create'
     | '/_logged-in/$yearId/days/$dayId/edit'
+    | '/_logged-in/$yearId/days/$dayId/'
   fileRoutesById: FileRoutesById
 }
 
@@ -473,8 +460,9 @@ export const routeTree = rootRoute
         "/_logged-in/$yearId/settings",
         "/_logged-in/$yearId/users",
         "/_logged-in/$yearId/",
-        "/_logged-in/$yearId/days/$dayId",
-        "/_logged-in/$yearId/days/create"
+        "/_logged-in/$yearId/days/create",
+        "/_logged-in/$yearId/days/$dayId/edit",
+        "/_logged-in/$yearId/days/$dayId/"
       ]
     },
     "/_logged-in/create": {
@@ -513,20 +501,17 @@ export const routeTree = rootRoute
       "filePath": "_logged-in/$yearId/index.tsx",
       "parent": "/_logged-in/$yearId"
     },
-    "/_logged-in/$yearId/days/$dayId": {
-      "filePath": "_logged-in/$yearId/days/$dayId/route.tsx",
-      "parent": "/_logged-in/$yearId",
-      "children": [
-        "/_logged-in/$yearId/days/$dayId/edit"
-      ]
-    },
     "/_logged-in/$yearId/days/create": {
       "filePath": "_logged-in/$yearId/days/create.tsx",
       "parent": "/_logged-in/$yearId"
     },
     "/_logged-in/$yearId/days/$dayId/edit": {
       "filePath": "_logged-in/$yearId/days/$dayId/edit.tsx",
-      "parent": "/_logged-in/$yearId/days/$dayId"
+      "parent": "/_logged-in/$yearId"
+    },
+    "/_logged-in/$yearId/days/$dayId/": {
+      "filePath": "_logged-in/$yearId/days/$dayId/index.tsx",
+      "parent": "/_logged-in/$yearId"
     }
   }
 }

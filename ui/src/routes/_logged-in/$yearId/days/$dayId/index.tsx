@@ -38,16 +38,24 @@ import {
   useReactTable,
 } from "@tanstack/react-table";
 import { useState } from "react";
-import type { AssignmentItem } from "@/client/types.gen";
-import { useDayAssignments } from "@/data/use-admin";
+import { useTranslation } from "react-i18next";
+import type { DayAssignmentItem } from "@/client/types.gen";
+import { LinkButton } from "@/components/LinkButton";
+import { useUserDayAssignments } from "@/data";
 
-export const Route = createFileRoute("/_logged-in/$yearId/days/$dayId")({
+export const Route = createFileRoute("/_logged-in/$yearId/days/$dayId/")({
   component: RouteComponent,
 });
 
 function RouteComponent() {
-  const { dayId } = Route.useParams();
-  const { data: assignmentsData, isLoading, error } = useDayAssignments(dayId);
+  const { t } = useTranslation();
+  const { yearId, dayId } = Route.useParams();
+  const { user } = Route.useRouteContext();
+  const {
+    data: assignmentsData,
+    isLoading,
+    error,
+  } = useUserDayAssignments(yearId, dayId);
 
   if (isLoading) {
     return (
@@ -75,21 +83,43 @@ function RouteComponent() {
     );
   }
 
-  return <AssignmentsTable assignments={assignmentsData.assignments} />;
+  return (
+    <Box
+      p={1}
+      sx={{
+        height: "100vh",
+        display: "flex",
+        flexDirection: "column",
+        flexShrink: 1,
+        overflow: "hidden",
+      }}
+    >
+      <Typography variant="h4" component="h1" gutterBottom>
+        {t("Volunteer Assignments")}
+      </Typography>
+      {user.is_admin && (
+        <LinkButton to="/$yearId/days/$dayId/edit" params={{ yearId, dayId }}>
+          {t("Edit Assignments")}
+        </LinkButton>
+      )}
+      <AssignmentsTable assignments={assignmentsData.assignments} />
+    </Box>
+  );
 }
 
 interface AssignmentsTableProps {
-  assignments: AssignmentItem[];
+  assignments: DayAssignmentItem[];
 }
 
 // Column helper for TanStack Table
-const columnHelper = createColumnHelper<AssignmentItem>();
+const columnHelper = createColumnHelper<DayAssignmentItem>();
 
 function AssignmentsTable({ assignments }: AssignmentsTableProps) {
+  const { t } = useTranslation();
   const [grouping, setGrouping] = useState<GroupingState>([]);
   const [sorting, setSorting] = useState<SortingState>([
-    { id: "position.name", desc: true },
-    { id: "hall_name", desc: true },
+    { id: "position", desc: true },
+    { id: "hall", desc: true },
     { id: "attendance", desc: true },
   ]);
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
@@ -98,10 +128,10 @@ function AssignmentsTable({ assignments }: AssignmentsTableProps) {
 
   // Get unique values for filter options
   const positionOptions = Array.from(
-    new Set(assignments.map((item) => item.position?.name || "No Position")),
+    new Set(assignments.map((item) => item.position || "No Position")),
   ).sort();
   const hallOptions = Array.from(
-    new Set(assignments.map((item) => item.hall_name || "No Hall")),
+    new Set(assignments.map((item) => item.hall || "No Hall")),
   ).sort();
   const attendanceOptions = Array.from(
     new Set(assignments.map((item) => item.attendance)),
@@ -110,12 +140,12 @@ function AssignmentsTable({ assignments }: AssignmentsTableProps) {
   console.log(positionOptions, hallOptions, attendanceOptions);
 
   const columns = [
-    columnHelper.accessor("full_name_en", {
-      header: "Name (EN)",
+    columnHelper.accessor("name", {
+      header: "Name",
       enableGrouping: false,
       enableColumnFilter: false,
     }),
-    columnHelper.accessor("telegram_username", {
+    columnHelper.accessor("telegram", {
       header: "Telegram",
       cell: (info) => {
         const username = info.getValue();
@@ -124,14 +154,14 @@ function AssignmentsTable({ assignments }: AssignmentsTableProps) {
       enableGrouping: false,
       enableColumnFilter: false,
     }),
-    columnHelper.accessor("position.name", {
+    columnHelper.accessor("position", {
       header: "Position",
-      cell: (info) => info.row.original.position?.name || "No Position",
+      cell: (info) => info.getValue() || "No Position",
       enableGrouping: true,
       enableGlobalFilter: true,
       filterFn: "equals",
     }),
-    columnHelper.accessor("hall_name", {
+    columnHelper.accessor("hall", {
       header: "Hall",
       cell: (info) => info.getValue() || "No Hall",
       enableGrouping: true,
@@ -143,9 +173,9 @@ function AssignmentsTable({ assignments }: AssignmentsTableProps) {
       cell: (info) => {
         const attendance = info.getValue();
         const color =
-          attendance === "PRESENT"
+          attendance === "yes"
             ? "success"
-            : attendance === "ABSENT"
+            : attendance === "no"
               ? "error"
               : "default";
         return (
@@ -190,25 +220,12 @@ function AssignmentsTable({ assignments }: AssignmentsTableProps) {
   });
 
   return (
-    <Box
-      p={1}
-      sx={{
-        height: "100vh",
-        display: "flex",
-        flexDirection: "column",
-        flexShrink: 1,
-        overflow: "hidden",
-      }}
-    >
-      <Typography variant="h4" component="h1" gutterBottom>
-        Volunteer Assignments
-      </Typography>
-
+    <>
       {/* Controls */}
       <Box sx={{ mt: 2 }}>
         <Box sx={{ display: "flex", gap: 2, alignItems: "center", mb: 2 }}>
           <TextField
-            placeholder="Search all columns..."
+            placeholder={t("Search all columns...")}
             value={globalFilter}
             onChange={(e) => setGlobalFilter(e.target.value)}
             size="small"
@@ -225,12 +242,12 @@ function AssignmentsTable({ assignments }: AssignmentsTableProps) {
         <Collapse in={showFilters}>
           <Box sx={{ display: "flex", gap: 2, flexWrap: "wrap", mb: 2 }}>
             <FormControl size="small" sx={{ minWidth: 120 }}>
-              <InputLabel>Group By</InputLabel>
+              <InputLabel>{t("Group By")}</InputLabel>
               <Select
                 multiple
                 value={grouping}
                 onChange={(e) => setGrouping(e.target.value as string[])}
-                label="Group By"
+                label={t("Group By")}
               >
                 {table
                   .getAllColumns()
@@ -249,9 +266,9 @@ function AssignmentsTable({ assignments }: AssignmentsTableProps) {
               .map((column) => {
                 const getFilterOptions = () => {
                   switch (column.id) {
-                    case "position.name":
+                    case "position":
                       return positionOptions;
-                    case "hall_name":
+                    case "hall":
                       return hallOptions;
                     case "attendance":
                       return attendanceOptions;
@@ -295,7 +312,7 @@ function AssignmentsTable({ assignments }: AssignmentsTableProps) {
                 setSorting([]);
               }}
             >
-              Clear All
+              {t("Clear All")}
             </Button>
           </Box>
         </Collapse>
@@ -306,7 +323,7 @@ function AssignmentsTable({ assignments }: AssignmentsTableProps) {
             {grouping.map((group) => (
               <Chip
                 key={group}
-                label={`Grouped by: ${group}`}
+                label={`${t("Grouped by")}: ${group}`}
                 onDelete={() =>
                   setGrouping(grouping.filter((g) => g !== group))
                 }
@@ -404,6 +421,6 @@ function AssignmentsTable({ assignments }: AssignmentsTableProps) {
           </TableBody>
         </Table>
       </TableContainer>
-    </Box>
+    </>
   );
 }

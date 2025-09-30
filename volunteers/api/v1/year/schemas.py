@@ -2,6 +2,7 @@ from pydantic import BaseModel
 
 from volunteers.schemas.base import BaseSuccessResponse
 from volunteers.schemas.day import DayOut
+from volunteers.schemas.day_assignment import DayAssignmentItem
 from volunteers.schemas.position import PositionOut
 from volunteers.schemas.year import YearOut
 
@@ -23,3 +24,9 @@ class ApplicationFormYearSaveRequest(BaseModel):
 
 class YearsResponse(BaseSuccessResponse):
     years: list[YearOut]
+
+
+class DayAssignmentsResponse(BaseModel):
+    """Response containing a plain array of day assignments"""
+
+    assignments: list[DayAssignmentItem]

@@ -698,14 +698,14 @@ function RouteComponent() {
 
     // If dragging a user
     if (activeId.startsWith("user-")) {
-      const userId = Number.parseInt(activeId.replace("user-", ""));
+      const userId = Number.parseInt(activeId.replace("user-", ""), 10);
       const user = findUserById(userId);
 
       if (!user) return;
 
       // If dropping on a position (general assignment)
       if (overId.startsWith("position-")) {
-        const positionId = Number.parseInt(overId.replace("position-", ""));
+        const positionId = Number.parseInt(overId.replace("position-", ""), 10);
 
         setPositions((prevPositions) => {
           const withoutUser = removeUserFromAll(prevPositions, userId);
@@ -824,7 +824,10 @@ function RouteComponent() {
             <div style={{ transform: "rotate(5deg)" }}>
               {activeId.startsWith("user-") ? (
                 (() => {
-                  const userId = Number.parseInt(activeId.replace("user-", ""));
+                  const userId = Number.parseInt(
+                    activeId.replace("user-", ""),
+                    10,
+                  );
                   const user = findUserById(userId);
                   return user ? (
                     <Card sx={{ maxWidth: 250, opacity: 0.9, boxShadow: 3 }}>
