@@ -75,7 +75,7 @@ type HallWithUsers = HallOut & {
   assigned_users: User[];
 };
 
-export const Route = createFileRoute("/_logged-in/$yearId/days/$dayId")({
+export const Route = createFileRoute("/_logged-in/$yearId/days/$dayId/edit")({
   component: RouteComponent,
 });
 
