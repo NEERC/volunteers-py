@@ -3,6 +3,7 @@ from typing import Annotated
 from dependency_injector.wiring import Provide, inject
 from fastapi import Depends, HTTPException
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
+from loguru import logger
 
 from volunteers.auth.jwt_tokens import verify_access_token
 from volunteers.core.di import Container
@@ -21,6 +22,7 @@ async def with_user(
     user = await user_service.get_user_by_id(payload.user_id)
     if not user:
         raise HTTPException(status_code=401, detail="User not found")
+    logger.info(f"User {user.id} has been authenticated, is_admin: {user.is_admin}")
     return user
 
 
