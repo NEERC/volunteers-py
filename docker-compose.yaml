@@ -1,0 +1,50 @@
+services:
+  postgres:
+    image: postgres:16
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: postgres
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    networks:
+      - app-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  app-db-migration:
+    image: test
+    env_file:
+      - .env
+    networks:
+      - app-network
+    command: bash -c "alembic upgrade head"
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  app:
+    image: test
+    env_file:
+      - .env
+    ports:
+      - "3000:3000"
+    networks:
+      - app-network
+    depends_on:
+      postgres:
+        condition: service_healthy
+      app-db-migration:
+        condition: service_completed_successfully
+
+volumes:
+  postgres-data:
+
+networks:
+  app-network:
+    driver: bridge
