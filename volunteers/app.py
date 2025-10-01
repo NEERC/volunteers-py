@@ -34,7 +34,7 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None]:
         await init_resources
     # parse config
     c = container.config()
-    logger.info(f"Config: {c}")
+    logger.debug(f"Config: {c}")
     yield
     # Shutdown
     shutdown_resources = container.shutdown_resources()
