@@ -29,7 +29,7 @@ class LoggingConfig(BaseModel):
 
 class Config(BaseSettings):
     model_config = SettingsConfigDict(
-        env_file=".env", env_prefix="VOLUNTEERS_", env_nested_delimiter="__"
+        env_file=".env", env_prefix="VOLUNTEERS_", env_nested_delimiter="__", extra="allow"
     )
     jwt: JWTConfig
     telegram: TelegramConfig
