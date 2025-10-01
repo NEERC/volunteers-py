@@ -40,9 +40,9 @@ services:
     entrypoint: ["/etc/alertmanager/entrypoint.sh"]
     command: ["--config.file=/etc/alertmanager/alertmanager.yml"]
     volumes:
-      - ./alertmanager.template.yml:/etc/alertmanager/alertmanager.template.yml
-      - ./entrypoint.sh:/etc/alertmanager/entrypoint.sh
-      - ./templates:/etc/alertmanager/templates
+      - ./alertmanager/alertmanager.template.yml:/etc/alertmanager/alertmanager.template.yml
+      - ./alertmanager/entrypoint.sh:/etc/alertmanager/entrypoint.sh
+      - ./alertmanager/templates:/etc/alertmanager/templates
     networks:
       - app-network
 
