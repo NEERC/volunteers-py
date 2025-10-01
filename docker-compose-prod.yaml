@@ -3,8 +3,8 @@ services:
     build:
       context: .
       dockerfile: Dockerfile.backend
-    ports:
-      - "8000:8000"
+    # ports:
+    #   - "8000:8000"
     networks:
       - app-network
 
@@ -15,8 +15,8 @@ services:
       args:
         - PUBLIC_URL=${PUBLIC_URL}
         - MODE=${MODE}
-    ports:
-      - "3000:3000"
+    # ports:
+    #   - "3000:3000"
     networks:
       - app-network
 
@@ -26,8 +26,8 @@ services:
       dockerfile: Dockerfile
       args:
         - PUBLIC_URL=${PUBLIC_URL}
-    ports:
-      - "8267:80"
+    # ports:
+    #   - "8267:80"
     networks:
       - app-network
       - proxy
@@ -41,7 +41,7 @@ services:
       POSTGRES_PASSWORD: postgres
       POSTGRES_DB: postgres
     ports:
-      - "5432:5432"
+      - "15432:5432"
     volumes:
       - dev-db:/var/lib/postgresql/data
     networks:
