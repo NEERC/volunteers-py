@@ -15,6 +15,8 @@ services:
       args:
         - PUBLIC_URL=${PUBLIC_URL}
         - MODE=${MODE}
+        - VITE_TELEGRAM_BOT_HANDLE=${VITE_TELEGRAM_BOT_HANDLE}
+        - VITE_TELEGRAM_BOT_ORIGIN=${VITE_TELEGRAM_BOT_ORIGIN}
     # ports:
     #   - "3000:3000"
     networks:
