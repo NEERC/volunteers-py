@@ -56,7 +56,7 @@ HTTP_REQUESTS_TOTAL = Counter(
 
 @app.get("/hc")
 def health_check() -> str:
-    """ Simple healthcheck """
+    """Simple healthcheck"""
     return "OK"
 
 
