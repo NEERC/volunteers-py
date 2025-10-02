@@ -300,6 +300,7 @@ export default observer(function MainLayout({
               </ListItemButton>
             </StyledLink>
           </ListItem>
+          <Divider />
           <ListItem disablePadding>
             <StyledLink
               to={`/${selectedYear}/users`}

@@ -16,6 +16,7 @@ import { observer } from "mobx-react-lite";
 import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import * as Yup from "yup";
+import { TELEGRAM_BOT_HANDLE, TELEGRAM_BOT_ORIGIN } from "@/const";
 import { authStore, UserNotFoundError } from "@/store/auth";
 
 export const Route = createFileRoute("/login")({
@@ -308,11 +309,10 @@ function RouteComponent() {
           }}
         >
           {isLoading && <LinearProgress sx={{ width: "200px" }} />}
-          {/** biome-ignore lint/correctness/useUniqueElementIds: telegram needs this id for iframe */}
           <iframe
-            id="telegram-login-nerc_volunteers_bot"
+            id={`telegram-login-${TELEGRAM_BOT_HANDLE}`}
             title="Telegram login"
-            src="https://oauth.telegram.org/embed/nerc_volunteers_bot?origin=https%3A%2F%2Fnerc-volunteers.itmo.ru&amp;return_to=https%3A%2F%2Fnerc-volunteers.itmo.ru%2F&amp;size=medium&amp;request_access=write"
+            src={`https://oauth.telegram.org/embed/${TELEGRAM_BOT_HANDLE}?origin=${TELEGRAM_BOT_ORIGIN}&return_to=${TELEGRAM_BOT_ORIGIN}&size=medium&request_access=write`}
             height={40}
             seamless={true}
             style={{

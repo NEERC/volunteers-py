@@ -82,6 +82,11 @@ class YearService(BaseService):
             )
             return list(result.scalars().all())
 
+    async def get_day_by_id(self, day_id: int) -> Day | None:
+        async with self.session_scope() as session:
+            result = await session.execute(select(Day).where(Day.id == day_id))
+            return result.scalar_one_or_none()
+
     async def get_halls_by_year_id(self, year_id: int) -> list[Hall]:
         async with self.session_scope() as session:
             result = await session.execute(

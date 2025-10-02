@@ -50,7 +50,7 @@ export type AddUserDayRequest = {
     day_id: number;
     information: string;
     attendance?: Attendance;
-    position_id?: number | null;
+    position_id: number;
     hall_id?: number | null;
 };
 
@@ -100,7 +100,7 @@ export type AssignmentItem = {
     comments: string;
     day_id: number;
     day_name: string;
-    position: PositionOut | null;
+    position: PositionOut;
     hall_id: number | null;
     hall_name: string | null;
     information: string;
@@ -114,6 +114,24 @@ export type AssignmentsResponse = {
 };
 
 export type Attendance = 'yes' | 'no' | 'late' | 'sick' | 'unknown';
+
+/**
+ * Simplified day assignment item for user-facing API
+ */
+export type DayAssignmentItem = {
+    name: string;
+    telegram: string | null;
+    position: string;
+    hall: string | null;
+    attendance: Attendance;
+};
+
+/**
+ * Response containing a plain array of day assignments
+ */
+export type DayAssignmentsResponse = {
+    assignments: Array<DayAssignmentItem>;
+};
 
 export type DayOut = {
     year_id: number;
@@ -146,7 +164,7 @@ export type EditPositionRequest = {
 export type EditUserDayRequest = {
     information?: string | null;
     attendance?: Attendance | null;
-    position_id?: number | null;
+    position_id: number;
     hall_id?: number | null;
 };
 
@@ -1013,6 +1031,34 @@ export type SaveFormYearApiV1YearYearIdPostResponses = {
 };
 
 export type SaveFormYearApiV1YearYearIdPostResponse = SaveFormYearApiV1YearYearIdPostResponses[keyof SaveFormYearApiV1YearYearIdPostResponses];
+
+export type GetDayAssignmentsApiV1YearYearIdDaysDayIdAssignmentsGetData = {
+    body?: never;
+    path: {
+        year_id: number;
+        day_id: number;
+    };
+    query?: never;
+    url: '/api/v1/year/{year_id}/days/{day_id}/assignments';
+};
+
+export type GetDayAssignmentsApiV1YearYearIdDaysDayIdAssignmentsGetErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type GetDayAssignmentsApiV1YearYearIdDaysDayIdAssignmentsGetError = GetDayAssignmentsApiV1YearYearIdDaysDayIdAssignmentsGetErrors[keyof GetDayAssignmentsApiV1YearYearIdDaysDayIdAssignmentsGetErrors];
+
+export type GetDayAssignmentsApiV1YearYearIdDaysDayIdAssignmentsGetResponses = {
+    /**
+     * Successful Response
+     */
+    200: DayAssignmentsResponse;
+};
+
+export type GetDayAssignmentsApiV1YearYearIdDaysDayIdAssignmentsGetResponse = GetDayAssignmentsApiV1YearYearIdDaysDayIdAssignmentsGetResponses[keyof GetDayAssignmentsApiV1YearYearIdDaysDayIdAssignmentsGetResponses];
 
 export type ProxyPathGetData = {
     body?: never;

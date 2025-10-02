@@ -56,7 +56,6 @@ function RouteComponent() {
             label="Information"
             value={information}
             onChange={(e) => setInformation(e.target.value)}
-            required
             multiline
             rows={4}
             sx={{ mb: 3 }}

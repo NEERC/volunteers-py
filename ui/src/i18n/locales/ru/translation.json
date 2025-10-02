@@ -75,7 +75,7 @@
   "Edit Position": "Редактировать позицию",
   "Position Name": "Название позиции",
   "Available for registration": "Доступно для регистрации",
-  "Has halls": "Имеет залы",
+  "Has halls": "Имеет холлы",
   "Adding...": "Добавление...",
   "Dismiss": "Отклонить",
   "Year Name": "Название года",
@@ -98,5 +98,16 @@
   "Status": "Статус",
   "Search users...": "Поиск пользователей...",
   "Volunteers": "Волонтеры",
-  "Registration Status:": "Регистрация:"
+  "Registration Status:": "Регистрация:",
+  "Open for Registration": "Открыта для регистрации",
+  "Halls": "Холлы",
+  "No halls found. Add your first hall to get started.": "Холлы не найдены. Добавьте первый холл для начала.",
+  "Add Hall": "Добавить холл",
+  "Add New Hall": "Добавить новый холл",
+  "Hall Name": "Название холла",
+  "Description": "Описание",
+  "No description": "Нет описания",
+  "No Hall": "Без холла",
+  "Edit Assignments": "Изменить назначения",
+  "Search all columns...": "Поиск во всех столбцах..."
 }

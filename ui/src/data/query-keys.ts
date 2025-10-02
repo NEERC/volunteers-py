@@ -130,6 +130,13 @@ export const queryKeys = {
     all: (yearId: string | number) => ["year", String(yearId)] as const,
     form: (yearId: string | number) =>
       [...queryKeys.year.all(yearId), "form"] as const,
+    dayAssignments: (yearId: string | number, dayId: string | number) =>
+      [
+        ...queryKeys.year.all(yearId),
+        "day",
+        String(dayId),
+        "assignments",
+      ] as const,
   },
 } as const;
 

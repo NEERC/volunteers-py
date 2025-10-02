@@ -96,5 +96,9 @@
   "Registered": "Registered",
   "Not Registered": "Not Registered",
   "List of all users and their registration status for this year": "List of all users and their registration status for this year",
-  "Registration Status:": "Registration Status:"
+  "Registration Status:": "Registration Status:",
+  "Edit Assignments": "Change your appointments",
+  "Group By": "Group By",
+  "Clear All": "Clear All",
+  "Grouped by": "Grouped by"
 }

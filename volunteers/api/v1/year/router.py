@@ -9,6 +9,7 @@ from volunteers.core.di import Container
 from volunteers.models import User
 from volunteers.schemas.application_form import ApplicationFormIn
 from volunteers.schemas.day import DayOut
+from volunteers.schemas.day_assignment import DayAssignmentItem
 from volunteers.schemas.position import PositionOut
 from volunteers.schemas.year import YearOut
 from volunteers.services.i18n import I18nService
@@ -17,6 +18,7 @@ from volunteers.services.year import YearService
 from .schemas import (
     ApplicationFormYearSavedResponse,
     ApplicationFormYearSaveRequest,
+    DayAssignmentsResponse,
     YearsResponse,
 )
 
@@ -139,3 +141,41 @@ async def save_form_year(
         await year_service.update_form(form_in)
         logger.debug(f"{DB_PREFIX} Updated user form")
         response.status_code = status.HTTP_204_NO_CONTENT
+
+
+@router.get(
+    "/{year_id}/days/{day_id}/assignments",
+    response_model=DayAssignmentsResponse,
+    description="Get all assignments for a day (user-facing, no admin privileges required)",
+)
+@inject
+async def get_day_assignments(
+    year_id: Annotated[int, Path(title="The ID of the year")],
+    day_id: Annotated[int, Path(title="The ID of the day")],
+    user: Annotated[User, Depends(with_user)],
+    year_service: Annotated[YearService, Depends(Provide[Container.year_service])],
+) -> DayAssignmentsResponse:
+    # Verify the day belongs to the year
+    year = await year_service.get_year_by_year_id(year_id=year_id)
+    if not year:
+        raise HTTPException(status_code=404, detail="Year not found")
+
+    day = await year_service.get_day_by_id(day_id=day_id)
+    if not day or day.year_id != year_id:
+        raise HTTPException(status_code=404, detail="Day not found")
+
+    assignments = await year_service.get_all_assignments_by_day_id(day_id=day_id)
+
+    assignment_items = [
+        DayAssignmentItem(
+            name=assignment.application_form.user.full_name_en,
+            telegram=assignment.application_form.user.telegram_username,
+            position=assignment.position.name,
+            hall=assignment.hall.name if assignment.hall else None,
+            attendance=assignment.attendance.value,
+        )
+        for assignment in assignments
+    ]
+
+    logger.debug(f"{DB_PREFIX} Got day assignments for user-facing API")
+    return DayAssignmentsResponse(assignments=assignment_items)
