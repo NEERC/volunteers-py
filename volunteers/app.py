@@ -54,6 +54,12 @@ HTTP_REQUESTS_TOTAL = Counter(
 )
 
 
+@app.get("/hc")
+def health_check() -> str:
+    """ Simple healthcheck """
+    return "OK"
+
+
 @app.middleware("http")
 async def track_requests(
     request: Request, call_next: Callable[[Request], Awaitable[Response]]

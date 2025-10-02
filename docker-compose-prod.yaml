@@ -1,14 +1,61 @@
 services:
+  db:
+    image: postgres:16
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: postgres
+    volumes:
+      - db-data:/var/lib/postgresql/data
+    networks:
+      - app-network
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -d $${POSTGRES_DB} -U $${POSTGRES_USER}" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
   backend:
     build:
       context: .
-      dockerfile: Dockerfile.backend
-    # ports:
-    #   - "8000:8000"
+      dockerfile: Dockerfile
     networks:
       - app-network
+    environment: &backend-environment
+      - VOLUNTEERS_LOGGING__LEVEL=${VOLUNTEERS_LOGGING__LEVEL}
+      - VOLUNTEERS_JWT__SECRET=${VOLUNTEERS_JWT__SECRET}
+      - VOLUNTEERS_JWT__ALGORITHM=${VOLUNTEERS_JWT__ALGORITHM}
+      - VOLUNTEERS_JWT__EXPIRATION=${VOLUNTEERS_JWT__EXPIRATION}
+      - VOLUNTEERS_JWT__REFRESH_EXPIRATION=${VOLUNTEERS_JWT__REFRESH_EXPIRATION}
+      - VOLUNTEERS_TELEGRAM__TOKEN=${VOLUNTEERS_TELEGRAM__TOKEN}
+      - VOLUNTEERS_TELEGRAM__EXPIRATION_TIME=${VOLUNTEERS_TELEGRAM__EXPIRATION_TIME}
+      - VOLUNTEERS_DATABASE__URL=${VOLUNTEERS_DATABASE__URL}
+      - VOLUNTEERS_SERVER__PORT=${VOLUNTEERS_SERVER__PORT}
+      - VOLUNTEERS_SERVER__HOST=${VOLUNTEERS_SERVER__HOST}
+    healthcheck:
+      test: [ "CMD-SHELL", "curl http://localhost:8000/hc 2> /dev/null | grep -q 'OK'" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    depends_on:
+      db:
+        condition: service_healthy
+      backend-db-migration:
+        condition: service_completed_successfully
 
-  ui:
+  backend-db-migration:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    networks:
+      - app-network
+    command: bash -c "alembic upgrade head"
+    environment: *backend-environment
+    depends_on:
+      db:
+        condition: service_healthy
+
+  frontend:
     build:
       context: ui
       dockerfile: Dockerfile
@@ -17,97 +64,40 @@ services:
         - MODE=${MODE}
         - VITE_TELEGRAM_BOT_HANDLE=${VITE_TELEGRAM_BOT_HANDLE}
         - VITE_TELEGRAM_BOT_ORIGIN=${VITE_TELEGRAM_BOT_ORIGIN}
-    # ports:
-    #   - "3000:3000"
     networks:
       - app-network
+    healthcheck:
+      test: ["CMD-SHELL", "curl http://localhost:8000/nginx-hc 2> /dev/null | grep -q 'OK'"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
   proxy:
     build:
-      context: .
+      context: proxy
       dockerfile: Dockerfile
-      args:
-        - PUBLIC_URL=${PUBLIC_URL}
-    # ports:
-    #   - "8267:80"
+    ports:
+      - "8000:8000"
     networks:
       - app-network
       - proxy
     environment:
-      - VIRTUAL_HOST=${PUBLIC_URL}
-
-  db:
-    image: postgres:16
-    environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
-      POSTGRES_DB: postgres
-    ports:
-      - "15432:5432"
-    volumes:
-      - dev-db:/var/lib/postgresql/data
-    networks:
-      - app-network
-
-  # prometheus:
-  #   image: prom/prometheus
-  #   ports:
-  #     - "9090:9090"
-  #   volumes:
-  #     - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
-  #     - ./prometheus/prometheus.rules.yml:/etc/prometheus/prometheus.rules.yml
-  #   networks:
-  #     - app-network
-  #   command:
-  #     - '--config.file=/etc/prometheus/prometheus.yml'
-  #     - '--web.enable-lifecycle'
-  #   depends_on:
-  #     - alertmanager
-
-  # alertmanager:
-  #   image: prom/alertmanager
-  #   container_name: alertmanager
-  #   cap_add:
-  #     - NET_ADMIN
-  #     - NET_RAW
-  #   ports:
-  #     - "9093:9093"
-  #   env_file:
-  #     - .env
-  #   entrypoint: ["/etc/alertmanager/entrypoint.sh"]
-  #   command: ["--config.file=/etc/alertmanager/alertmanager.yml"]
-  #   volumes:
-  #     - ./alertmanager.template.yml:/etc/alertmanager/alertmanager.template.yml
-  #     - ./entrypoint.sh:/etc/alertmanager/entrypoint.sh
-  #     - ./templates:/etc/alertmanager/templates
-  #   networks:
-  #     - app-network
-
-  # node_exporter:
-  #   image: quay.io/prometheus/node-exporter:v1.9.1
-  #   container_name: node_exporter
-  #   command:
-  #     - '--collector.disable-defaults'
-  #     - '--collector.cpu'
-  #   ports:
-  #     - "9100:9100"  # Required for Windows/Mac
-  #   volumes:
-  #     - /proc:/host/proc:ro  # Needed for CPU stats
-  #   restart: unless-stopped
-
-  # cadvisor:
-  #   image: gcr.io/cadvisor/cadvisor:v0.47.0
-  #   container_name: cadvisor
-  #   network_mode: host
-  #   volumes:
-  #     - /:/rootfs:ro
-  #     - /var/run:/var/run:rw
-  #     - /sys:/sys:ro
-  #     - /var/lib/docker:/var/lib/docker:ro
-  #   restart: unless-stopped
+      - PORT=8000
+      - BACKEND_SITE=http://backend:8000
+      - FRONTEND_SITE=http://frontend:8000
+    healthcheck:
+      test: ["CMD-SHELL", "curl http://localhost:$$PORT/nginx-hc | grep -q 'OK'"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    depends_on:
+      backend:
+        condition: service_healthy
+      frontend:
+        condition: service_healthy
 
 volumes:
-  dev-db:
+  db-data:
 
 networks:
   app-network:
