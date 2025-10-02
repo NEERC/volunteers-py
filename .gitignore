@@ -1,4 +1,6 @@
 *.sql
+.env.staging
+.env.production
 
 # Created by https://www.toptal.com/developers/gitignore/api/macos,react,python,jetbrains+all,linux
 # Edit at https://www.toptal.com/developers/gitignore?templates=macos,react,python,jetbrains+all,linux

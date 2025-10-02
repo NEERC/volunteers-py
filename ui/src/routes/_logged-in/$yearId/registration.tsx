@@ -3,6 +3,7 @@ import {
   Box,
   Button,
   Checkbox,
+  Chip,
   CircularProgress,
   Container,
   Divider,
@@ -237,6 +238,7 @@ function RouteComponent() {
             <InputLabel id={positionId}>{t("Desired Positions")}</InputLabel>
             <Select
               labelId={positionId}
+              label={t("Desired Positions")}
               multiple
               value={formik.values.desired_positions}
               disabled={!year.open_for_registration}
@@ -250,9 +252,14 @@ function RouteComponent() {
               renderValue={(selected) => {
                 const selectedPositions = year.positions
                   .filter((p) => selected.includes(p.position_id))
-                  .map((p) => p.name)
-                  .join(", ");
-                return selectedPositions;
+                  .map((p) => p.name);
+                return (
+                  <Box sx={{ display: "flex", flexWrap: "wrap", gap: 0.5 }}>
+                    {selectedPositions.map((value) => (
+                      <Chip key={value} label={value} />
+                    ))}
+                  </Box>
+                );
               }}
             >
               {year.positions.map((position) => (

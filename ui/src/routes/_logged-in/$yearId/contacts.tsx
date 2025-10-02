@@ -40,13 +40,14 @@ function RouteComponent() {
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
   const [globalFilter, setGlobalFilter] = useState("");
 
-  // Define columns
+  // Define columns with appropriate sizing
   const columns: ColumnDef<UserListItem>[] = [
     {
       id: "name_ru",
       header: t("Name (Russian)"),
       accessorFn: (row) =>
         `${row.last_name_ru} ${row.first_name_ru}${row.patronymic_ru ? ` ${row.patronymic_ru}` : ""}`,
+      size: 200, // Russian names can be long
       cell: (info) => (
         <Typography variant="body2" fontWeight="medium" fontSize="0.875rem">
           {info.getValue() as string}
@@ -57,6 +58,7 @@ function RouteComponent() {
       id: "name_en",
       header: t("Name (English)"),
       accessorKey: "full_name_en",
+      size: 150, // English names are usually shorter
       cell: (info) => (
         <Typography variant="body2" fontSize="0.875rem">
           {info.getValue() as string}
@@ -67,6 +69,7 @@ function RouteComponent() {
       id: "group",
       header: t("Group"),
       accessorKey: "itmo_group",
+      size: 100, // Group codes are short
       cell: (info) => {
         const group = info.getValue() as string | null;
         return group ? (
@@ -91,6 +94,7 @@ function RouteComponent() {
       id: "email",
       header: t("Email"),
       accessorKey: "email",
+      size: 200, // Email addresses need adequate space
       cell: (info) => {
         const email = info.getValue() as string | null;
         return email ? (
@@ -123,6 +127,7 @@ function RouteComponent() {
       id: "phone",
       header: t("Phone"),
       accessorKey: "phone",
+      size: 200, // Phone numbers are relatively short
       cell: (info) => {
         const phone = info.getValue() as string | null;
         return phone ? (
@@ -155,6 +160,7 @@ function RouteComponent() {
       id: "telegram",
       header: t("Telegram"),
       accessorKey: "telegram_username",
+      size: 200, // Telegram usernames are short
       cell: (info) => {
         const username = info.getValue() as string | null;
         return username ? (
@@ -187,6 +193,7 @@ function RouteComponent() {
       id: "status",
       header: t("Status"),
       accessorKey: "is_registered",
+      size: 170, // Status chips are compact
       cell: (info) => {
         const isRegistered = info.getValue() as boolean;
         return (
@@ -256,6 +263,7 @@ function RouteComponent() {
         flexDirection: "column",
         p: 2,
         flexShrink: 1,
+        alignItems: "flex-start",
         overflow: "hidden",
       }}
     >
@@ -287,28 +295,32 @@ function RouteComponent() {
       <Paper
         sx={{
           flex: 1,
-          display: "flex",
-          flexDirection: "column",
-          overflow: "hidden",
+          overflow: "auto",
+          maxWidth: "100%",
         }}
       >
         <Box
           ref={tableContainerRef}
           sx={{
-            flex: 1,
+            height: "100%",
             overflow: "auto",
           }}
         >
           {/* Header */}
           <Box
             sx={{
-              display: "flex",
+              display: "grid",
+              gridTemplateColumns: table
+                .getAllColumns()
+                .map((col) => `${col.getSize()}px`)
+                .join(" "),
               borderBottom: "2px solid",
               borderColor: "divider",
               position: "sticky",
               top: 0,
               backgroundColor: "background.paper",
               zIndex: 1,
+              minWidth: "max-content",
             }}
           >
             {table.getHeaderGroups().map((headerGroup) =>
@@ -321,8 +333,6 @@ function RouteComponent() {
                     userSelect: "none",
                     py: 1,
                     px: 1.5,
-                    flex: "1 1 0",
-                    minWidth: 0,
                     borderRight: "1px solid",
                     borderColor: "divider",
                     display: "flex",
@@ -353,7 +363,7 @@ function RouteComponent() {
           <Box
             sx={{
               height: `${rowVirtualizer.getTotalSize()}px`,
-              width: "100%",
+              minWidth: "max-content",
               position: "relative",
             }}
           >
@@ -366,11 +376,14 @@ function RouteComponent() {
                     position: "absolute",
                     top: 0,
                     left: 0,
-                    width: "100%",
                     height: `${virtualRow.size}px`,
                     transform: `translateY(${virtualRow.start}px)`,
-                    display: "flex",
-                    minWidth: "100%",
+                    display: "grid",
+                    gridTemplateColumns: table
+                      .getAllColumns()
+                      .map((col) => `${col.getSize()}px`)
+                      .join(" "),
+                    minWidth: "max-content",
                     borderBottom: "1px solid",
                     borderColor: "divider",
                     "&:hover": {
@@ -387,8 +400,6 @@ function RouteComponent() {
                         whiteSpace: "nowrap",
                         overflow: "hidden",
                         textOverflow: "ellipsis",
-                        flex: "1 1 0",
-                        minWidth: 0,
                         borderRight: "1px solid",
                         borderColor: "divider",
                         display: "flex",

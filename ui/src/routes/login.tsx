@@ -2,6 +2,7 @@ import {
   Alert,
   Box,
   Container,
+  Grid,
   LinearProgress,
   Link,
   Paper,
@@ -176,12 +177,12 @@ function RouteComponent() {
         height: "100vh",
         display: "flex",
         justifyContent: "center",
-        alignItems: "center",
+        alignItems: "stretch",
         flexDirection: "column",
         gap: 2,
       }}
     >
-      <Paper elevation={3} sx={{ p: 4, width: "100%", textAlign: "center" }}>
+      <Paper elevation={3} sx={{ p: 4, textAlign: "center" }}>
         <Typography variant="h4" component="h1" gutterBottom>
           {t("Login with Telegram")}
         </Typography>
