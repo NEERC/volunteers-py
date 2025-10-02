@@ -26,7 +26,7 @@ def upgrade() -> None:
     # Exit if there is no volunteers schema (workaround for clean setups)
     connection = op.get_bind()
     inspector = inspect(connection)
-    if "volunteers" not in inspector.get_table_names():
+    if "volunteers" not in inspector.get_schema_names():
         return
 
     op.execute("SET search_path TO public,volunteers")
