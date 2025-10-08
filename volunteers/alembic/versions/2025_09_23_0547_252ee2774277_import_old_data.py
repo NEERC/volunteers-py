@@ -1,7 +1,7 @@
 """import-old-data
 
 Revision ID: 252ee2774277
-Revises: ffef4006794c
+Revises: 74464f9f93c5
 Create Date: 2025-09-21 06:10:55.868512
 
 """
@@ -9,6 +9,7 @@ Create Date: 2025-09-21 06:10:55.868512
 from collections.abc import Sequence
 
 from alembic import op
+from sqlalchemy.inspection import inspect
 
 # revision identifiers, used by Alembic.
 revision: str = "252ee2774277"
@@ -21,6 +22,13 @@ def upgrade() -> None:
     """Import data from volunteers schema into new schema."""
     # This migration reads data directly from the existing volunteers schema
     # and migrates it to the new schema structure with auto-generated IDs
+
+    # Exit if there is no volunteers schema (workaround for clean setups)
+    connection = op.get_bind()
+    inspector = inspect(connection)
+    if "volunteers" not in inspector.get_schema_names():
+        return
+
     op.execute("SET search_path TO public,volunteers")
 
     # Migrate data from volunteers schema to new schema

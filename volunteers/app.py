@@ -34,7 +34,7 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None]:
         await init_resources
     # parse config
     c = container.config()
-    logger.info(f"Config: {c}")
+    logger.debug(f"Config: {c}")
     yield
     # Shutdown
     shutdown_resources = container.shutdown_resources()
@@ -52,6 +52,12 @@ app.mount("/metrics", metrics_app)
 HTTP_REQUESTS_TOTAL = Counter(
     "http_requests_total", "Total HTTP requests", ["method", "endpoint", "status_code"]
 )
+
+
+@app.get("/hc")
+def health_check() -> str:
+    """Simple healthcheck"""
+    return "OK"
 
 
 @app.middleware("http")
