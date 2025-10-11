@@ -71,7 +71,7 @@ const LoggedInYearIdIndexRoute = LoggedInYearIdIndexImport.update({
   getParentRoute: () => LoggedInYearIdRoute,
 } as any)
 
-const LoggedInYearIdU sersRoute = LoggedInYearIdUsersImport.update({
+const LoggedInYearIdUsersRoute = LoggedInYearIdUsersImport.update({
   id: '/users',
   path: '/users',
   getParentRoute: () => LoggedInYearIdRoute,
