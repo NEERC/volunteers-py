@@ -46,7 +46,107 @@ import { queryKeys, useYears } from "@/data";
 import { authStore } from "@/store/auth";
 import LanguageSwitcher from "./LanguageSwitcher";
 
+// Route configuration types
+interface BaseRoute {
+  id: string;
+  labelKey: string;
+  icon: React.ComponentType;
+  path: string;
+  adminOnly?: boolean;
+}
+
+interface CollapsibleRoute extends BaseRoute {
+  type: "collapsible";
+  children: Array<{
+    id: string;
+    labelKey?: string;
+    label?: string;
+    path: string;
+    adminOnly?: boolean;
+  }>;
+}
+
+interface SimpleRoute extends BaseRoute {
+  type: "simple";
+}
+
+type RouteConfig = SimpleRoute | CollapsibleRoute;
+
 const drawerWidth = 240;
+
+// Routes configuration
+const getRoutesConfig = (
+  selectedYear: string,
+  yearData: { days?: Array<{ day_id: number; name: string }> },
+): RouteConfig[] => [
+  {
+    id: "registration",
+    type: "simple",
+    labelKey: "Registration Form",
+    icon: AssignmentIcon,
+    path: `/${selectedYear}/registration`,
+  },
+  {
+    id: "contacts",
+    type: "simple",
+    labelKey: "Contacts",
+    icon: ContactsIcon,
+    path: `/${selectedYear}/contacts`,
+    adminOnly: true,
+  },
+  {
+    id: "days",
+    type: "collapsible",
+    labelKey: "Days",
+    icon: CalendarMonthIcon,
+    path: `/${selectedYear}/days`,
+    children: [
+      ...(yearData?.days?.map((day: { day_id: number; name: string }) => ({
+        id: `day-${day.day_id}`,
+        label: day.name,
+        path: `/${selectedYear}/days/${day.day_id}`,
+      })) || []),
+      {
+        id: "create-day",
+        labelKey: "Create Day",
+        path: `/${selectedYear}/days/create`,
+        adminOnly: true,
+      },
+    ],
+  },
+  {
+    id: "results",
+    type: "simple",
+    labelKey: "Results",
+    icon: AssessmentIcon,
+    path: `/${selectedYear}/results`,
+    adminOnly: true,
+  },
+  {
+    id: "medals",
+    type: "simple",
+    labelKey: "User Medals",
+    icon: EmojiEventsIcon,
+    path: `/${selectedYear}/medals`,
+    adminOnly: true,
+  },
+  {
+    id: "settings",
+    type: "simple",
+    labelKey: "Settings",
+    icon: SettingsIcon,
+    path: `/${selectedYear}/settings`,
+    adminOnly: true,
+  },
+  {
+    id: "users",
+    type: "simple",
+    labelKey: "Users",
+    icon: GroupIcon,
+    path: `/${selectedYear}/users`,
+    adminOnly: true,
+  },
+];
 
 const StyledLink = styled(Link)<{ theme?: Theme }>(({ theme }) => ({
   textDecoration: "none",
@@ -66,6 +166,92 @@ const StyledListItemButton = styled(ListItemButton)(({ theme }) => ({
     backgroundColor: theme.palette.action.hover,
   },
 }));
+
+// Function to render routes from configuration
+const renderRoutes = (
+  routes: RouteConfig[],
+  isLinkActive: (path: string) => boolean,
+  daysOpen: boolean,
+  setDaysOpen: (open: boolean) => void,
+  t: (key: string) => string,
+  user: { is_admin?: boolean } | null,
+) => {
+  return routes.map((route) => {
+    // Skip admin-only routes for non-admin users
+    if (route.adminOnly && !user?.is_admin) {
+      return null;
+    }
+
+    if (route.type === "simple") {
+      return (
+        <ListItem key={route.id} disablePadding>
+          <StyledLink
+            to={route.path}
+            className={isLinkActive(route.path) ? "active" : ""}
+          >
+            <ListItemButton>
+              <ListItemIcon>
+                <route.icon />
+              </ListItemIcon>
+              <ListItemText primary={t(route.labelKey)} />
+            </ListItemButton>
+          </StyledLink>
+        </ListItem>
+      );
+    }
+
+    if (route.type === "collapsible") {
+      return (
+        <div key={route.id}>
+          <ListItem disablePadding>
+            <StyledListItemButton onClick={() => setDaysOpen(!daysOpen)}>
+              <ListItemIcon>
+                <route.icon />
+              </ListItemIcon>
+              <ListItemText primary={t(route.labelKey)} />
+              {daysOpen ? <ExpandLess /> : <ExpandMore />}
+            </StyledListItemButton>
+          </ListItem>
+          <Collapse in={daysOpen} timeout="auto" unmountOnExit>
+            <List component="div" disablePadding>
+              {route.children.map((child) => {
+                // Skip admin-only children for non-admin users
+                if (child.adminOnly && !user?.is_admin) {
+                  return null;
+                }
+
+                return (
+                  <StyledLink
+                    key={child.id}
+                    to={child.path}
+                    className={isLinkActive(child.path) ? "active" : ""}
+                  >
+                    <ListItemButton
+                      sx={{
+                        pl: 4,
+                        color: child.adminOnly ? "primary.main" : "inherit",
+                      }}
+                    >
+                      <ListItemText
+                        primary={
+                          child.labelKey
+                            ? `+ ${t(child.labelKey)}`
+                            : child.label
+                        }
+                      />
+                    </ListItemButton>
+                  </StyledLink>
+                );
+              })}
+            </List>
+          </Collapse>
+        </div>
+      );
+    }
+
+    return null;
+  });
+};
 
 export default observer(function MainLayout({
   children,
@@ -134,6 +320,9 @@ export default observer(function MainLayout({
     return location.pathname === path;
   };
 
+  // Get routes configuration
+  const routes = getRoutesConfig(selectedYear, yearData.data || {});
+
   const drawer = (
     <div>
       <Toolbar>
@@ -184,136 +373,8 @@ export default observer(function MainLayout({
       <Divider />
       {selectedYear && (
         <List>
-          <ListItem disablePadding>
-            <StyledLink
-              to={`/${selectedYear}/registration`}
-              className={
-                isLinkActive(`/${selectedYear}/registration`) ? "active" : ""
-              }
-            >
-              <ListItemButton>
-                <ListItemIcon>
-                  <AssignmentIcon />
-                </ListItemIcon>
-                <ListItemText primary={t("Registration Form")} />
-              </ListItemButton>
-            </StyledLink>
-          </ListItem>
-          <ListItem disablePadding>
-            <StyledLink
-              to={`/${selectedYear}/contacts`}
-              className={
-                isLinkActive(`/${selectedYear}/contacts`) ? "active" : ""
-              }
-            >
-              <ListItemButton>
-                <ListItemIcon>
-                  <ContactsIcon />
-                </ListItemIcon>
-                <ListItemText primary={t("Contacts")} />
-              </ListItemButton>
-            </StyledLink>
-          </ListItem>
-          <ListItem disablePadding>
-            <StyledListItemButton onClick={() => setDaysOpen(!daysOpen)}>
-              <ListItemIcon>
-                <CalendarMonthIcon />
-              </ListItemIcon>
-              <ListItemText primary={t("Days")} />
-              {daysOpen ? <ExpandLess /> : <ExpandMore />}
-            </StyledListItemButton>
-          </ListItem>
-          <Collapse in={daysOpen} timeout="auto" unmountOnExit>
-            <List component="div" disablePadding>
-              {yearData.isSuccess &&
-                yearData.data?.days.map((day) => (
-                  <StyledLink
-                    key={day.day_id}
-                    to={`/${selectedYear}/days/${day.day_id}`}
-                    className={
-                      isLinkActive(`/${selectedYear}/days/${day.day_id}`)
-                        ? "active"
-                        : ""
-                    }
-                  >
-                    <ListItemButton sx={{ pl: 4 }}>
-                      <ListItemText primary={day.name} />
-                    </ListItemButton>
-                  </StyledLink>
-                ))}
-              {authStore.user?.is_admin && (
-                <StyledLink
-                  to={`/${selectedYear}/days/create`}
-                  className={
-                    isLinkActive(`/${selectedYear}/days/create`) ? "active" : ""
-                  }
-                >
-                  <ListItemButton sx={{ pl: 4, color: "primary.main" }}>
-                    <ListItemText primary={`+ ${t("Create Day")}`} />
-                  </ListItemButton>
-                </StyledLink>
-              )}
-            </List>
-          </Collapse>
-          <ListItem disablePadding>
-            <StyledLink
-              to={`/${selectedYear}/results`}
-              className={
-                isLinkActive(`/${selectedYear}/results`) ? "active" : ""
-              }
-            >
-              <ListItemButton>
-                <ListItemIcon>
-                  <AssessmentIcon />
-                </ListItemIcon>
-                <ListItemText primary={t("Results")} />
-              </ListItemButton>
-            </StyledLink>
-          </ListItem>
-          <ListItem disablePadding>
-            <StyledLink
-              to={`/${selectedYear}/medals`}
-              className={
-                isLinkActive(`/${selectedYear}/medals`) ? "active" : ""
-              }
-            >
-              <ListItemButton>
-                <ListItemIcon>
-                  <EmojiEventsIcon />
-                </ListItemIcon>
-                <ListItemText primary={t("User Medals")} />
-              </ListItemButton>
-            </StyledLink>
-          </ListItem>
-          <ListItem disablePadding>
-            <StyledLink
-              to={`/${selectedYear}/settings`}
-              className={
-                isLinkActive(`/${selectedYear}/settings`) ? "active" : ""
-              }
-            >
-              <ListItemButton>
-                <ListItemIcon>
-                  <SettingsIcon />
-                </ListItemIcon>
-                <ListItemText primary={t("Settings")} />
-              </ListItemButton>
-            </StyledLink>
-          </ListItem>
+          {renderRoutes(routes, isLinkActive, daysOpen, setDaysOpen, t, user)}
           <Divider />
-          <ListItem disablePadding>
-            <StyledLink
-              to={`/${selectedYear}/users`}
-              className={isLinkActive(`/${selectedYear}/users`) ? "active" : ""}
-            >
-              <ListItemButton>
-                <ListItemIcon>
-                  <GroupIcon />
-                </ListItemIcon>
-                <ListItemText primary={t("Users")} />
-              </ListItemButton>
-            </StyledLink>
-          </ListItem>
         </List>
       )}
     </div>

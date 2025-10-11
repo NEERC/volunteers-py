@@ -12,9 +12,9 @@
 
 import { Route as rootRoute } from './routes/__root'
 import { Route as LoginImport } from './routes/login'
-import { Route as ForbiddenImport } from './routes/forbidden'
 import { Route as LoggedInImport } from './routes/_logged-in'
 import { Route as LoggedInIndexImport } from './routes/_logged-in/index'
+import { Route as LoggedInForbiddenImport } from './routes/_logged-in/forbidden'
 import { Route as LoggedInCreateImport } from './routes/_logged-in/create'
 import { Route as LoggedInYearIdImport } from './routes/_logged-in/$yearId'
 import { Route as LoggedInYearIdIndexImport } from './routes/_logged-in/$yearId/index'
@@ -36,12 +36,6 @@ const LoginRoute = LoginImport.update({
   getParentRoute: () => rootRoute,
 } as any)
 
-const ForbiddenRoute = ForbiddenImport.update({
-  id: '/forbidden',
-  path: '/forbidden',
-  getParentRoute: () => rootRoute,
-} as any)
-
 const LoggedInRoute = LoggedInImport.update({
   id: '/_logged-in',
   getParentRoute: () => rootRoute,
@@ -50,6 +44,12 @@ const LoggedInRoute = LoggedInImport.update({
 const LoggedInIndexRoute = LoggedInIndexImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => LoggedInRoute,
+} as any)
+
+const LoggedInForbiddenRoute = LoggedInForbiddenImport.update({
+  id: '/forbidden',
+  path: '/forbidden',
   getParentRoute: () => LoggedInRoute,
 } as any)
 
@@ -71,7 +71,7 @@ const LoggedInYearIdIndexRoute = LoggedInYearIdIndexImport.update({
   getParentRoute: () => LoggedInYearIdRoute,
 } as any)
 
-const LoggedInYearIdUsersRoute = LoggedInYearIdUsersImport.update({
+const LoggedInYearIdU sersRoute = LoggedInYearIdUsersImport.update({
   id: '/users',
   path: '/users',
   getParentRoute: () => LoggedInYearIdRoute,
@@ -140,13 +140,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LoggedInImport
       parentRoute: typeof rootRoute
     }
-    '/forbidden': {
-      id: '/forbidden'
-      path: '/forbidden'
-      fullPath: '/forbidden'
-      preLoaderRoute: typeof ForbiddenImport
-      parentRoute: typeof rootRoute
-    }
     '/login': {
       id: '/login'
       path: '/login'
@@ -166,6 +159,13 @@ declare module '@tanstack/react-router' {
       path: '/create'
       fullPath: '/create'
       preLoaderRoute: typeof LoggedInCreateImport
+      parentRoute: typeof LoggedInImport
+    }
+    '/_logged-in/forbidden': {
+      id: '/_logged-in/forbidden'
+      path: '/forbidden'
+      fullPath: '/forbidden'
+      preLoaderRoute: typeof LoggedInForbiddenImport
       parentRoute: typeof LoggedInImport
     }
     '/_logged-in/': {
@@ -283,12 +283,14 @@ const LoggedInYearIdRouteWithChildren = LoggedInYearIdRoute._addFileChildren(
 interface LoggedInRouteChildren {
   LoggedInYearIdRoute: typeof LoggedInYearIdRouteWithChildren
   LoggedInCreateRoute: typeof LoggedInCreateRoute
+  LoggedInForbiddenRoute: typeof LoggedInForbiddenRoute
   LoggedInIndexRoute: typeof LoggedInIndexRoute
 }
 
 const LoggedInRouteChildren: LoggedInRouteChildren = {
   LoggedInYearIdRoute: LoggedInYearIdRouteWithChildren,
   LoggedInCreateRoute: LoggedInCreateRoute,
+  LoggedInForbiddenRoute: LoggedInForbiddenRoute,
   LoggedInIndexRoute: LoggedInIndexRoute,
 }
 
@@ -298,10 +300,10 @@ const LoggedInRouteWithChildren = LoggedInRoute._addFileChildren(
 
 export interface FileRoutesByFullPath {
   '': typeof LoggedInRouteWithChildren
-  '/forbidden': typeof ForbiddenRoute
   '/login': typeof LoginRoute
   '/$yearId': typeof LoggedInYearIdRouteWithChildren
   '/create': typeof LoggedInCreateRoute
+  '/forbidden': typeof LoggedInForbiddenRoute
   '/': typeof LoggedInIndexRoute
   '/$yearId/contacts': typeof LoggedInYearIdContactsRoute
   '/$yearId/medals': typeof LoggedInYearIdMedalsRoute
@@ -316,9 +318,9 @@ export interface FileRoutesByFullPath {
 }
 
 export interface FileRoutesByTo {
-  '/forbidden': typeof ForbiddenRoute
   '/login': typeof LoginRoute
   '/create': typeof LoggedInCreateRoute
+  '/forbidden': typeof LoggedInForbiddenRoute
   '/': typeof LoggedInIndexRoute
   '/$yearId/contacts': typeof LoggedInYearIdContactsRoute
   '/$yearId/medals': typeof LoggedInYearIdMedalsRoute
@@ -335,10 +337,10 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRoute
   '/_logged-in': typeof LoggedInRouteWithChildren
-  '/forbidden': typeof ForbiddenRoute
   '/login': typeof LoginRoute
   '/_logged-in/$yearId': typeof LoggedInYearIdRouteWithChildren
   '/_logged-in/create': typeof LoggedInCreateRoute
+  '/_logged-in/forbidden': typeof LoggedInForbiddenRoute
   '/_logged-in/': typeof LoggedInIndexRoute
   '/_logged-in/$yearId/contacts': typeof LoggedInYearIdContactsRoute
   '/_logged-in/$yearId/medals': typeof LoggedInYearIdMedalsRoute
@@ -356,10 +358,10 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | ''
-    | '/forbidden'
     | '/login'
     | '/$yearId'
     | '/create'
+    | '/forbidden'
     | '/'
     | '/$yearId/contacts'
     | '/$yearId/medals'
@@ -373,9 +375,9 @@ export interface FileRouteTypes {
     | '/$yearId/days/$dayId'
   fileRoutesByTo: FileRoutesByTo
   to:
-    | '/forbidden'
     | '/login'
     | '/create'
+    | '/forbidden'
     | '/'
     | '/$yearId/contacts'
     | '/$yearId/medals'
@@ -390,10 +392,10 @@ export interface FileRouteTypes {
   id:
     | '__root__'
     | '/_logged-in'
-    | '/forbidden'
     | '/login'
     | '/_logged-in/$yearId'
     | '/_logged-in/create'
+    | '/_logged-in/forbidden'
     | '/_logged-in/'
     | '/_logged-in/$yearId/contacts'
     | '/_logged-in/$yearId/medals'
@@ -410,13 +412,11 @@ export interface FileRouteTypes {
 
 export interface RootRouteChildren {
   LoggedInRoute: typeof LoggedInRouteWithChildren
-  ForbiddenRoute: typeof ForbiddenRoute
   LoginRoute: typeof LoginRoute
 }
 
 const rootRouteChildren: RootRouteChildren = {
   LoggedInRoute: LoggedInRouteWithChildren,
-  ForbiddenRoute: ForbiddenRoute,
   LoginRoute: LoginRoute,
 }
 
@@ -431,7 +431,6 @@ export const routeTree = rootRoute
       "filePath": "__root.tsx",
       "children": [
         "/_logged-in",
-        "/forbidden",
         "/login"
       ]
     },
@@ -440,11 +439,9 @@ export const routeTree = rootRoute
       "children": [
         "/_logged-in/$yearId",
         "/_logged-in/create",
+        "/_logged-in/forbidden",
         "/_logged-in/"
       ]
-    },
-    "/forbidden": {
-      "filePath": "forbidden.tsx"
     },
     "/login": {
       "filePath": "login.tsx"
@@ -467,6 +464,10 @@ export const routeTree = rootRoute
     },
     "/_logged-in/create": {
       "filePath": "_logged-in/create.tsx",
+      "parent": "/_logged-in"
+    },
+    "/_logged-in/forbidden": {
+      "filePath": "_logged-in/forbidden.tsx",
       "parent": "/_logged-in"
     },
     "/_logged-in/": {

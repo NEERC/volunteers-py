@@ -7,17 +7,15 @@ import {
   TextField,
   Typography,
 } from "@mui/material";
-import { createFileRoute, redirect, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
 import { useAddYear } from "@/data";
+import { shouldBeLoggedIn } from "@/utils/should-be-logged-in";
 
 export const Route = createFileRoute("/_logged-in/create")({
   component: RouteComponent,
-  loader: async ({ context }) => {
-    const user = context.user;
-    if (user.is_admin !== true) {
-      throw redirect({ to: "/forbidden" });
-    }
+  beforeLoad: async ({ context }) => {
+    shouldBeLoggedIn(context);
     return {
       title: "Создать год",
     };

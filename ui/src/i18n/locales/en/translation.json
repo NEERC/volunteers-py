@@ -100,5 +100,8 @@
   "Edit Assignments": "Change your appointments",
   "Group By": "Group By",
   "Clear All": "Clear All",
-  "Grouped by": "Grouped by"
+  "Grouped by": "Grouped by",
+  "Access Forbidden": "Access Forbidden",
+  "You are not authorized to access this page": "You are not authorized to access this page",
+  "Go to Main Page": "Go to Main Page"
 }

@@ -109,5 +109,9 @@
   "No description": "Нет описания",
   "No Hall": "Без холла",
   "Edit Assignments": "Изменить назначения",
-  "Search all columns...": "Поиск во всех столбцах..."
+  "Search all columns...": "Поиск во всех столбцах...",
+  "Access Forbidden": "Доступ запрещен",
+  "You are not authorized to access this page": "У вас нет прав для доступа к этой странице",
+  "Go to Main Page": "Перейти на главную страницу",
+  "Welcome to the volunteer system. Select a year in the top left corner.": "Добро пожаловать в волонтерскую систему. Выберите год в верхнем левом углу."
 }
