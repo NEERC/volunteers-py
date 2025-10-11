@@ -22,7 +22,7 @@ import {
   useReactTable,
 } from "@tanstack/react-table";
 import { useVirtualizer } from "@tanstack/react-virtual";
-import { useRef, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import type { UserListItem } from "@/client/types.gen";
 import { useUsersList } from "@/data/use-admin";
@@ -31,7 +31,10 @@ export const Route = createFileRoute("/_logged-in/$yearId/contacts")({
   component: RouteComponent,
 });
 
+const EMPTY: UserListItem[] = [];
+
 function RouteComponent() {
+  // console.log("render");
   const { t } = useTranslation();
   const { yearId } = Route.useParams();
   const { data, isLoading, error } = useUsersList(yearId);
@@ -41,177 +44,180 @@ function RouteComponent() {
   const [globalFilter, setGlobalFilter] = useState("");
 
   // Define columns with appropriate sizing
-  const columns: ColumnDef<UserListItem>[] = [
-    {
-      id: "name_ru",
-      header: t("Name (Russian)"),
-      accessorFn: (row) =>
-        `${row.last_name_ru} ${row.first_name_ru}${row.patronymic_ru ? ` ${row.patronymic_ru}` : ""}`,
-      size: 200, // Russian names can be long
-      cell: (info) => (
-        <Typography variant="body2" fontWeight="medium" fontSize="0.875rem">
-          {info.getValue() as string}
-        </Typography>
-      ),
-    },
-    {
-      id: "name_en",
-      header: t("Name (English)"),
-      accessorKey: "full_name_en",
-      size: 150, // English names are usually shorter
-      cell: (info) => (
-        <Typography variant="body2" fontSize="0.875rem">
-          {info.getValue() as string}
-        </Typography>
-      ),
-    },
-    {
-      id: "group",
-      header: t("Group"),
-      accessorKey: "itmo_group",
-      size: 100, // Group codes are short
-      cell: (info) => {
-        const group = info.getValue() as string | null;
-        return group ? (
-          <Chip
-            label={group}
-            size="small"
-            color="primary"
-            sx={{ height: 20, fontSize: "0.75rem" }}
-          />
-        ) : (
-          <Typography
-            variant="body2"
-            color="text.secondary"
-            fontSize="0.875rem"
-          >
-            -
+  const columns: ColumnDef<UserListItem>[] = useMemo(
+    () => [
+      {
+        id: "name_ru",
+        header: t("Name (Russian)"),
+        accessorFn: (row) =>
+          `${row.last_name_ru} ${row.first_name_ru}${row.patronymic_ru ? ` ${row.patronymic_ru}` : ""}`,
+        size: 200, // Russian names can be long
+        cell: (info) => (
+          <Typography variant="body2" fontWeight="medium" fontSize="0.875rem">
+            {info.getValue() as string}
           </Typography>
-        );
+        ),
       },
-    },
-    {
-      id: "email",
-      header: t("Email"),
-      accessorKey: "email",
-      size: 200, // Email addresses need adequate space
-      cell: (info) => {
-        const email = info.getValue() as string | null;
-        return email ? (
-          <Link
-            href={`mailto:${email}`}
-            sx={{
-              textDecoration: "none",
-              color: "primary.main",
-              "&:hover": {
-                textDecoration: "underline",
-              },
-            }}
-          >
-            <Typography variant="body2" fontSize="0.875rem">
-              {email}
+      {
+        id: "name_en",
+        header: t("Name (English)"),
+        accessorKey: "full_name_en",
+        size: 150, // English names are usually shorter
+        cell: (info) => (
+          <Typography variant="body2" fontSize="0.875rem">
+            {info.getValue() as string}
+          </Typography>
+        ),
+      },
+      {
+        id: "group",
+        header: t("Group"),
+        accessorKey: "itmo_group",
+        size: 100, // Group codes are short
+        cell: (info) => {
+          const group = info.getValue() as string | null;
+          return group ? (
+            <Chip
+              label={group}
+              size="small"
+              color="primary"
+              sx={{ height: 20, fontSize: "0.75rem" }}
+            />
+          ) : (
+            <Typography
+              variant="body2"
+              color="text.secondary"
+              fontSize="0.875rem"
+            >
+              -
             </Typography>
-          </Link>
-        ) : (
-          <Typography
-            variant="body2"
-            color="text.secondary"
-            fontSize="0.875rem"
-          >
-            -
-          </Typography>
-        );
+          );
+        },
       },
-    },
-    {
-      id: "phone",
-      header: t("Phone"),
-      accessorKey: "phone",
-      size: 200, // Phone numbers are relatively short
-      cell: (info) => {
-        const phone = info.getValue() as string | null;
-        return phone ? (
-          <Link
-            href={`tel:${phone}`}
-            sx={{
-              textDecoration: "none",
-              color: "primary.main",
-              "&:hover": {
-                textDecoration: "underline",
-              },
-            }}
-          >
-            <Typography variant="body2" fontSize="0.875rem">
-              {phone}
+      {
+        id: "email",
+        header: t("Email"),
+        accessorKey: "email",
+        size: 200, // Email addresses need adequate space
+        cell: (info) => {
+          const email = info.getValue() as string | null;
+          return email ? (
+            <Link
+              href={`mailto:${email}`}
+              sx={{
+                textDecoration: "none",
+                color: "primary.main",
+                "&:hover": {
+                  textDecoration: "underline",
+                },
+              }}
+            >
+              <Typography variant="body2" fontSize="0.875rem">
+                {email}
+              </Typography>
+            </Link>
+          ) : (
+            <Typography
+              variant="body2"
+              color="text.secondary"
+              fontSize="0.875rem"
+            >
+              -
             </Typography>
-          </Link>
-        ) : (
-          <Typography
-            variant="body2"
-            color="text.secondary"
-            fontSize="0.875rem"
-          >
-            -
-          </Typography>
-        );
+          );
+        },
       },
-    },
-    {
-      id: "telegram",
-      header: t("Telegram"),
-      accessorKey: "telegram_username",
-      size: 200, // Telegram usernames are short
-      cell: (info) => {
-        const username = info.getValue() as string | null;
-        return username ? (
-          <Link
-            href={`tg://resolve?domain=${username}`}
-            sx={{
-              textDecoration: "none",
-              color: "primary.main",
-              "&:hover": {
-                textDecoration: "underline",
-              },
-            }}
-          >
-            <Typography variant="body2" fontSize="0.875rem">
-              @{username}
+      {
+        id: "phone",
+        header: t("Phone"),
+        accessorKey: "phone",
+        size: 200, // Phone numbers are relatively short
+        cell: (info) => {
+          const phone = info.getValue() as string | null;
+          return phone ? (
+            <Link
+              href={`tel:${phone}`}
+              sx={{
+                textDecoration: "none",
+                color: "primary.main",
+                "&:hover": {
+                  textDecoration: "underline",
+                },
+              }}
+            >
+              <Typography variant="body2" fontSize="0.875rem">
+                {phone}
+              </Typography>
+            </Link>
+          ) : (
+            <Typography
+              variant="body2"
+              color="text.secondary"
+              fontSize="0.875rem"
+            >
+              -
             </Typography>
-          </Link>
-        ) : (
-          <Typography
-            variant="body2"
-            color="text.secondary"
-            fontSize="0.875rem"
-          >
-            -
-          </Typography>
-        );
+          );
+        },
       },
-    },
-    {
-      id: "status",
-      header: t("Status"),
-      accessorKey: "is_registered",
-      size: 170, // Status chips are compact
-      cell: (info) => {
-        const isRegistered = info.getValue() as boolean;
-        return (
-          <Chip
-            label={isRegistered ? t("Registered") : t("Not Registered")}
-            size="small"
-            color={isRegistered ? "success" : "default"}
-            variant={isRegistered ? "filled" : "outlined"}
-            sx={{ height: 20, fontSize: "0.75rem" }}
-          />
-        );
+      {
+        id: "telegram",
+        header: t("Telegram"),
+        accessorKey: "telegram_username",
+        size: 200, // Telegram usernames are short
+        cell: (info) => {
+          const username = info.getValue() as string | null;
+          return username ? (
+            <Link
+              href={`tg://resolve?domain=${username}`}
+              sx={{
+                textDecoration: "none",
+                color: "primary.main",
+                "&:hover": {
+                  textDecoration: "underline",
+                },
+              }}
+            >
+              <Typography variant="body2" fontSize="0.875rem">
+                @{username}
+              </Typography>
+            </Link>
+          ) : (
+            <Typography
+              variant="body2"
+              color="text.secondary"
+              fontSize="0.875rem"
+            >
+              -
+            </Typography>
+          );
+        },
       },
-    },
-  ];
+      {
+        id: "status",
+        header: t("Status"),
+        accessorKey: "is_registered",
+        size: 170, // Status chips are compact
+        cell: (info) => {
+          const isRegistered = info.getValue() as boolean;
+          return (
+            <Chip
+              label={isRegistered ? t("Registered") : t("Not Registered")}
+              size="small"
+              color={isRegistered ? "success" : "default"}
+              variant={isRegistered ? "filled" : "outlined"}
+              sx={{ height: 20, fontSize: "0.75rem" }}
+            />
+          );
+        },
+      },
+    ],
+    [t],
+  );
 
   // Create table instance
   const table = useReactTable({
-    data: data?.users || [],
+    data: data?.users || EMPTY,
     columns,
     state: {
       sorting,
@@ -253,7 +259,7 @@ function RouteComponent() {
     );
   }
 
-  const users = data?.users || [];
+  const users = data?.users || EMPTY;
 
   return (
     <Box

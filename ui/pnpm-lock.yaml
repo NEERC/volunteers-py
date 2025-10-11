@@ -117,6 +117,9 @@ importers:
       '@vitejs/plugin-react':
         specifier: ^4.3.4
         version: 4.5.0(vite@6.3.5(jiti@2.4.2)(tsx@4.19.4))
+      '@welldone-software/why-did-you-render':
+        specifier: ^10.0.1
+        version: 10.0.1(react@19.1.0)
       jsdom:
         specifier: ^26.0.0
         version: 26.1.0
@@ -1017,6 +1020,11 @@ packages:
 
   '@vitest/utils@3.1.4':
     resolution: {integrity: sha512-yriMuO1cfFhmiGc8ataN51+9ooHRuURdfAZfwFd3usWynjzpLslZdYnRegTv32qdgtJTsj15FoeZe2g15fY1gg==}
+
+  '@welldone-software/why-did-you-render@10.0.1':
+    resolution: {integrity: sha512-tMgGkt30iVYeLMUKExNmtm019QgyjLtA7lwB0QAizYNEuihlCG2eoAWBBaz/bDeI7LeqAJ9msC6hY3vX+JB97g==}
+    peerDependencies:
+      react: ^19
 
   acorn@8.14.1:
     resolution: {integrity: sha512-OvQ/2pUDKmgfCg++xsTX1wGxfTaszcHVcTctW4UJB4hibJx2HXxxO5UmVgyjMa+ZDsiaf5wWLXYpRWMmBI0QHg==}
@@ -2886,6 +2894,11 @@ snapshots:
       '@vitest/pretty-format': 3.1.4
       loupe: 3.1.3
       tinyrainbow: 2.0.0
+
+  '@welldone-software/why-did-you-render@10.0.1(react@19.1.0)':
+    dependencies:
+      lodash: 4.17.21
+      react: 19.1.0
 
   acorn@8.14.1: {}
 

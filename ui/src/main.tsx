@@ -1,3 +1,12 @@
+// import React from "react";
+
+// if (import.meta.env.DEV) {
+//   const whyDidYouRender = await import("@welldone-software/why-did-you-render");
+//   whyDidYouRender.default(React, {
+//     // trackAllPureComponents: true,
+//   });
+// }
+
 import { createRouter, RouterProvider } from "@tanstack/react-router";
 import { StrictMode } from "react";
 import ReactDOM from "react-dom/client";
