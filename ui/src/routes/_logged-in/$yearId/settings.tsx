@@ -22,7 +22,7 @@ import {
   Tooltip,
   Typography,
 } from "@mui/material";
-import { createFileRoute, redirect } from "@tanstack/react-router";
+import { createFileRoute } from "@tanstack/react-router";
 import React, { useState } from "react";
 import { useTranslation } from "react-i18next";
 import type { HallOut, PositionOut } from "@/client/types.gen";
