@@ -63,9 +63,11 @@ volunteers/
 - [X] Add more fields in the registration form and gray it out if user have already filled the form, allowing to edit it with a click of a button
 - [X] Telegram user migration mechanism
 - [X] Day Position assignment table
-- [ ] Experience in the assignment table
-- [ ] Experiment with a sliding drawer for the users
+- [X] Experience in the assignment table
+- [X] Experiment with a sliding drawer for the users
 - [ ] Scores
+- [ ] Hall manager positions
+- [ ] Attendance
 - [ ] Year specific positions should be copied from the previous year with theirs scores saved
 - [ ] Diploma generation
 - [ ] csv export

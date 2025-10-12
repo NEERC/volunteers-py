@@ -1173,7 +1173,7 @@ function RouteComponent() {
           {positions.map((position) => (
             <Box
               key={position.position_id}
-              sx={{ flex: "0 0 250px", minWidth: "250px" }}
+              sx={{ flex: "0 0 250px", minWidth: "400px" }}
             >
               <PositionColumn
                 position={position}
