@@ -565,13 +565,6 @@ function PositionColumn({
     id: `position-${position.position_id}`,
   });
 
-  const totalAssigned =
-    position.assigned_users.length +
-    (position.halls?.reduce(
-      (sum, hall) => sum + hall.assigned_users.length,
-      0,
-    ) || 0);
-
   return (
     <Paper
       ref={setNodeRef}
