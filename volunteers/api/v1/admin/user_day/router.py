@@ -7,7 +7,6 @@ from loguru import logger
 from volunteers.auth.deps import with_admin
 from volunteers.core.di import Container
 from volunteers.models import User
-from volunteers.schemas.position import PositionOut
 from volunteers.schemas.user_day import UserDayEditIn, UserDayIn
 from volunteers.services.year import HallNotFound, PositionNotFound, YearService
 
@@ -119,33 +118,9 @@ async def get_day_assignments(
     assignment_items = [
         AssignmentItem(
             user_day_id=assignment.id,
-            user_id=assignment.application_form.user.id,
             application_form_id=assignment.application_form.id,
-            first_name_ru=assignment.application_form.user.first_name_ru,
-            last_name_ru=assignment.application_form.user.last_name_ru,
-            patronymic_ru=assignment.application_form.user.patronymic_ru,
-            full_name_en=assignment.application_form.user.full_name_en,
-            isu_id=assignment.application_form.user.isu_id,
-            phone=assignment.application_form.user.phone,
-            email=assignment.application_form.user.email,
-            telegram_username=assignment.application_form.user.telegram_username,
-            itmo_group=assignment.application_form.itmo_group,
-            comments=assignment.application_form.comments,
-            day_id=assignment.day.id,
-            day_name=assignment.day.name,
-            position=PositionOut(
-                position_id=assignment.position.id,
-                year_id=assignment.position.year_id,
-                name=assignment.position.name,
-                can_desire=assignment.position.can_desire,
-                has_halls=assignment.position.has_halls,
-            ),
+            position_id=assignment.position.id,
             hall_id=assignment.hall.id if assignment.hall else None,
-            hall_name=assignment.hall.name if assignment.hall else None,
-            information=assignment.information,
-            attendance=assignment.attendance.value,
-            created_at=assignment.created_at.isoformat(),
-            updated_at=assignment.updated_at.isoformat(),
         )
         for assignment in assignments
     ]

@@ -172,7 +172,7 @@ async def get_day_assignments(
             telegram=assignment.application_form.user.telegram_username,
             position=assignment.position.name,
             hall=assignment.hall.name if assignment.hall else None,
-            attendance=assignment.attendance.value,
+            attendance=assignment.attendance,
         )
         for assignment in assignments
     ]

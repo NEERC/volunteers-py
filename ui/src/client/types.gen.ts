@@ -86,27 +86,9 @@ export type ApplicationFormYearSavedResponse = {
 
 export type AssignmentItem = {
     user_day_id: number;
-    user_id: number;
     application_form_id: number;
-    first_name_ru: string;
-    last_name_ru: string;
-    patronymic_ru: string | null;
-    full_name_en: string;
-    isu_id: number | null;
-    phone: string | null;
-    email: string | null;
-    telegram_username: string | null;
-    itmo_group: string | null;
-    comments: string;
-    day_id: number;
-    day_name: string;
-    position: PositionOut;
+    position_id: number;
     hall_id: number | null;
-    hall_name: string | null;
-    information: string;
-    attendance: string;
-    created_at: string;
-    updated_at: string;
 };
 
 export type AssignmentsResponse = {
@@ -1059,6 +1041,22 @@ export type GetDayAssignmentsApiV1YearYearIdDaysDayIdAssignmentsGetResponses = {
 };
 
 export type GetDayAssignmentsApiV1YearYearIdDaysDayIdAssignmentsGetResponse = GetDayAssignmentsApiV1YearYearIdDaysDayIdAssignmentsGetResponses[keyof GetDayAssignmentsApiV1YearYearIdDaysDayIdAssignmentsGetResponses];
+
+export type HealthCheckHcGetData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/hc';
+};
+
+export type HealthCheckHcGetResponses = {
+    /**
+     * Successful Response
+     */
+    200: string;
+};
+
+export type HealthCheckHcGetResponse = HealthCheckHcGetResponses[keyof HealthCheckHcGetResponses];
 
 export type ProxyPathGetData = {
     body?: never;

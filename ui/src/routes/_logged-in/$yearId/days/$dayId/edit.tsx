@@ -1,4 +1,5 @@
 import {
+  type CollisionDetection,
   closestCenter,
   DndContext,
   type DragEndEvent,
@@ -17,13 +18,20 @@ import {
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import {
+  ExpandMore as ExpandMoreIcon,
+  Person as PersonIcon,
+} from "@mui/icons-material";
+import {
   Alert,
   Box,
   Card,
   CardContent,
   Chip,
   CircularProgress,
+  Collapse,
   Divider,
+  IconButton,
+  Link,
   Paper,
   Typography,
 } from "@mui/material";
@@ -45,126 +53,333 @@ import {
   useYearPositions,
 } from "@/data/use-admin";
 
-// Extended types for drag and drop functionality
+// Custom collision detection that prioritizes the drawer
+const customCollisionDetection: CollisionDetection = (args) => {
+  const { active, droppableContainers, pointerCoordinates } = args;
 
-// Common user type that works for both registration forms and assignments
-type User = {
-  form_id: number;
-  user_id: number;
-  first_name_ru: string;
-  last_name_ru: string;
-  patronymic_ru: string | null;
-  full_name_en: string;
-  isu_id: number | null;
-  phone: string | null;
-  email: string | null;
-  telegram_username: string | null;
-  itmo_group: string | null;
-  comments: string;
-  desired_positions: PositionOut[];
-  created_at: string;
-  updated_at: string;
+  // If dragging a user card
+  if (active.id.toString().startsWith("user-")) {
+    // Check if we're over the drawer area
+    const drawerContainer = droppableContainers.find(
+      (container) => container.id === "hover-drawer-area",
+    );
+
+    if (drawerContainer?.rect.current && pointerCoordinates) {
+      // Get the drawer's bounding rectangle
+      const drawerRect = drawerContainer.rect.current;
+
+      // Check if the pointer is over the drawer
+      const isOverDrawer =
+        pointerCoordinates.x >= drawerRect.left &&
+        pointerCoordinates.x <= drawerRect.right &&
+        pointerCoordinates.y >= drawerRect.top &&
+        pointerCoordinates.y <= drawerRect.bottom;
+
+      if (isOverDrawer) {
+        return [
+          {
+            id: "hover-drawer-area",
+            data: {
+              droppableContainer: drawerContainer,
+            },
+          },
+        ];
+      }
+    }
+  }
+
+  // Fall back to closest center for other cases
+  return closestCenter(args);
 };
 
+// Extended types for drag and drop functionality
+
 type PositionWithHalls = PositionOut & {
-  assigned_users: User[];
+  assigned_users: RegistrationFormItem[];
   halls?: HallWithUsers[];
 };
 
 type HallWithUsers = HallOut & {
-  assigned_users: User[];
+  assigned_users: RegistrationFormItem[];
 };
 
 export const Route = createFileRoute("/_logged-in/$yearId/days/$dayId/edit")({
   component: RouteComponent,
 });
 
-function UserCard({ user }: { user: User }) {
+function DetailedUserCard({
+  user,
+  expandedDefault,
+}: {
+  user: RegistrationFormItem;
+  expandedDefault: boolean;
+}) {
+  const [expanded, setExpanded] = useState(expandedDefault);
   const fullName = user.patronymic_ru
     ? `${user.last_name_ru} ${user.first_name_ru} ${user.patronymic_ru}`
     : `${user.last_name_ru} ${user.first_name_ru}`;
 
+  const hasExtraInfo =
+    user.itmo_group ||
+    user.telegram_username ||
+    user.desired_positions.length > 0 ||
+    user.comments;
+
   return (
     <CardContent sx={{ p: 1, "&:last-child": { pb: 1 } }}>
-      <Typography variant="body2" gutterBottom sx={{ fontWeight: 600 }}>
-        {fullName}
-      </Typography>
-      <Typography variant="caption" color="text.secondary" display="block">
-        {user.full_name_en}
-      </Typography>
-      {user.itmo_group && (
-        <Typography variant="caption" color="text.secondary" display="block">
-          Group: {user.itmo_group}
-        </Typography>
-      )}
-      {user.isu_id && (
-        <Typography variant="caption" color="text.secondary" display="block">
-          ISU: {user.isu_id}
-        </Typography>
-      )}
-      {user.phone && (
-        <Typography variant="caption" color="text.secondary" display="block">
-          📞 {user.phone}
-        </Typography>
-      )}
-      {user.email && (
-        <Typography variant="caption" color="text.secondary" display="block">
-          ✉️ {user.email}
-        </Typography>
-      )}
-      {user.telegram_username && (
-        <Typography variant="caption" color="text.secondary" display="block">
-          📱 @{user.telegram_username}
-        </Typography>
-      )}
-      {user.desired_positions.length > 0 && (
-        <Box sx={{ mt: 0.5 }}>
-          <Typography
-            variant="caption"
-            color="text.secondary"
-            display="block"
-            sx={{ mb: 0.25 }}
-          >
-            Desired:
+      <Box
+        sx={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+        }}
+        onClick={() => setExpanded(!expanded)}
+      >
+        <Box sx={{ flex: 1 }}>
+          <Typography variant="body2" sx={{ fontWeight: 600 }}>
+            {fullName}
           </Typography>
-          {user.desired_positions.map((position) => (
-            <Chip
-              key={position.position_id}
-              label={position.name}
-              size="small"
-              color="primary"
-              variant="outlined"
+        </Box>
+        {hasExtraInfo && (
+          <IconButton
+            size="small"
+            onClick={() => setExpanded(!expanded)}
+            sx={{
+              p: 0.25,
+              transform: expanded ? "rotate(180deg)" : "rotate(0deg)",
+              transition: "transform 0.2s ease-in-out",
+            }}
+          >
+            <ExpandMoreIcon sx={{ fontSize: "1rem" }} />
+          </IconButton>
+        )}
+      </Box>
+
+      <Collapse in={expanded} timeout="auto" unmountOnExit>
+        <Typography
+          variant="body2"
+          color="text.secondary"
+          sx={{ fontSize: "0.75rem" }}
+        >
+          {user.full_name_en}
+        </Typography>
+        <Divider sx={{ my: 0.5 }} />
+
+        {user.itmo_group && (
+          <Typography variant="body2" sx={{ mb: 0.25, fontSize: "0.75rem" }}>
+            <strong>Group:</strong> {user.itmo_group}
+          </Typography>
+        )}
+        {user.telegram_username && (
+          <Typography variant="body2" sx={{ mb: 0.25, fontSize: "0.75rem" }}>
+            <strong>Telegram:</strong> 📱{" "}
+            <Link
+              href={`https://t.me/${user.telegram_username}`}
+              target="_blank"
+            >
+              @{user.telegram_username}
+            </Link>
+          </Typography>
+        )}
+
+        {user.desired_positions.length > 0 && (
+          <Box sx={{ mt: 0.5 }}>
+            <Typography
+              variant="body2"
+              sx={{ mb: 0.25, fontWeight: 600, fontSize: "0.75rem" }}
+            >
+              Desired Positions:
+            </Typography>
+            <Box sx={{ display: "flex", flexWrap: "wrap", gap: 0.25 }}>
+              {user.desired_positions.map((position) => (
+                <Chip
+                  key={position.position_id}
+                  label={position.name}
+                  size="small"
+                  color="primary"
+                  variant="outlined"
+                  sx={{ fontSize: "0.65rem", height: "20px" }}
+                />
+              ))}
+            </Box>
+          </Box>
+        )}
+
+        {user.comments && (
+          <Box sx={{ mt: 0.5 }}>
+            <Typography
+              variant="body2"
+              sx={{ fontWeight: 600, mb: 0.25, fontSize: "0.75rem" }}
+            >
+              Comments:
+            </Typography>
+            <Typography
+              variant="body2"
+              color="text.secondary"
               sx={{
-                mr: 0.25,
-                mb: 0.25,
-                fontSize: "0.6rem",
-                height: "18px",
+                fontStyle: "italic",
+                backgroundColor: "grey.50",
+                p: 0.5,
+                borderRadius: 0.5,
+                fontSize: "0.7rem",
               }}
-            />
-          ))}
-        </Box>
-      )}
-      {user.comments && (
-        <Box sx={{ mt: 0.5 }}>
-          <Typography
-            variant="caption"
-            color="text.secondary"
-            sx={{ fontStyle: "italic", fontSize: "0.6rem" }}
-          >
-            "{user.comments}"
-          </Typography>
-        </Box>
-      )}
+            >
+              "{user.comments}"
+            </Typography>
+          </Box>
+        )}
+      </Collapse>
     </CardContent>
+  );
+}
+
+function DraggableDetailedUserCard({ user }: { user: RegistrationFormItem }) {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: `user-${user.user_id}` });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+  };
+
+  return (
+    <Card
+      ref={setNodeRef}
+      style={style}
+      {...attributes}
+      {...listeners}
+      sx={{
+        mb: 2,
+        cursor: "grab",
+        "&:active": { cursor: "grabbing" },
+        opacity: isDragging ? 0.5 : 1,
+      }}
+    >
+      <DetailedUserCard user={user} expandedDefault={true} />
+    </Card>
+  );
+}
+
+function HoverDrawer({
+  unassignedUsers,
+  activeId,
+}: {
+  unassignedUsers: RegistrationFormItem[];
+  activeId: string | null;
+}) {
+  const [isHovered, setIsHovered] = useState(false);
+  const { isOver, setNodeRef } = useDroppable({
+    id: "hover-drawer-area",
+  });
+
+  // Don't open drawer when dragging
+  const shouldShowDrawer = isHovered && !activeId;
+
+  return (
+    <Box
+      ref={setNodeRef}
+      sx={{
+        position: "fixed",
+        right: 0,
+        top: 0,
+        height: "100vh",
+        width: shouldShowDrawer ? "500px" : "50px",
+        backgroundColor: isOver ? "action.hover" : "background.paper",
+        border: isOver ? "2px dashed" : "1px solid",
+        boxSizing: "border-box",
+        borderColor: isOver ? "primary.main" : "divider",
+        transition: "width 0.3s ease-in-out",
+        zIndex: 3000,
+        overflow: "hidden",
+        "&:hover": {
+          width: shouldShowDrawer ? "500px" : "50px",
+        },
+      }}
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
+    >
+      {/* Hover trigger area */}
+      <Box
+        sx={{
+          position: "absolute",
+          right: 0,
+          top: 0,
+          width: "50px",
+          height: "100%",
+          backgroundColor: "primary.main",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          cursor: "pointer",
+          zIndex: 3001,
+          pointerEvents: "none",
+        }}
+      >
+        <PersonIcon sx={{ color: "white", transform: "rotate(90deg)" }} />
+      </Box>
+
+      {/* Drawer content */}
+      <Box
+        sx={{
+          width: "calc(500px - 50px - 2px)",
+          boxSizing: "border-box",
+          height: "100%",
+          p: 2,
+          pt: 8,
+          overflowY: "auto",
+          overflowX: "hidden",
+          opacity: shouldShowDrawer ? 1 : 0,
+          transition: "opacity 0.2s ease-in-out",
+          pointerEvents: "auto",
+        }}
+      >
+        <Typography
+          variant="h6"
+          sx={{ mb: 1, display: "flex", alignItems: "center", gap: 1 }}
+        >
+          <PersonIcon />
+          Available Volunteers
+        </Typography>
+
+        <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+          {unassignedUsers.length} volunteers available
+        </Typography>
+
+        <Divider sx={{ mb: 2 }} />
+
+        {unassignedUsers.length === 0 ? (
+          <Typography
+            variant="body2"
+            color="text.secondary"
+            sx={{ textAlign: "center", py: 4 }}
+          >
+            All volunteers have been assigned to positions
+          </Typography>
+        ) : (
+          unassignedUsers.map((user) => (
+            <DraggableDetailedUserCard key={user.user_id} user={user} />
+          ))
+        )}
+      </Box>
+    </Box>
   );
 }
 
 function DraggableRegistrationForm({
   registrationForm,
   isAssigned = false,
+  isOptimistic = false,
 }: {
   registrationForm: RegistrationFormItem;
   isAssigned?: boolean;
+  isOptimistic?: boolean;
 }) {
   const {
     attributes,
@@ -179,25 +394,6 @@ function DraggableRegistrationForm({
     transform: CSS.Transform.toString(transform),
     transition,
     opacity: isDragging ? 0.5 : 1,
-  };
-
-  // Convert RegistrationFormItem to User type for UserCard
-  const user: User = {
-    form_id: registrationForm.form_id,
-    user_id: registrationForm.user_id,
-    first_name_ru: registrationForm.first_name_ru,
-    last_name_ru: registrationForm.last_name_ru,
-    patronymic_ru: registrationForm.patronymic_ru,
-    full_name_en: registrationForm.full_name_en,
-    isu_id: registrationForm.isu_id,
-    phone: registrationForm.phone,
-    email: registrationForm.email,
-    telegram_username: registrationForm.telegram_username,
-    itmo_group: registrationForm.itmo_group,
-    comments: registrationForm.comments,
-    desired_positions: registrationForm.desired_positions,
-    created_at: registrationForm.created_at,
-    updated_at: registrationForm.updated_at,
   };
 
   return (
@@ -216,14 +412,43 @@ function DraggableRegistrationForm({
         backgroundColor: isAssigned ? "action.selected" : "background.paper",
         border: isAssigned ? "1px solid" : "1px solid transparent",
         borderColor: isAssigned ? "primary.main" : "transparent",
+        // Add subtle loading animation for optimistic updates
+        ...(isOptimistic && {
+          position: "relative",
+          "&::after": {
+            content: '""',
+            position: "absolute",
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            background:
+              "linear-gradient(90deg, transparent, rgba(25, 118, 210, 0.1), transparent)",
+            animation: "shimmer 1.5s infinite",
+            pointerEvents: "none",
+          },
+        }),
       }}
     >
-      <UserCard user={user} />
+      <DetailedUserCard user={registrationForm} expandedDefault={false} />
     </Card>
   );
 }
 
-function PositionColumn({ position }: { position: PositionWithHalls }) {
+function PositionColumn({
+  position,
+  optimisticUpdates,
+}: {
+  position: PositionWithHalls;
+  optimisticUpdates: {
+    [key: string]: {
+      userId: number;
+      positionId: number;
+      hallId?: number;
+      type: "add" | "remove";
+    };
+  };
+}) {
   const { setNodeRef, isOver } = useDroppable({
     id: `position-${position.position_id}`,
   });
@@ -272,13 +497,24 @@ function PositionColumn({ position }: { position: PositionWithHalls }) {
           items={position.assigned_users.map((user) => `user-${user.user_id}`)}
           strategy={verticalListSortingStrategy}
         >
-          {position.assigned_users.map((user) => (
-            <DraggableRegistrationForm
-              key={user.user_id}
-              registrationForm={user}
-              isAssigned={true}
-            />
-          ))}
+          {position.assigned_users.map((user) => {
+            // Check if this user has an optimistic update
+            const hasOptimisticUpdate = Object.values(optimisticUpdates).some(
+              (update) =>
+                update.userId === user.user_id &&
+                update.positionId === position.position_id &&
+                !update.hallId,
+            );
+
+            return (
+              <DraggableRegistrationForm
+                key={user.user_id}
+                registrationForm={user}
+                isAssigned={true}
+                isOptimistic={hasOptimisticUpdate}
+              />
+            );
+          })}
         </SortableContext>
       </Box>
 
@@ -290,6 +526,7 @@ function PositionColumn({ position }: { position: PositionWithHalls }) {
               key={hall.hall_id}
               hall={hall}
               positionId={position.position_id}
+              optimisticUpdates={optimisticUpdates}
             />
           ))}
         </Box>
@@ -301,9 +538,18 @@ function PositionColumn({ position }: { position: PositionWithHalls }) {
 function HallColumn({
   hall,
   positionId,
+  optimisticUpdates,
 }: {
   hall: HallWithUsers;
   positionId: number;
+  optimisticUpdates: {
+    [key: string]: {
+      userId: number;
+      positionId: number;
+      hallId?: number;
+      type: "add" | "remove";
+    };
+  };
 }) {
   const { setNodeRef, isOver } = useDroppable({
     id: `hall-${positionId}-${hall.hall_id}`,
@@ -335,59 +581,24 @@ function HallColumn({
         items={hall.assigned_users.map((user) => `user-${user.user_id}`)}
         strategy={verticalListSortingStrategy}
       >
-        {hall.assigned_users.map((user) => (
-          <DraggableRegistrationForm
-            key={user.user_id}
-            registrationForm={user}
-            isAssigned={true}
-          />
-        ))}
-      </SortableContext>
-    </Paper>
-  );
-}
+        {hall.assigned_users.map((user) => {
+          // Check if this user has an optimistic update for this hall
+          const hasOptimisticUpdate = Object.values(optimisticUpdates).some(
+            (update) =>
+              update.userId === user.user_id &&
+              update.positionId === positionId &&
+              update.hallId === hall.hall_id,
+          );
 
-function UnassignedArea({ unassignedUsers }: { unassignedUsers: User[] }) {
-  const { isOver, setNodeRef } = useDroppable({
-    id: "unassigned-area",
-  });
-
-  return (
-    <Paper
-      ref={setNodeRef}
-      sx={{
-        p: 1.5,
-        minHeight: 300,
-        border: isOver ? "2px dashed" : "2px dashed transparent",
-        borderColor: isOver ? "primary.main" : "transparent",
-        backgroundColor: isOver ? "action.hover" : "background.paper",
-        "&:hover": {
-          borderColor: "primary.main",
-          backgroundColor: "action.hover",
-        },
-      }}
-    >
-      <Typography variant="subtitle1" gutterBottom sx={{ fontWeight: 600 }}>
-        Unassigned Volunteers
-      </Typography>
-      <Typography
-        variant="caption"
-        color="text.secondary"
-        sx={{ mb: 1, display: "block" }}
-      >
-        {unassignedUsers.length} available
-      </Typography>
-      <Divider sx={{ mb: 1 }} />
-      <SortableContext
-        items={unassignedUsers.map((user) => `user-${user.user_id}`)}
-        strategy={verticalListSortingStrategy}
-      >
-        {unassignedUsers.map((user) => (
-          <DraggableRegistrationForm
-            key={user.user_id}
-            registrationForm={user}
-          />
-        ))}
+          return (
+            <DraggableRegistrationForm
+              key={user.user_id}
+              registrationForm={user}
+              isAssigned={true}
+              isOptimistic={hasOptimisticUpdate}
+            />
+          );
+        })}
       </SortableContext>
     </Paper>
   );
@@ -397,6 +608,14 @@ function RouteComponent() {
   const { t } = useTranslation();
   const { yearId, dayId } = Route.useParams();
   const [activeId, setActiveId] = useState<string | null>(null);
+  const [optimisticUpdates, setOptimisticUpdates] = useState<{
+    [key: string]: {
+      userId: number;
+      positionId: number;
+      hallId?: number;
+      type: "add" | "remove";
+    };
+  }>({});
 
   const {
     data: registrationFormsData,
@@ -427,10 +646,19 @@ function RouteComponent() {
     hallId?: number,
   ) => {
     try {
-      // Check if assignment already exists
+      // Find the user to get their application_form_id
+      const user = findUserById(userId);
+      if (!user) {
+        console.error("User not found for assignment");
+        return;
+      }
+
+      // Check if assignment already exists by looking for the user in assignments
       const existingAssignment = assignmentsData?.assignments.find(
-        (assignment) =>
-          assignment.user_id === userId && assignment.day_id === Number(dayId),
+        (assignment) => {
+          const assignmentUser = assignmentToUser(assignment);
+          return assignmentUser?.user_id === userId;
+        },
       );
 
       if (existingAssignment) {
@@ -443,13 +671,6 @@ function RouteComponent() {
           },
         });
       } else {
-        // Find the application_form_id for this user
-        const user = unassignedUsers.find((u) => u.user_id === userId);
-        if (!user) {
-          console.error("User not found for assignment");
-          return;
-        }
-
         // Create new assignment
         await addUserDayMutation.mutateAsync({
           application_form_id: user.form_id,
@@ -475,181 +696,191 @@ function RouteComponent() {
     }),
   );
 
-  // Transform data for drag and drop
-  const [positions, setPositions] = useState<PositionWithHalls[]>([]);
-
-  // Helper function to convert assignment to user
+  // Helper function to convert assignment to user using application_form_id
   const assignmentToUser = React.useCallback(
     (assignment: {
       application_form_id: number;
-      user_id: number;
-      first_name_ru: string;
-      last_name_ru: string;
-      patronymic_ru: string | null;
-      full_name_en: string;
-      isu_id: number | null;
-      phone: string | null;
-      email: string | null;
-      telegram_username: string | null;
-      itmo_group: string | null;
-      comments: string;
-      created_at: string;
-      updated_at: string;
-    }): User => ({
-      form_id: assignment.application_form_id,
-      user_id: assignment.user_id,
-      first_name_ru: assignment.first_name_ru,
-      last_name_ru: assignment.last_name_ru,
-      patronymic_ru: assignment.patronymic_ru,
-      full_name_en: assignment.full_name_en,
-      isu_id: assignment.isu_id,
-      phone: assignment.phone,
-      email: assignment.email,
-      telegram_username: assignment.telegram_username,
-      itmo_group: assignment.itmo_group,
-      comments: assignment.comments,
-      desired_positions: [], // Not available in assignments
-      created_at: assignment.created_at,
-      updated_at: assignment.updated_at,
-    }),
-    [],
+      position_id: number;
+      hall_id: number | null;
+    }): RegistrationFormItem | null => {
+      // Find the original registration form using application_form_id
+      const originalForm = registrationFormsData?.forms.find(
+        (form) => form.form_id === assignment.application_form_id,
+      );
+
+      if (!originalForm) {
+        console.warn(
+          `Registration form not found for application_form_id: ${assignment.application_form_id}`,
+        );
+        return null;
+      }
+
+      return originalForm;
+    },
+    [registrationFormsData],
   );
 
-  // Initialize positions when data loads
-  React.useEffect(() => {
-    if (positionsData && registrationFormsData && halls) {
-      const initialPositions: PositionWithHalls[] = positionsData.map(
-        (position) => {
-          // Find all assignments for this position and day
-          const positionAssignments =
-            assignmentsData?.assignments.filter(
-              (assignment) =>
-                assignment.position?.position_id === position.position_id &&
-                assignment.day_id === Number(dayId),
-            ) || [];
-
-          // Separate direct position assignments (no hall) from hall assignments
-          const directAssignments = positionAssignments.filter(
-            (assignment) => !assignment.hall_id,
-          );
-          const hallAssignments = positionAssignments.filter(
-            (assignment) => assignment.hall_id,
-          );
-
-          // Create hall structure if position has halls
-          const positionHalls: HallWithUsers[] = position.has_halls
-            ? halls.map((hall) => ({
-                ...hall,
-                assigned_users: hallAssignments
-                  .filter((assignment) => assignment.hall_id === hall.hall_id)
-                  .map(assignmentToUser),
-              }))
-            : [];
-
-          return {
-            ...position,
-            assigned_users: directAssignments.map(assignmentToUser),
-            halls: positionHalls.length > 0 ? positionHalls : undefined,
-          };
-        },
+  // Helper function to find user by ID from all sources
+  const findUserById = React.useCallback(
+    (userId: number): RegistrationFormItem | null => {
+      // First check registration forms (unassigned users)
+      const formUser = registrationFormsData?.forms.find(
+        (form) => form.user_id === userId,
       );
-      setPositions(initialPositions);
+      if (formUser) {
+        return formUser;
+      }
+
+      // Then check assignments - need to find by application_form_id
+      const assignment = assignmentsData?.assignments.find((assignment) => {
+        const user = assignmentToUser(assignment);
+        return user?.user_id === userId;
+      });
+      if (assignment) {
+        return assignmentToUser(assignment);
+      }
+
+      return null;
+    },
+    [registrationFormsData, assignmentsData, assignmentToUser],
+  );
+
+  // Transform data for drag and drop - computed from fetched data with optimistic updates
+  const positions: PositionWithHalls[] = React.useMemo(() => {
+    if (!positionsData || !registrationFormsData || !halls) {
+      return [];
     }
+
+    return positionsData.map((position) => {
+      // Find all assignments for this position and day
+      const positionAssignments =
+        assignmentsData?.assignments.filter(
+          (assignment) => assignment.position_id === position.position_id,
+        ) || [];
+
+      // Separate direct position assignments (no hall) from hall assignments
+      const directAssignments = positionAssignments.filter(
+        (assignment) => !assignment.hall_id,
+      );
+      const hallAssignments = positionAssignments.filter(
+        (assignment) => assignment.hall_id,
+      );
+
+      // Apply optimistic updates for this position
+      const optimisticDirectUsers: RegistrationFormItem[] = [];
+      const optimisticHallUsers: { [hallId: number]: RegistrationFormItem[] } =
+        {};
+
+      Object.values(optimisticUpdates).forEach((update) => {
+        if (update.positionId === position.position_id) {
+          const user = findUserById(update.userId);
+          if (user) {
+            if (update.type === "add") {
+              if (update.hallId) {
+                // Add to specific hall
+                if (!optimisticHallUsers[update.hallId]) {
+                  optimisticHallUsers[update.hallId] = [];
+                }
+                optimisticHallUsers[update.hallId].push(user);
+              } else {
+                // Add to direct position
+                optimisticDirectUsers.push(user);
+              }
+            }
+            // For 'remove' type, we'll filter out the user below
+          }
+        }
+      });
+
+      // Create hall structure if position has halls
+      const positionHalls: HallWithUsers[] = position.has_halls
+        ? halls.map((hall) => {
+            const hallAssignmentsForHall = hallAssignments
+              .filter((assignment) => assignment.hall_id === hall.hall_id)
+              .map(assignmentToUser)
+              .filter((user): user is RegistrationFormItem => user !== null);
+
+            // Apply optimistic updates for this hall
+            const optimisticUsers = optimisticHallUsers[hall.hall_id] || [];
+            const finalHallUsers = [
+              ...hallAssignmentsForHall,
+              ...optimisticUsers,
+            ].filter((user) => {
+              // Remove users that have optimistic 'remove' updates
+              return !Object.values(optimisticUpdates).some(
+                (update) =>
+                  update.userId === user.user_id &&
+                  update.type === "remove" &&
+                  update.positionId === position.position_id &&
+                  update.hallId === hall.hall_id,
+              );
+            });
+
+            return {
+              ...hall,
+              assigned_users: finalHallUsers,
+            };
+          })
+        : [];
+
+      // Apply optimistic updates to direct assignments
+      const finalDirectUsers = [
+        ...directAssignments
+          .map(assignmentToUser)
+          .filter((user): user is RegistrationFormItem => user !== null),
+        ...optimisticDirectUsers,
+      ].filter((user) => {
+        // Remove users that have optimistic 'remove' updates
+        return !Object.values(optimisticUpdates).some(
+          (update) =>
+            update.userId === user.user_id &&
+            update.type === "remove" &&
+            update.positionId === position.position_id &&
+            !update.hallId,
+        );
+      });
+
+      return {
+        ...position,
+        assigned_users: finalDirectUsers,
+        halls: positionHalls.length > 0 ? positionHalls : undefined,
+      };
+    });
   }, [
     positionsData,
     registrationFormsData,
     assignmentsData,
     halls,
-    dayId,
     assignmentToUser,
+    optimisticUpdates,
+    findUserById,
   ]);
 
   // Get unassigned users (all users who haven't been manually assigned to any position yet)
-  const unassignedUsers: User[] =
-    registrationFormsData?.forms
-      .map((form) => ({
-        form_id: form.form_id,
-        user_id: form.user_id,
-        first_name_ru: form.first_name_ru,
-        last_name_ru: form.last_name_ru,
-        patronymic_ru: form.patronymic_ru,
-        full_name_en: form.full_name_en,
-        isu_id: form.isu_id,
-        phone: form.phone,
-        email: form.email,
-        telegram_username: form.telegram_username,
-        itmo_group: form.itmo_group,
-        comments: form.comments,
-        desired_positions: form.desired_positions,
-        created_at: form.created_at,
-        updated_at: form.updated_at,
-      }))
-      .filter((user) => {
-        // Check if user is assigned to any position for this day
-        const isAssigned =
-          assignmentsData?.assignments.some(
-            (assignment) => assignment.user_id === user.user_id,
-          ) || false;
-        return !isAssigned;
-      }) || [];
+  const unassignedUsers: RegistrationFormItem[] =
+    registrationFormsData?.forms.filter((form) => {
+      // Check if user is assigned to any position for this day (including optimistic updates)
+      const isAssignedInData =
+        assignmentsData?.assignments.some((assignment) => {
+          const assignmentUser = assignmentToUser(assignment);
+          return assignmentUser?.user_id === form.user_id;
+        }) || false;
 
-  // Helper function to remove user from all positions and halls
-  const removeUserFromAll = (
-    positions: PositionWithHalls[],
-    userId: number,
-  ): PositionWithHalls[] => {
-    return positions.map((pos) => ({
-      ...pos,
-      assigned_users: pos.assigned_users.filter((u) => u.user_id !== userId),
-      halls: pos.halls?.map((hall) => ({
-        ...hall,
-        assigned_users: hall.assigned_users.filter((u) => u.user_id !== userId),
-      })),
-    }));
-  };
+      // Check if user has optimistic 'add' updates (meaning they're being assigned)
+      const hasOptimisticAdd = Object.values(optimisticUpdates).some(
+        (update) => update.userId === form.user_id && update.type === "add",
+      );
 
-  // Helper function to add user to position
-  const addUserToPosition = (
-    positions: PositionWithHalls[],
-    positionId: number,
-    user: User,
-  ): PositionWithHalls[] => {
-    return positions.map((pos) => {
-      if (pos.position_id === positionId) {
-        return {
-          ...pos,
-          assigned_users: [...pos.assigned_users, user],
-        };
-      }
-      return pos;
-    });
-  };
+      // Check if user has optimistic 'remove' updates (meaning they're being unassigned)
+      const hasOptimisticRemove = Object.values(optimisticUpdates).some(
+        (update) => update.userId === form.user_id && update.type === "remove",
+      );
 
-  // Helper function to add user to hall
-  const addUserToHall = (
-    positions: PositionWithHalls[],
-    positionId: number,
-    hallId: number,
-    user: User,
-  ): PositionWithHalls[] => {
-    return positions.map((pos) => {
-      if (pos.position_id === positionId && pos.halls) {
-        return {
-          ...pos,
-          halls: pos.halls.map((hall) => {
-            if (hall.hall_id === hallId) {
-              return {
-                ...hall,
-                assigned_users: [...hall.assigned_users, user],
-              };
-            }
-            return hall;
-          }),
-        };
-      }
-      return pos;
-    });
-  };
+      // User is unassigned if:
+      // 1. Not assigned in data AND no optimistic add, OR
+      // 2. Has optimistic remove (regardless of data state)
+      return (!isAssignedInData && !hasOptimisticAdd) || hasOptimisticRemove;
+    }) || [];
 
   const handleDragStart = (event: DragStartEvent) => {
     setActiveId(event.active.id as string);
@@ -657,34 +888,6 @@ function RouteComponent() {
 
   const handleDragOver = (_event: DragOverEvent) => {
     // Handle drag over logic if needed
-  };
-
-  // Helper function to find user by ID from all sources
-  const findUserById = (userId: number): User | null => {
-    // First check unassigned users
-    const unassignedUser = unassignedUsers.find((u) => u.user_id === userId);
-    if (unassignedUser) return unassignedUser;
-
-    // Then check all assigned users in positions and halls
-    for (const position of positions) {
-      // Check direct position assignments
-      const directUser = position.assigned_users.find(
-        (u) => u.user_id === userId,
-      );
-      if (directUser) return directUser;
-
-      // Check hall assignments
-      if (position.halls) {
-        for (const hall of position.halls) {
-          const hallUser = hall.assigned_users.find(
-            (u) => u.user_id === userId,
-          );
-          if (hallUser) return hallUser;
-        }
-      }
-    }
-
-    return null;
   };
 
   const handleDragEnd = (event: DragEndEvent) => {
@@ -703,17 +906,36 @@ function RouteComponent() {
 
       if (!user) return;
 
+      // Generate unique key for this operation
+      const operationKey = `${userId}-${Date.now()}`;
+
       // If dropping on a position (general assignment)
       if (overId.startsWith("position-")) {
         const positionId = Number.parseInt(overId.replace("position-", ""), 10);
 
-        setPositions((prevPositions) => {
-          const withoutUser = removeUserFromAll(prevPositions, userId);
-          return addUserToPosition(withoutUser, positionId, user);
-        });
+        // Add optimistic update
+        setOptimisticUpdates((prev) => ({
+          ...prev,
+          [operationKey]: { userId, positionId, type: "add" },
+        }));
 
         // Save assignment to backend
-        saveAssignment(userId, positionId);
+        saveAssignment(userId, positionId)
+          .then(() => {
+            // Remove optimistic update on success
+            setOptimisticUpdates((prev) => {
+              const { [operationKey]: _, ...rest } = prev;
+              return rest;
+            });
+          })
+          .catch((error) => {
+            console.error("Failed to save assignment:", error);
+            // Remove optimistic update on error
+            setOptimisticUpdates((prev) => {
+              const { [operationKey]: _, ...rest } = prev;
+              return rest;
+            });
+          });
       }
 
       // If dropping on a hall (hall-specific assignment)
@@ -723,30 +945,85 @@ function RouteComponent() {
           .split("-")
           .map(Number);
 
-        setPositions((prevPositions) => {
-          const withoutUser = removeUserFromAll(prevPositions, userId);
-          return addUserToHall(withoutUser, positionId, hallId, user);
-        });
+        // Add optimistic update
+        setOptimisticUpdates((prev) => ({
+          ...prev,
+          [operationKey]: { userId, positionId, hallId, type: "add" },
+        }));
 
         // Save assignment to backend
-        saveAssignment(userId, positionId, hallId);
+        saveAssignment(userId, positionId, hallId)
+          .then(() => {
+            // Remove optimistic update on success
+            setOptimisticUpdates((prev) => {
+              const { [operationKey]: _, ...rest } = prev;
+              return rest;
+            });
+          })
+          .catch((error) => {
+            console.error("Failed to save assignment:", error);
+            // Remove optimistic update on error
+            setOptimisticUpdates((prev) => {
+              const { [operationKey]: _, ...rest } = prev;
+              return rest;
+            });
+          });
       }
 
-      // If dropping on unassigned area (remove assignment)
-      if (overId === "unassigned-area") {
-        setPositions((prevPositions) => {
-          return removeUserFromAll(prevPositions, userId);
-        });
-
-        // Remove assignment from backend
+      // If dropping on hover drawer area (remove assignment)
+      if (overId === "hover-drawer-area") {
         const existingAssignment = assignmentsData?.assignments.find(
-          (assignment) =>
-            assignment.user_id === userId &&
-            assignment.day_id === Number(dayId),
+          (assignment) => {
+            const assignmentUser = assignmentToUser(assignment);
+            return assignmentUser?.user_id === userId;
+          },
         );
 
         if (existingAssignment) {
-          deleteUserDayMutation.mutate(existingAssignment.user_day_id);
+          // Find which position/hall the user is currently assigned to
+          const currentPosition = positions.find(
+            (pos) =>
+              pos.assigned_users.some((u) => u.user_id === userId) ||
+              pos.halls?.some((hall) =>
+                hall.assigned_users.some((u) => u.user_id === userId),
+              ),
+          );
+
+          if (currentPosition) {
+            const currentHall = currentPosition.halls?.find((hall) =>
+              hall.assigned_users.some((u) => u.user_id === userId),
+            );
+
+            // Add optimistic update for removal
+            setOptimisticUpdates((prev) => ({
+              ...prev,
+              [operationKey]: {
+                userId,
+                positionId: currentPosition.position_id,
+                hallId: currentHall?.hall_id,
+                type: "remove",
+              },
+            }));
+
+            // Remove assignment from backend
+            deleteUserDayMutation.mutate(existingAssignment.user_day_id, {
+              onSuccess: () => {
+                // Remove optimistic update on success
+                setOptimisticUpdates((prev) => {
+                  const { [operationKey]: _, ...rest } = prev;
+                  return rest;
+                });
+              },
+              onError: (error) => {
+                console.error("Failed to delete assignment:", error);
+                // Remove optimistic update on error
+                setOptimisticUpdates((prev) => {
+                  const { [operationKey]: _, ...rest } = prev;
+                  return rest;
+                });
+              },
+            });
+          }
         }
       }
     }
@@ -778,6 +1055,14 @@ function RouteComponent() {
 
   return (
     <Box sx={{ p: 2 }}>
+      <style>
+        {`
+          @keyframes shimmer {
+            0% { transform: translateX(-100%); }
+            100% { transform: translateX(100%); }
+          }
+        `}
+      </style>
       <Typography variant="h5" gutterBottom>
         {t("Day Assignments")} - Day {dayId}
       </Typography>
@@ -795,29 +1080,28 @@ function RouteComponent() {
 
       <DndContext
         sensors={sensors}
-        collisionDetection={closestCenter}
+        collisionDetection={customCollisionDetection}
         onDragStart={handleDragStart}
         onDragOver={handleDragOver}
         onDragEnd={handleDragEnd}
       >
-        <Box sx={{ display: "flex", gap: 2, flexWrap: "wrap" }}>
-          {/* Unassigned Users Column */}
-          <Box sx={{ flex: "0 0 250px", minWidth: "250px" }}>
-            <UnassignedArea unassignedUsers={unassignedUsers} />
-          </Box>
-
+        <Box sx={{ display: "flex", gap: 2, flexWrap: "wrap", pr: "60px" }}>
           {/* Positions Columns */}
-          <Box sx={{ flex: 1, display: "flex", flexWrap: "wrap", gap: 1.5 }}>
-            {positions.map((position) => (
-              <Box
-                key={position.position_id}
-                sx={{ flex: "0 0 250px", minWidth: "250px" }}
-              >
-                <PositionColumn position={position} />
-              </Box>
-            ))}
-          </Box>
+          {positions.map((position) => (
+            <Box
+              key={position.position_id}
+              sx={{ flex: "0 0 250px", minWidth: "250px" }}
+            >
+              <PositionColumn
+                position={position}
+                optimisticUpdates={optimisticUpdates}
+              />
+            </Box>
+          ))}
         </Box>
+
+        {/* Hover Drawer for Available Volunteers */}
+        <HoverDrawer unassignedUsers={unassignedUsers} activeId={activeId} />
 
         <DragOverlay>
           {activeId ? (
@@ -831,7 +1115,7 @@ function RouteComponent() {
                   const user = findUserById(userId);
                   return user ? (
                     <Card sx={{ maxWidth: 250, opacity: 0.9, boxShadow: 3 }}>
-                      <UserCard user={user} />
+                      <DetailedUserCard user={user} expandedDefault={false} />
                     </Card>
                   ) : null;
                 })()

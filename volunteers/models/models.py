@@ -140,7 +140,7 @@ class UserDay(Base, TimestampMixin):
     hall_id: Mapped[int | None] = mapped_column(ForeignKey("halls.id"), nullable=True)
     hall: Mapped[Hall | None] = relationship(back_populates="user_days")
 
-    information: Mapped[str] = mapped_column(String)
+    information: Mapped[str] = mapped_column(String)  # no idea why it's here or what it's used for
     attendance: Mapped[Attendance] = mapped_column(
         Enum(Attendance, name="attendance_enum"), default=Attendance.UNKNOWN
     )
