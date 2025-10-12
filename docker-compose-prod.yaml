@@ -5,6 +5,8 @@ services:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
       POSTGRES_DB: postgres
+    ports:
+      - "127.0.0.1:15432:5432" # left open for manual intervention
     volumes:
       - db-data:/var/lib/postgresql/data
     networks:
