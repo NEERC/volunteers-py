@@ -160,6 +160,15 @@ export type ErrorLoginResponse = {
     description: string;
 };
 
+export type ExperienceItem = {
+    year_name: string;
+    positions: Array<string>;
+    attendance_stats: {
+        [key: string]: number;
+    };
+    assessments: Array<string>;
+};
+
 export type HttpValidationError = {
     detail?: Array<ValidationError>;
 };
@@ -197,6 +206,7 @@ export type RegistrationFormItem = {
     itmo_group: string | null;
     comments: string;
     desired_positions: Array<PositionOut>;
+    experience: Array<ExperienceItem>;
     created_at: string;
     updated_at: string;
 };

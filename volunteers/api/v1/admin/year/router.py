@@ -134,34 +134,39 @@ async def get_registration_forms(
 ) -> RegistrationFormsResponse:
     forms = await year_service.get_all_forms_by_year_id(year_id=year_id)
 
-    form_items = [
-        RegistrationFormItem(
-            form_id=form.id,
-            user_id=form.user.id,
-            first_name_ru=form.user.first_name_ru,
-            last_name_ru=form.user.last_name_ru,
-            patronymic_ru=form.user.patronymic_ru,
-            full_name_en=form.user.full_name_en,
-            isu_id=form.user.isu_id,
-            phone=form.user.phone,
-            email=form.user.email,
-            telegram_username=form.user.telegram_username,
-            itmo_group=form.itmo_group,
-            comments=form.comments,
-            desired_positions=[
-                PositionOut(
-                    position_id=p.id,
-                    year_id=p.year_id,
-                    name=p.name,
-                    can_desire=p.can_desire,
-                    has_halls=p.has_halls,
-                )
-                for p in form.desired_positions
-            ],
-            created_at=form.created_at.isoformat(),
-            updated_at=form.updated_at.isoformat(),
+    form_items: list[RegistrationFormItem] = []
+    for form in forms:
+        # Get user experience data
+        experience_data = await year_service.get_user_experience(form.user.id)
+
+        form_items.append(
+            RegistrationFormItem(
+                form_id=form.id,
+                user_id=form.user.id,
+                first_name_ru=form.user.first_name_ru,
+                last_name_ru=form.user.last_name_ru,
+                patronymic_ru=form.user.patronymic_ru,
+                full_name_en=form.user.full_name_en,
+                isu_id=form.user.isu_id,
+                phone=form.user.phone,
+                email=form.user.email,
+                telegram_username=form.user.telegram_username,
+                itmo_group=form.itmo_group,
+                comments=form.comments,
+                desired_positions=[
+                    PositionOut(
+                        position_id=p.id,
+                        year_id=p.year_id,
+                        name=p.name,
+                        can_desire=p.can_desire,
+                        has_halls=p.has_halls,
+                    )
+                    for p in form.desired_positions
+                ],
+                experience=experience_data,
+                created_at=form.created_at.isoformat(),
+                updated_at=form.updated_at.isoformat(),
+            )
         )
-        for form in forms
-    ]
 
     return RegistrationFormsResponse(forms=form_items)

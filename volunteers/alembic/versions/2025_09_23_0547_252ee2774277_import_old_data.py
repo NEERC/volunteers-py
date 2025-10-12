@@ -280,10 +280,10 @@ def _migrate_user_days() -> None:
             dim.new_id as day_id,
             '' as information,  -- No information field in old schema
             CASE
-                WHEN ud.attendance = 'yes' THEN 'YES'::attendance_enum
-                WHEN ud.attendance = 'no' THEN 'NO'::attendance_enum
-                WHEN ud.attendance = 'late' THEN 'LATE'::attendance_enum
-                WHEN ud.attendance = 'sick' THEN 'SICK'::attendance_enum
+                WHEN ud.attendance = 'YES' THEN 'YES'::attendance_enum
+                WHEN ud.attendance = 'NO' THEN 'NO'::attendance_enum
+                WHEN ud.attendance = 'LATE' THEN 'LATE'::attendance_enum
+                WHEN ud.attendance = 'SICK' THEN 'SICK'::attendance_enum
                 ELSE 'UNKNOWN'::attendance_enum
             END as attendance,
             pim.new_id as position_id,

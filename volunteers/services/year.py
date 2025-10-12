@@ -1,6 +1,7 @@
 from sqlalchemy import and_, delete, select
 from sqlalchemy.orm import selectinload
 
+from volunteers.api.v1.admin.year.schemas import ExperienceItem
 from volunteers.models import (
     ApplicationForm,
     Assessment,
@@ -400,3 +401,52 @@ class YearService(BaseService):
                 )
                 session.add(association)
             await session.commit()
+
+    async def get_user_experience(self, user_id: int) -> list[ExperienceItem]:
+        """Get prior experience data for a user across all years."""
+        async with self.session_scope() as session:
+            # Get all user days for this user with related data
+            result = await session.execute(
+                select(UserDay)
+                .join(ApplicationForm)
+                .where(ApplicationForm.user_id == user_id)
+                .options(
+                    selectinload(UserDay.application_form).selectinload(ApplicationForm.year),
+                    selectinload(UserDay.position),
+                    selectinload(UserDay.assessments),
+                )
+                .order_by(ApplicationForm.year_id)
+            )
+            user_days = list(result.scalars().all())
+
+            # Group by year and build experience list directly
+            experience_by_year: dict[int, ExperienceItem] = {}
+
+            for user_day in user_days:
+                year_id = user_day.application_form.year_id
+                year_name = user_day.application_form.year.year_name
+
+                if year_id not in experience_by_year:
+                    experience_by_year[year_id] = ExperienceItem(
+                        year_name=year_name,
+                        positions=[],
+                        attendance_stats={},
+                        assessments=[],
+                    )
+
+                # Add position if not already present
+                if user_day.position.name not in experience_by_year[year_id].positions:
+                    experience_by_year[year_id].positions.append(user_day.position.name)
+
+                # Increment attendance count
+                experience_by_year[year_id].attendance_stats[user_day.attendance] = (
+                    experience_by_year[year_id].attendance_stats.get(user_day.attendance, 0) + 1
+                )
+
+                # Add assessment comments
+                for assessment in user_day.assessments:
+                    experience_by_year[year_id].assessments.append(
+                        str(assessment.value) + ": " + assessment.comment
+                    )
+
+            return list(experience_by_year.values())

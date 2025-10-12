@@ -110,8 +110,92 @@ async def test_edit_year_success(app: AppWithContainer, edit_year_request: dict[
         resp = await ac.post("/api/v1/admin/year/123/edit", json=edit_year_request)
     assert resp.status_code == status.HTTP_200_OK, resp.json()
     edit_year_mock.assert_awaited_once()
-    args, kwargs = edit_year_mock.call_args
+    _, kwargs = edit_year_mock.call_args
     assert kwargs.get("year_id") == 123
     year_edit_in = kwargs.get("year_edit_in")
     assert year_edit_in.year_name == "2026-2027"
     assert year_edit_in.open_for_registration is True
+
+
+@pytest.mark.asyncio
+async def test_get_registration_forms_with_experience(app: AppWithContainer) -> None:
+    """Test that get_registration_forms includes experience data for each user."""
+
+    from volunteers.models import ApplicationForm, Position, User
+
+    # Create mock data
+    mock_user = User(
+        id=1,
+        telegram_id=123,
+        first_name_ru="Иван",
+        last_name_ru="Иванов",
+        patronymic_ru="Иванович",
+        full_name_en="Ivan Ivanov",
+        isu_id=12345,
+        phone="+1234567890",
+        email="ivan@example.com",
+        telegram_username="ivan_user",
+    )
+    mock_position = Position(id=1, year_id=1, name="Volunteer", can_desire=True, has_halls=False)
+
+    mock_form = ApplicationForm(
+        id=1, year_id=1, user_id=1, itmo_group="M1234", comments="Test comment"
+    )
+    mock_form.user = mock_user
+    mock_form.desired_positions = {mock_position}
+
+    # Mock the service methods
+    app.test_year_service.get_all_forms_by_year_id = AsyncMock(return_value=[mock_form])
+    app.test_year_service.get_user_experience = AsyncMock(
+        return_value=[
+            {
+                "year_name": "2023",
+                "positions": ["Helper", "Coordinator"],
+                "attendance_stats": {"yes": 5, "late": 1, "no": 0, "sick": 0, "unknown": 0},
+                "assessments": ["Great work!", "Very helpful"],
+            }
+        ]
+    )
+
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as ac:
+        resp = await ac.get("/api/v1/admin/year/1/registration-forms")
+
+    assert resp.status_code == status.HTTP_200_OK, resp.json()
+    data = resp.json()
+
+    # Verify the response structure
+    assert "forms" in data
+    assert len(data["forms"]) == 1
+
+    form_data = data["forms"][0]
+    assert form_data["form_id"] == 1
+    assert form_data["user_id"] == 1
+    assert form_data["first_name_ru"] == "Иван"
+    assert form_data["last_name_ru"] == "Иванов"
+    assert form_data["patronymic_ru"] == "Иванович"
+    assert form_data["full_name_en"] == "Ivan Ivanov"
+    assert form_data["isu_id"] == 12345
+    assert form_data["phone"] == "+1234567890"
+    assert form_data["email"] == "ivan@example.com"
+    assert form_data["telegram_username"] == "ivan_user"
+    assert form_data["itmo_group"] == "M1234"
+    assert form_data["comments"] == "Test comment"
+
+    # Verify desired positions
+    assert "desired_positions" in form_data
+    assert len(form_data["desired_positions"]) == 1
+    assert form_data["desired_positions"][0]["name"] == "Volunteer"
+
+    # Verify experience data
+    assert "experience" in form_data
+    assert len(form_data["experience"]) == 1
+
+    experience = form_data["experience"][0]
+    assert experience["year_name"] == "2023"
+    assert experience["positions"] == ["Helper", "Coordinator"]
+    assert experience["attendance_stats"] == {"yes": 5, "late": 1, "no": 0, "sick": 0, "unknown": 0}
+    assert experience["assessments"] == ["Great work!", "Very helpful"]
+
+    # Verify service methods were called
+    app.test_year_service.get_all_forms_by_year_id.assert_awaited_once_with(year_id=1)
+    app.test_year_service.get_user_experience.assert_awaited_once_with(1)

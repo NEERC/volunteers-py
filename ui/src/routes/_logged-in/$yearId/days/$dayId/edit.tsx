@@ -33,6 +33,11 @@ import {
   IconButton,
   Link,
   Paper,
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableRow,
   Typography,
 } from "@mui/material";
 import { createFileRoute } from "@tanstack/react-router";
@@ -123,7 +128,8 @@ function DetailedUserCard({
     user.itmo_group ||
     user.telegram_username ||
     user.desired_positions.length > 0 ||
-    user.comments;
+    user.comments ||
+    (user.experience && user.experience.length > 0);
 
   return (
     <CardContent sx={{ p: 1, "&:last-child": { pb: 1 } }}>
@@ -226,6 +232,112 @@ function DetailedUserCard({
             >
               "{user.comments}"
             </Typography>
+          </Box>
+        )}
+
+        {user.experience && user.experience.length > 0 && (
+          <Box sx={{ mt: 0.5, overflowX: "auto" }}>
+            <Typography
+              variant="body2"
+              sx={{ fontWeight: 600, mb: 0.25, fontSize: "0.75rem" }}
+            >
+              Experience:
+            </Typography>
+            <Table size="small" sx={{ fontSize: "0.7rem" }}>
+              <TableHead>
+                <TableRow>
+                  <TableCell sx={{ fontSize: "0.65rem", py: 0.25, px: 0.5 }}>
+                    Year
+                  </TableCell>
+                  <TableCell sx={{ fontSize: "0.65rem", py: 0.25, px: 0.5 }}>
+                    Positions
+                  </TableCell>
+                  <TableCell sx={{ fontSize: "0.65rem", py: 0.25, px: 0.5 }}>
+                    Attendance
+                  </TableCell>
+                  <TableCell sx={{ fontSize: "0.65rem", py: 0.25, px: 0.5 }}>
+                    Assessments
+                  </TableCell>
+                </TableRow>
+              </TableHead>
+              <TableBody>
+                {user.experience.map((exp, index) => (
+                  <TableRow key={`${exp.year_name}-${index}`}>
+                    <TableCell sx={{ fontSize: "0.65rem", py: 0.25, px: 0.5 }}>
+                      {exp.year_name}
+                    </TableCell>
+                    <TableCell sx={{ fontSize: "0.65rem", py: 0.25, px: 0.5 }}>
+                      {exp.positions.length > 0 ? (
+                        <Box
+                          sx={{ display: "flex", flexWrap: "wrap", gap: 0.25 }}
+                        >
+                          {exp.positions.map((position, posIndex) => (
+                            <Chip
+                              key={`${exp.year_name}-pos-${posIndex}`}
+                              label={position}
+                              size="small"
+                              color="secondary"
+                              variant="outlined"
+                              sx={{ fontSize: "0.6rem", height: "16px" }}
+                            />
+                          ))}
+                        </Box>
+                      ) : (
+                        <Typography variant="caption" color="text.secondary">
+                          None
+                        </Typography>
+                      )}
+                    </TableCell>
+                    <TableCell sx={{ fontSize: "0.65rem", py: 0.25, px: 0.5 }}>
+                      {Object.entries(exp.attendance_stats).map(
+                        ([status, count]) => (
+                          <Box
+                            key={`${exp.year_name}-attendance-${status}`}
+                            sx={{ display: "inline-block", mr: 0.5 }}
+                          >
+                            <Typography
+                              variant="caption"
+                              sx={{ fontSize: "0.6rem" }}
+                            >
+                              {status}: {count}
+                            </Typography>
+                          </Box>
+                        ),
+                      )}
+                    </TableCell>
+                    <TableCell sx={{ fontSize: "0.65rem", py: 0.25, px: 0.5 }}>
+                      {exp.assessments.length > 0 ? (
+                        <Box
+                          sx={{ display: "flex", flexWrap: "wrap", gap: 0.25 }}
+                        >
+                          {exp.assessments.map((assessment, assIndex) => (
+                            <Chip
+                              key={`${exp.year_name}-ass-${assIndex}`}
+                              label={assessment}
+                              size="small"
+                              color="success"
+                              variant="outlined"
+                              sx={{
+                                fontSize: "0.6rem",
+                                height: "auto",
+                                "& .MuiChip-label": {
+                                  display: "block",
+                                  whiteSpace: "normal",
+                                },
+                              }}
+                            />
+                          ))}
+                        </Box>
+                      ) : (
+                        <Typography variant="caption" color="text.secondary">
+                          None
+                        </Typography>
+                      )}
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
           </Box>
         )}
       </Collapse>
@@ -474,25 +586,10 @@ function PositionColumn({
       <Typography variant="subtitle1" gutterBottom sx={{ fontWeight: 600 }}>
         {position.name}
       </Typography>
-
-      <Typography
-        variant="caption"
-        color="text.secondary"
-        sx={{ mb: 1, display: "block" }}
-      >
-        {totalAssigned} assigned
-      </Typography>
       <Divider sx={{ mb: 1 }} />
 
       {/* Direct position assignments (always available) */}
       <Box sx={{ mb: position.halls?.length ? 2 : 0 }}>
-        <Typography
-          variant="caption"
-          color="text.secondary"
-          sx={{ mb: 0.5, display: "block" }}
-        >
-          General ({position.assigned_users.length})
-        </Typography>
         <SortableContext
           items={position.assigned_users.map((user) => `user-${user.user_id}`)}
           strategy={verticalListSortingStrategy}
@@ -568,13 +665,6 @@ function HallColumn({
     >
       <Typography variant="body2" gutterBottom sx={{ fontWeight: 600 }}>
         {hall.name}
-      </Typography>
-      <Typography
-        variant="caption"
-        color="text.secondary"
-        sx={{ mb: 1, display: "block" }}
-      >
-        {hall.assigned_users.length} assigned
       </Typography>
       <Divider sx={{ mb: 1 }} />
       <SortableContext

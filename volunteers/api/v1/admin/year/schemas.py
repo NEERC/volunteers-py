@@ -1,5 +1,6 @@
 from pydantic import BaseModel
 
+from volunteers.models.attendance import Attendance
 from volunteers.schemas.base import BaseSuccessResponse
 from volunteers.schemas.position import PositionOut
 
@@ -34,6 +35,13 @@ class UserListResponse(BaseModel):
     users: list[UserListItem]
 
 
+class ExperienceItem(BaseModel):
+    year_name: str
+    positions: list[str]
+    attendance_stats: dict[Attendance, int]
+    assessments: list[str]
+
+
 class RegistrationFormItem(BaseModel):
     form_id: int
     user_id: int
@@ -48,6 +56,7 @@ class RegistrationFormItem(BaseModel):
     itmo_group: str | None
     comments: str
     desired_positions: list[PositionOut]
+    experience: list[ExperienceItem]
     created_at: str
     updated_at: str
 
