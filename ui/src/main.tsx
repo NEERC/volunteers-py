@@ -47,7 +47,7 @@ declare module "@tanstack/react-router" {
 }
 
 client.setConfig({
-  baseURL: "/",
+  baseURL: import.meta.env.BASE_URL,
 });
 
 client.instance.interceptors.response.use(
