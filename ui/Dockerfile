@@ -21,7 +21,7 @@ RUN --mount=type=cache,id=pnpm,target=/pnpm/store  \
 
 COPY . .
 
-RUN pnpm run build --mode ${MODE}
+RUN pnpm run build --mode ${MODE} --base ${PUBLIC_URL}
 
 
 FROM nginx:${NGINX_VERSION}-alpine
