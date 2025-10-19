@@ -1,5 +1,6 @@
 import AddIcon from "@mui/icons-material/Add";
 import EditIcon from "@mui/icons-material/Edit";
+import HomeIcon from "@mui/icons-material/Home";
 import SaveIcon from "@mui/icons-material/Save";
 import VisibilityIcon from "@mui/icons-material/Visibility";
 import VisibilityOffIcon from "@mui/icons-material/VisibilityOff";
@@ -422,6 +423,11 @@ function RouteComponent() {
                             color="disabled"
                             fontSize="small"
                           />
+                        </Tooltip>
+                      )}
+                      {position.has_halls && (
+                        <Tooltip title={t("Has halls")}>
+                          <HomeIcon color="primary" fontSize="small" />
                         </Tooltip>
                       )}
                     </Box>
