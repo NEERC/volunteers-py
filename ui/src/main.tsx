@@ -68,7 +68,7 @@ client.instance.interceptors.response.use(
 const App = observer(() => (
   <StrictMode>
     <TanStackQueryProvider.Provider>
-      <RouterProvider router={router} />
+      <RouterProvider router={router} basepath={import.meta.env.BASE_URL} />
     </TanStackQueryProvider.Provider>
   </StrictMode>
 ));
