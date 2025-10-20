@@ -98,7 +98,7 @@ function RouteComponent() {
     last_name_ru: string;
     patronymic_ru: string | null;
     full_name_en: string;
-    isu_id: number | null;
+    isu_id: number | "" | null;
   }) => {
     setIsRegisterSubmitting(true);
     setError(null); // Clear any previous errors
@@ -112,7 +112,9 @@ function RouteComponent() {
         ...storedTelegramData,
         first_name_ru: values.first_name_ru,
         last_name_ru: values.last_name_ru,
-        isu_id: values.isu_id,
+        ...(values.isu_id != null && values.isu_id !== ""
+          ? { isu_id: values.isu_id }
+          : {}),
         full_name_en: values.full_name_en,
         patronymic_ru: values.patronymic_ru,
       });
