@@ -6,6 +6,7 @@
   "Main page": "Main page",
   "Create Year": "Create Year",
   "Registration Form": "Registration Form",
+  "Registration Forms": "Registration Forms",
   "Contacts": "Contacts",
   "Days": "Days",
   "Create Day": "Create Day",
@@ -103,5 +104,14 @@
   "Grouped by": "Grouped by",
   "Access Forbidden": "Access Forbidden",
   "You are not authorized to access this page": "You are not authorized to access this page",
-  "Go to Main Page": "Go to Main Page"
+  "Go to Main Page": "Go to Main Page",
+  "All registration forms for this year": "All registration forms for this year",
+  "forms": "forms",
+  "Search registration forms...": "Search registration forms...",
+  "Search by name...": "Search by name...",
+  "Position counts": "Position counts",
+  "Filter by position": "Filter by position",
+  "All positions": "All positions",
+  "No registration forms found matching your search": "No registration forms found matching your search",
+  "No registration forms found": "No registration forms found"
 }

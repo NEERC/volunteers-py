@@ -6,6 +6,7 @@
   "Years": "Годы",
   "Create Year": "Создать год",
   "Registration Form": "Форма регистрации",
+  "Registration Forms": "Формы регистрации",
   "Contacts": "Контакты",
   "Days": "Дни",
   "Create Day": "Создать день",
@@ -113,5 +114,14 @@
   "Access Forbidden": "Доступ запрещен",
   "You are not authorized to access this page": "У вас нет прав для доступа к этой странице",
   "Go to Main Page": "Перейти на главную страницу",
-  "Welcome to the volunteer system. Select a year in the top left corner.": "Добро пожаловать в волонтерскую систему. Выберите год в верхнем левом углу."
+  "Welcome to the volunteer system. Select a year in the top left corner.": "Добро пожаловать в волонтерскую систему. Выберите год в верхнем левом углу.",
+  "All registration forms for this year": "Все формы регистрации для этого года",
+  "forms": "форм",
+  "Search registration forms...": "Поиск форм регистрации...",
+  "Search by name...": "Поиск по имени...",
+  "Position counts": "Количество по позициям",
+  "Filter by position": "Фильтр по позиции",
+  "All positions": "Все позиции",
+  "No registration forms found matching your search": "Не найдено форм регистрации, соответствующих вашему поиску",
+  "No registration forms found": "Формы регистрации не найдены"
 }

@@ -1,9 +1,14 @@
+import CloseIcon from "@mui/icons-material/Close";
 import SearchIcon from "@mui/icons-material/Search";
 import {
   Alert,
   Box,
   Chip,
   CircularProgress,
+  Dialog,
+  DialogContent,
+  DialogTitle,
+  IconButton,
   InputAdornment,
   Link,
   Paper,
@@ -22,10 +27,11 @@ import {
   useReactTable,
 } from "@tanstack/react-table";
 import { useVirtualizer } from "@tanstack/react-virtual";
-import { useMemo, useRef, useState } from "react";
+import { useCallback, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import type { UserListItem } from "@/client/types.gen";
-import { useUsersList } from "@/data/use-admin";
+import { DetailedUserCard } from "@/components/DetailedUserCard";
+import { useRegistrationForms, useUsersList } from "@/data/use-admin";
 import { shouldBeLoggedIn } from "@/utils/should-be-logged-in";
 
 export const Route = createFileRoute("/_logged-in/$yearId/contacts")({
@@ -45,10 +51,24 @@ function RouteComponent() {
   const { t } = useTranslation();
   const { yearId } = Route.useParams();
   const { data, isLoading, error } = useUsersList(yearId);
+  const { data: registrationForms } = useRegistrationForms(yearId);
 
   const [sorting, setSorting] = useState<SortingState>([]);
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
   const [globalFilter, setGlobalFilter] = useState("");
+  const [selectedUserId, setSelectedUserId] = useState<number | null>(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+
+  // Handle status column click
+  const handleStatusClick = useCallback((userId: number) => {
+    setSelectedUserId(userId);
+    setIsModalOpen(true);
+  }, []);
+
+  // Get selected user's registration form data
+  const selectedUserForm = registrationForms?.forms.find(
+    (form) => form.user_id === selectedUserId,
+  );
 
   // Define columns with appropriate sizing
   const columns: ColumnDef<UserListItem>[] = useMemo(
@@ -207,19 +227,28 @@ function RouteComponent() {
         size: 170, // Status chips are compact
         cell: (info) => {
           const isRegistered = info.getValue() as boolean;
+          const userId = info.row.original.id;
           return (
             <Chip
               label={isRegistered ? t("Registered") : t("Not Registered")}
               size="small"
               color={isRegistered ? "success" : "default"}
               variant={isRegistered ? "filled" : "outlined"}
-              sx={{ height: 20, fontSize: "0.75rem" }}
+              sx={{
+                height: 20,
+                fontSize: "0.75rem",
+                cursor: "pointer",
+                "&:hover": {
+                  opacity: 0.8,
+                },
+              }}
+              onClick={() => handleStatusClick(userId)}
             />
           );
         },
       },
     ],
-    [t],
+    [t, handleStatusClick],
   );
 
   // Create table instance
@@ -442,6 +471,42 @@ function RouteComponent() {
           </Typography>
         </Box>
       )}
+
+      {/* User Details Modal */}
+      <Dialog
+        open={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        maxWidth="md"
+        fullWidth
+      >
+        <DialogTitle
+          sx={{
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+          }}
+        >
+          <Typography variant="h6">{t("User Registration Details")}</Typography>
+          <IconButton onClick={() => setIsModalOpen(false)} size="small">
+            <CloseIcon />
+          </IconButton>
+        </DialogTitle>
+        <DialogContent sx={{ p: 0 }}>
+          {selectedUserForm ? (
+            <DetailedUserCard
+              user={selectedUserForm}
+              expandedDefault={true}
+              expandable={false}
+            />
+          ) : (
+            <Box p={3} textAlign="center">
+              <Typography variant="body1" color="text.secondary">
+                {t("User registration form not found")}
+              </Typography>
+            </Box>
+          )}
+        </DialogContent>
+      </Dialog>
     </Box>
   );
 }

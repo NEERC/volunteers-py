@@ -2,6 +2,7 @@ import AssessmentIcon from "@mui/icons-material/Assessment";
 import AssignmentIcon from "@mui/icons-material/Assignment";
 import CalendarMonthIcon from "@mui/icons-material/CalendarMonth";
 import ContactsIcon from "@mui/icons-material/Contacts";
+import DescriptionIcon from "@mui/icons-material/Description";
 import EmojiEventsIcon from "@mui/icons-material/EmojiEvents";
 import ExpandLess from "@mui/icons-material/ExpandLess";
 import ExpandMore from "@mui/icons-material/ExpandMore";
@@ -92,6 +93,14 @@ const getRoutesConfig = (
     labelKey: "Contacts",
     icon: ContactsIcon,
     path: `/${selectedYear}/contacts`,
+    adminOnly: true,
+  },
+  {
+    id: "registration-forms",
+    type: "simple",
+    labelKey: "Registration Forms",
+    icon: DescriptionIcon,
+    path: `/${selectedYear}/registration-forms`,
     adminOnly: true,
   },
   {
