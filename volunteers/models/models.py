@@ -1,6 +1,15 @@
 from __future__ import annotations
 
-from sqlalchemy import Boolean, Double, Enum, ForeignKey, Integer, String, UniqueConstraint
+from sqlalchemy import (
+    BigInteger,
+    Boolean,
+    Double,
+    Enum,
+    ForeignKey,
+    Integer,
+    String,
+    UniqueConstraint,
+)
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from .attendance import Attendance
@@ -24,7 +33,7 @@ class Year(Base, TimestampMixin):
 class User(Base, TimestampMixin):
     __tablename__ = "users"
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
-    telegram_id: Mapped[int | None] = mapped_column(Integer, unique=True, nullable=True)
+    telegram_id: Mapped[int | None] = mapped_column(BigInteger, unique=True, nullable=True)
 
     isu_id: Mapped[int | None] = mapped_column(Integer, nullable=True)
     first_name_ru: Mapped[str] = mapped_column(String)
