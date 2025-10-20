@@ -38,6 +38,13 @@ class AuthStore {
     }).then(async () => {
       this.installMiddleware();
       try {
+        if (!this.refreshToken) {
+          console.log("No refresh token");
+          return;
+        }
+        if (!this.accessToken) {
+          await this.refresh();
+        }
         await this.fetchUser();
       } catch (error) {
         console.error(error);
