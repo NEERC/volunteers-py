@@ -105,7 +105,6 @@ export type DayAssignmentItem = {
     telegram: string | null;
     position: string;
     hall: string | null;
-    attendance: Attendance;
 };
 
 /**

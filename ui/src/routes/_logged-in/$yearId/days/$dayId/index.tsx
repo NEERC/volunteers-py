@@ -120,7 +120,7 @@ function AssignmentsTable({ assignments }: AssignmentsTableProps) {
   const [sorting, setSorting] = useState<SortingState>([
     { id: "position", desc: true },
     { id: "hall", desc: true },
-    { id: "attendance", desc: true },
+    // { id: "attendance", desc: true },
   ]);
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
   const [globalFilter, setGlobalFilter] = useState("");
@@ -133,11 +133,11 @@ function AssignmentsTable({ assignments }: AssignmentsTableProps) {
   const hallOptions = Array.from(
     new Set(assignments.map((item) => item.hall || "No Hall")),
   ).sort();
-  const attendanceOptions = Array.from(
-    new Set(assignments.map((item) => item.attendance)),
-  ).sort();
+  // const attendanceOptions = Array.from(
+  //   new Set(assignments.map((item) => item.attendance)),
+  // ).sort();
 
-  console.log(positionOptions, hallOptions, attendanceOptions);
+  // console.log(positionOptions, hallOptions, attendanceOptions);
 
   const columns = [
     columnHelper.accessor("name", {
@@ -168,28 +168,28 @@ function AssignmentsTable({ assignments }: AssignmentsTableProps) {
       enableGlobalFilter: true,
       filterFn: "equals",
     }),
-    columnHelper.accessor("attendance", {
-      header: "Attendance",
-      cell: (info) => {
-        const attendance = info.getValue();
-        const color =
-          attendance === "yes"
-            ? "success"
-            : attendance === "no"
-              ? "error"
-              : "default";
-        return (
-          <Chip
-            label={attendance}
-            color={color as "success" | "error" | "default"}
-            size="small"
-          />
-        );
-      },
-      enableGrouping: true,
-      enableGlobalFilter: true,
-      filterFn: "equals",
-    }),
+    // columnHelper.accessor("attendance", {
+    //   header: "Attendance",
+    //   cell: (info) => {
+    //     const attendance = info.getValue();
+    //     const color =
+    //       attendance === "yes"
+    //         ? "success"
+    //         : attendance === "no"
+    //           ? "error"
+    //           : "default";
+    //     return (
+    //       <Chip
+    //         label={attendance}
+    //         color={color as "success" | "error" | "default"}
+    //         size="small"
+    //       />
+    //     );
+    //   },
+    //   enableGrouping: true,
+    //   enableGlobalFilter: true,
+    //   filterFn: "equals",
+    // }),
   ];
 
   const table = useReactTable({
@@ -270,8 +270,8 @@ function AssignmentsTable({ assignments }: AssignmentsTableProps) {
                       return positionOptions;
                     case "hall":
                       return hallOptions;
-                    case "attendance":
-                      return attendanceOptions;
+                    // case "attendance":
+                    //   return attendanceOptions;
                     default:
                       return [];
                   }
