@@ -17,7 +17,11 @@ import {
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { Person as PersonIcon } from "@mui/icons-material";
+import {
+  Person as PersonIcon,
+  PushPin as PinIcon,
+  PushPinOutlined as PinOutlinedIcon,
+} from "@mui/icons-material";
 import {
   Alert,
   Box,
@@ -25,6 +29,7 @@ import {
   CardContent,
   CircularProgress,
   Divider,
+  IconButton,
   Paper,
   Typography,
 } from "@mui/material";
@@ -138,17 +143,21 @@ function DraggableDetailedUserCard({ user }: { user: RegistrationFormItem }) {
 function HoverDrawer({
   unassignedUsers,
   activeId,
+  isPinned,
+  onPinChange,
 }: {
   unassignedUsers: RegistrationFormItem[];
   activeId: string | null;
+  isPinned: boolean;
+  onPinChange: (pinned: boolean) => void;
 }) {
   const [isHovered, setIsHovered] = useState(false);
   const { isOver, setNodeRef } = useDroppable({
     id: "hover-drawer-area",
   });
 
-  // Don't open drawer when dragging
-  const shouldShowDrawer = isHovered && !activeId;
+  // Don't open drawer when dragging, but show if pinned
+  const shouldShowDrawer = (isHovered || isPinned) && !activeId;
 
   return (
     <Box
@@ -163,15 +172,15 @@ function HoverDrawer({
         border: isOver ? "2px dashed" : "1px solid",
         boxSizing: "border-box",
         borderColor: isOver ? "primary.main" : "divider",
-        transition: "width 0.3s ease-in-out",
+        transition: isPinned ? "none" : "width 0.3s ease-in-out",
         zIndex: 3000,
         overflow: "hidden",
         "&:hover": {
-          width: shouldShowDrawer ? "500px" : "50px",
+          width: isPinned ? "500px" : shouldShowDrawer ? "500px" : "50px",
         },
       }}
-      onMouseEnter={() => setIsHovered(true)}
-      onMouseLeave={() => setIsHovered(false)}
+      onMouseEnter={() => !isPinned && setIsHovered(true)}
+      onMouseLeave={() => !isPinned && setIsHovered(false)}
     >
       {/* Hover trigger area */}
       <Box
@@ -183,14 +192,36 @@ function HoverDrawer({
           height: "100%",
           backgroundColor: "primary.main",
           display: "flex",
+          flexDirection: "column",
           alignItems: "center",
           justifyContent: "center",
+          gap: 1,
           cursor: "pointer",
           zIndex: 3001,
-          pointerEvents: "none",
+          pointerEvents: "auto",
         }}
       >
         <PersonIcon sx={{ color: "white", transform: "rotate(90deg)" }} />
+        <IconButton
+          size="small"
+          onClick={(e) => {
+            e.stopPropagation();
+            onPinChange(!isPinned);
+          }}
+          sx={{
+            color: "white",
+            padding: 0.5,
+            "&:hover": {
+              backgroundColor: "rgba(255, 255, 255, 0.1)",
+            },
+          }}
+        >
+          {isPinned ? (
+            <PinIcon sx={{ fontSize: 16 }} />
+          ) : (
+            <PinOutlinedIcon sx={{ fontSize: 16 }} />
+          )}
+        </IconButton>
       </Box>
 
       {/* Drawer content */}
@@ -447,6 +478,7 @@ function RouteComponent() {
   const { t } = useTranslation();
   const { yearId, dayId } = Route.useParams();
   const [activeId, setActiveId] = useState<string | null>(null);
+  const [isDrawerPinned, setIsDrawerPinned] = useState(false);
   const [optimisticUpdates, setOptimisticUpdates] = useState<{
     [key: string]: {
       userId: number;
@@ -924,7 +956,15 @@ function RouteComponent() {
         onDragOver={handleDragOver}
         onDragEnd={handleDragEnd}
       >
-        <Box sx={{ display: "flex", gap: 2, flexWrap: "wrap", pr: "60px" }}>
+        <Box
+          sx={{
+            display: "flex",
+            gap: 2,
+            flexWrap: "wrap",
+            pr: isDrawerPinned ? "500px" : "60px",
+            transition: "padding-right 0.3s ease-in-out",
+          }}
+        >
           {/* Positions Columns */}
           {positions.map((position) => (
             <Box
@@ -940,7 +980,12 @@ function RouteComponent() {
         </Box>
 
         {/* Hover Drawer for Available Volunteers */}
-        <HoverDrawer unassignedUsers={unassignedUsers} activeId={activeId} />
+        <HoverDrawer
+          unassignedUsers={unassignedUsers}
+          activeId={activeId}
+          isPinned={isDrawerPinned}
+          onPinChange={setIsDrawerPinned}
+        />
 
         <DragOverlay>
           {activeId ? (
