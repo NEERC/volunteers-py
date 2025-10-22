@@ -25,6 +25,7 @@ import {
 import {
   Alert,
   Box,
+  Button,
   Card,
   CardContent,
   CircularProgress,
@@ -32,9 +33,11 @@ import {
   IconButton,
   Paper,
   Typography,
+  useMediaQuery,
+  useTheme,
 } from "@mui/material";
 import { createFileRoute } from "@tanstack/react-router";
-import React, { useState } from "react";
+import React, { useCallback, useState } from "react";
 import { useTranslation } from "react-i18next";
 import type {
   HallOut,
@@ -43,14 +46,12 @@ import type {
 } from "@/client/types.gen";
 import { DetailedUserCard } from "@/components/DetailedUserCard";
 import {
-  useAddUserDay,
   useDayAssignments,
-  useDeleteUserDay,
-  useEditUserDay,
   useRegistrationForms,
   useYearHalls,
   useYearPositions,
 } from "@/data/use-admin";
+import { useDayAssignmentManager } from "@/hooks/useDayAssignmentManager";
 
 // Custom collision detection that prioritizes the drawer
 const customCollisionDetection: CollisionDetection = (args) => {
@@ -106,7 +107,17 @@ export const Route = createFileRoute("/_logged-in/$yearId/days/$dayId/edit")({
   component: RouteComponent,
 });
 
-function DraggableDetailedUserCard({ user }: { user: RegistrationFormItem }) {
+function DraggableDetailedUserCard({
+  user,
+  isSelected,
+  onClick,
+  isMobile = false,
+}: {
+  user: RegistrationFormItem;
+  isSelected: boolean;
+  onClick: () => void;
+  isMobile?: boolean;
+}) {
   const {
     attributes,
     listeners,
@@ -114,7 +125,10 @@ function DraggableDetailedUserCard({ user }: { user: RegistrationFormItem }) {
     transform,
     transition,
     isDragging,
-  } = useSortable({ id: `user-${user.user_id}` });
+  } = useSortable({
+    id: `user-${user.user_id}`,
+    disabled: isMobile, // Disable drag on mobile
+  });
 
   const style = {
     transform: CSS.Transform.toString(transform),
@@ -126,13 +140,23 @@ function DraggableDetailedUserCard({ user }: { user: RegistrationFormItem }) {
     <Card
       ref={setNodeRef}
       style={style}
-      {...attributes}
-      {...listeners}
+      {...(isMobile ? {} : attributes)}
+      {...(isMobile ? {} : listeners)}
+      onClick={(e) => {
+        e.stopPropagation();
+        onClick();
+      }}
       sx={{
         mb: 2,
-        cursor: "grab",
-        "&:active": { cursor: "grabbing" },
+        cursor: isMobile ? "pointer" : "grab",
+        "&:active": { cursor: isMobile ? "pointer" : "grabbing" },
         opacity: isDragging ? 0.5 : 1,
+        border: isSelected ? "2px solid" : "1px solid",
+        borderColor: isSelected ? "primary.main" : "divider",
+        backgroundColor: isSelected ? "action.selected" : "background.paper",
+        "&:hover": {
+          backgroundColor: isSelected ? "action.selected" : "action.hover",
+        },
       }}
     >
       <DetailedUserCard user={user} expandedDefault={true} />
@@ -145,11 +169,19 @@ function HoverDrawer({
   activeId,
   isPinned,
   onPinChange,
+  clickSelectedUserId,
+  onUserClick,
+  onRemoveAssignment,
+  isMobile = false,
 }: {
   unassignedUsers: RegistrationFormItem[];
   activeId: string | null;
   isPinned: boolean;
   onPinChange: (pinned: boolean) => void;
+  clickSelectedUserId: number | null;
+  onUserClick: (userId: number) => void;
+  onRemoveAssignment: (userId: number) => void;
+  isMobile?: boolean;
 }) {
   const [isHovered, setIsHovered] = useState(false);
   const { isOver, setNodeRef } = useDroppable({
@@ -157,42 +189,105 @@ function HoverDrawer({
   });
 
   // Don't open drawer when dragging, but show if pinned
-  const shouldShowDrawer = (isHovered || isPinned) && !activeId;
+  // On mobile, only show if pinned (no hover)
+  const shouldShowDrawer = isMobile
+    ? isPinned && !activeId
+    : (isHovered || isPinned) && !activeId;
 
   return (
     <Box
       ref={setNodeRef}
       sx={{
         position: "fixed",
-        right: 0,
-        top: 0,
-        height: "100vh",
-        width: shouldShowDrawer ? "500px" : "50px",
-        backgroundColor: isOver ? "action.hover" : "background.paper",
-        border: isOver ? "2px dashed" : "1px solid",
+        // Desktop: right side drawer
+        ...(isMobile
+          ? {}
+          : {
+              right: 0,
+              top: 0,
+              height: "100vh",
+              width: shouldShowDrawer ? "500px" : "50px",
+            }),
+        // Mobile: bottom drawer
+        ...(isMobile
+          ? {
+              bottom: 0,
+              left: 0,
+              right: 0,
+              height: shouldShowDrawer ? "60vh" : "60px",
+              width: "100vw",
+            }
+          : {}),
+        backgroundColor: isOver
+          ? "action.hover"
+          : clickSelectedUserId
+            ? "action.selected"
+            : "background.paper",
+        border: isOver
+          ? "2px dashed"
+          : clickSelectedUserId
+            ? "2px solid"
+            : "1px solid",
         boxSizing: "border-box",
-        borderColor: isOver ? "primary.main" : "divider",
-        transition: isPinned ? "none" : "width 0.3s ease-in-out",
+        borderColor: isOver
+          ? "primary.main"
+          : clickSelectedUserId
+            ? "primary.main"
+            : "divider",
+        transition: isPinned
+          ? "none"
+          : isMobile
+            ? "height 0.3s ease-in-out"
+            : "width 0.3s ease-in-out",
         zIndex: 3000,
         overflow: "hidden",
+        cursor: clickSelectedUserId ? "pointer" : "default",
         "&:hover": {
-          width: isPinned ? "500px" : shouldShowDrawer ? "500px" : "50px",
+          // Only apply hover effects on desktop
+          ...(isMobile
+            ? {}
+            : {
+                width: isPinned ? "500px" : shouldShowDrawer ? "500px" : "50px",
+              }),
         },
       }}
-      onMouseEnter={() => !isPinned && setIsHovered(true)}
-      onMouseLeave={() => !isPinned && setIsHovered(false)}
+      onMouseEnter={() => !isMobile && !isPinned && setIsHovered(true)}
+      onMouseLeave={() => !isMobile && !isPinned && setIsHovered(false)}
     >
       {/* Hover trigger area */}
       <Box
+        onClick={(e) => {
+          e.stopPropagation();
+          // On mobile, clicking the trigger area toggles the drawer
+          if (isMobile) {
+            onPinChange(!isPinned);
+          }
+        }}
         sx={{
           position: "absolute",
-          right: 0,
-          top: 0,
-          width: "50px",
-          height: "100%",
+          // Desktop: right side trigger
+          ...(isMobile
+            ? {}
+            : {
+                right: 0,
+                top: 0,
+                width: "50px",
+                height: "100%",
+                flexDirection: "column",
+              }),
+          // Mobile: bottom trigger
+          ...(isMobile
+            ? {
+                bottom: 0,
+                left: 0,
+                right: 0,
+                height: "60px",
+                width: "100%",
+                flexDirection: "row",
+              }
+            : {}),
           backgroundColor: "primary.main",
           display: "flex",
-          flexDirection: "column",
           alignItems: "center",
           justifyContent: "center",
           gap: 1,
@@ -201,7 +296,12 @@ function HoverDrawer({
           pointerEvents: "auto",
         }}
       >
-        <PersonIcon sx={{ color: "white", transform: "rotate(90deg)" }} />
+        <PersonIcon
+          sx={{
+            color: "white",
+            transform: isMobile ? "none" : "rotate(90deg)",
+          }}
+        />
         <IconButton
           size="small"
           onClick={(e) => {
@@ -226,17 +326,53 @@ function HoverDrawer({
 
       {/* Drawer content */}
       <Box
+        onClick={(e) => {
+          e.stopPropagation();
+          // Handle clicks on empty areas of the drawer content
+          if (clickSelectedUserId) {
+            onRemoveAssignment(clickSelectedUserId);
+          }
+        }}
         sx={{
-          width: "calc(500px - 50px - 2px)",
+          // Desktop: right side content
+          ...(isMobile
+            ? {}
+            : {
+                width: "calc(500px - 50px - 2px)",
+                height: "100%",
+                pt: 8,
+              }),
+          // Mobile: bottom content
+          ...(isMobile
+            ? {
+                width: "100%",
+                height: "calc(60vh - 60px - 2px)",
+                pb: 8,
+              }
+            : {}),
           boxSizing: "border-box",
-          height: "100%",
           p: 2,
-          pt: 8,
           overflowY: "auto",
           overflowX: "hidden",
-          opacity: shouldShowDrawer ? 1 : 0,
-          transition: "opacity 0.2s ease-in-out",
+          // opacity: shouldShowDrawer ? 1 : 0,
+          // transition: "opacity 0.2s ease-in-out",
           pointerEvents: "auto",
+          position: "relative",
+          // ...(clickSelectedUserId && {
+          //   "&::before": {
+          //     content: '""',
+          //     position: "absolute",
+          //     top: 0,
+          //     left: 0,
+          //     right: 0,
+          //     bottom: 0,
+          //     border: "2px dashed",
+          //     borderColor: "primary.main",
+          //     borderRadius: 1,
+          //     pointerEvents: "none",
+          //     animation: "pulse 2s infinite",
+          //   },
+          // }),
         }}
       >
         <Typography
@@ -246,6 +382,18 @@ function HoverDrawer({
           <PersonIcon />
           Available Volunteers
         </Typography>
+
+        {clickSelectedUserId && (
+          <Box sx={{ mb: 2 }}>
+            <Button
+              onClick={() => onRemoveAssignment(clickSelectedUserId)}
+              variant="contained"
+              color="error"
+            >
+              Click here to remove assignment
+            </Button>
+          </Box>
+        )}
 
         <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
           {unassignedUsers.length} volunteers available
@@ -263,7 +411,13 @@ function HoverDrawer({
           </Typography>
         ) : (
           unassignedUsers.map((user) => (
-            <DraggableDetailedUserCard key={user.user_id} user={user} />
+            <DraggableDetailedUserCard
+              key={user.user_id}
+              user={user}
+              isSelected={clickSelectedUserId === user.user_id}
+              onClick={() => onUserClick(user.user_id)}
+              isMobile={isMobile}
+            />
           ))
         )}
       </Box>
@@ -275,10 +429,16 @@ function DraggableRegistrationForm({
   registrationForm,
   isAssigned = false,
   isOptimistic = false,
+  isSelected = false,
+  onClick,
+  isMobile = false,
 }: {
   registrationForm: RegistrationFormItem;
   isAssigned?: boolean;
   isOptimistic?: boolean;
+  isSelected?: boolean;
+  onClick?: () => void;
+  isMobile?: boolean;
 }) {
   const {
     attributes,
@@ -287,7 +447,10 @@ function DraggableRegistrationForm({
     transform,
     transition,
     isDragging,
-  } = useSortable({ id: `user-${registrationForm.user_id}` });
+  } = useSortable({
+    id: `user-${registrationForm.user_id}`,
+    disabled: isMobile, // Disable drag on mobile
+  });
 
   const style = {
     transform: CSS.Transform.toString(transform),
@@ -299,18 +462,38 @@ function DraggableRegistrationForm({
     <Card
       ref={setNodeRef}
       style={style}
-      {...attributes}
-      {...listeners}
+      {...(isMobile ? {} : attributes)}
+      {...(isMobile ? {} : listeners)}
+      onClick={
+        onClick
+          ? (e) => {
+              e.stopPropagation();
+              onClick();
+            }
+          : undefined
+      }
       sx={{
         mb: 0.5,
-        cursor: "grab",
+        cursor: isMobile ? "pointer" : "grab",
         "&:active": {
-          cursor: "grabbing",
+          cursor: isMobile ? "pointer" : "grabbing",
         },
         opacity: isDragging ? 0.5 : 1,
-        backgroundColor: isAssigned ? "action.selected" : "background.paper",
-        border: isAssigned ? "1px solid" : "1px solid transparent",
-        borderColor: isAssigned ? "primary.main" : "transparent",
+        backgroundColor: isSelected
+          ? "action.selected"
+          : isAssigned
+            ? "action.hover"
+            : "background.paper",
+        border: isSelected
+          ? "2px solid"
+          : isAssigned
+            ? "1px solid"
+            : "1px solid transparent",
+        borderColor: isSelected
+          ? "primary.main"
+          : isAssigned
+            ? "primary.main"
+            : "transparent",
         // Add subtle loading animation for optimistic updates
         ...(isOptimistic && {
           position: "relative",
@@ -337,6 +520,10 @@ function DraggableRegistrationForm({
 function PositionColumn({
   position,
   optimisticUpdates,
+  clickSelectedUserId,
+  onPositionClick,
+  onUserClick,
+  isMobile = false,
 }: {
   position: PositionWithHalls;
   optimisticUpdates: {
@@ -347,20 +534,46 @@ function PositionColumn({
       type: "add" | "remove";
     };
   };
+  clickSelectedUserId: number | null;
+  onPositionClick: (positionId: number, hallId?: number) => void;
+  onUserClick: (userId: number) => void;
+  isMobile?: boolean;
 }) {
   const { setNodeRef, isOver } = useDroppable({
     id: `position-${position.position_id}`,
   });
 
+  const [isHovered, setIsHovered] = useState(false);
+
   return (
     <Paper
       ref={setNodeRef}
+      onClick={(e) => {
+        e.stopPropagation();
+        onPositionClick(position.position_id);
+      }}
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
       sx={{
         p: 1.5,
         minHeight: 300,
-        border: isOver ? "2px dashed" : "1px solid",
-        borderColor: isOver ? "primary.main" : "divider",
-        backgroundColor: isOver ? "action.hover" : "background.paper",
+        border: isOver
+          ? "2px dashed"
+          : isHovered && clickSelectedUserId
+            ? "2px solid"
+            : "1px solid",
+        borderColor: isOver
+          ? "primary.main"
+          : isHovered && clickSelectedUserId
+            ? "primary.main"
+            : "divider",
+        backgroundColor: isOver
+          ? "action.hover"
+          : isHovered && clickSelectedUserId
+            ? "action.selected"
+            : "background.paper",
+        cursor: clickSelectedUserId ? "pointer" : "default",
+        transition: "all 0.2s ease-in-out",
       }}
     >
       <Typography variant="subtitle1" gutterBottom sx={{ fontWeight: 600 }}>
@@ -389,6 +602,9 @@ function PositionColumn({
                 registrationForm={user}
                 isAssigned={true}
                 isOptimistic={hasOptimisticUpdate}
+                isSelected={clickSelectedUserId === user.user_id}
+                onClick={() => onUserClick(user.user_id)}
+                isMobile={isMobile}
               />
             );
           })}
@@ -404,6 +620,10 @@ function PositionColumn({
               hall={hall}
               positionId={position.position_id}
               optimisticUpdates={optimisticUpdates}
+              clickSelectedUserId={clickSelectedUserId}
+              onPositionClick={onPositionClick}
+              onUserClick={onUserClick}
+              isMobile={isMobile}
             />
           ))}
         </Box>
@@ -416,6 +636,10 @@ function HallColumn({
   hall,
   positionId,
   optimisticUpdates,
+  clickSelectedUserId,
+  onPositionClick,
+  onUserClick,
+  isMobile = false,
 }: {
   hall: HallWithUsers;
   positionId: number;
@@ -427,20 +651,46 @@ function HallColumn({
       type: "add" | "remove";
     };
   };
+  clickSelectedUserId: number | null;
+  onPositionClick: (positionId: number, hallId?: number) => void;
+  onUserClick: (userId: number) => void;
+  isMobile?: boolean;
 }) {
   const { setNodeRef, isOver } = useDroppable({
     id: `hall-${positionId}-${hall.hall_id}`,
   });
 
+  const [isHovered, setIsHovered] = useState(false);
+
   return (
     <Paper
       ref={setNodeRef}
+      onClick={(e) => {
+        e.stopPropagation();
+        onPositionClick(positionId, hall.hall_id);
+      }}
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
       sx={{
         p: 1,
         minHeight: 200,
-        border: isOver ? "2px dashed" : "1px solid",
-        borderColor: isOver ? "secondary.main" : "divider",
-        backgroundColor: isOver ? "action.hover" : "background.paper",
+        border: isOver
+          ? "2px dashed"
+          : isHovered && clickSelectedUserId
+            ? "2px solid"
+            : "1px solid",
+        borderColor: isOver
+          ? "secondary.main"
+          : isHovered && clickSelectedUserId
+            ? "primary.main"
+            : "divider",
+        backgroundColor: isOver
+          ? "action.hover"
+          : isHovered && clickSelectedUserId
+            ? "action.selected"
+            : "background.paper",
+        cursor: clickSelectedUserId ? "pointer" : "default",
+        transition: "all 0.2s ease-in-out",
       }}
     >
       <Typography variant="body2" gutterBottom sx={{ fontWeight: 600 }}>
@@ -466,6 +716,9 @@ function HallColumn({
               registrationForm={user}
               isAssigned={true}
               isOptimistic={hasOptimisticUpdate}
+              isSelected={clickSelectedUserId === user.user_id}
+              onClick={() => onUserClick(user.user_id)}
+              isMobile={isMobile}
             />
           );
         })}
@@ -479,14 +732,8 @@ function RouteComponent() {
   const { yearId, dayId } = Route.useParams();
   const [activeId, setActiveId] = useState<string | null>(null);
   const [isDrawerPinned, setIsDrawerPinned] = useState(false);
-  const [optimisticUpdates, setOptimisticUpdates] = useState<{
-    [key: string]: {
-      userId: number;
-      positionId: number;
-      hallId?: number;
-      type: "add" | "remove";
-    };
-  }>({});
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down("md"));
 
   const {
     data: registrationFormsData,
@@ -506,57 +753,6 @@ function RouteComponent() {
     error: assignmentsError,
   } = useDayAssignments(dayId);
 
-  const addUserDayMutation = useAddUserDay();
-  const editUserDayMutation = useEditUserDay();
-  const deleteUserDayMutation = useDeleteUserDay();
-
-  // Function to save assignment to backend
-  const saveAssignment = async (
-    userId: number,
-    positionId: number,
-    hallId?: number,
-  ) => {
-    try {
-      // Find the user to get their application_form_id
-      const user = findUserById(userId);
-      if (!user) {
-        console.error("User not found for assignment");
-        return;
-      }
-
-      // Check if assignment already exists by looking for the user in assignments
-      const existingAssignment = assignmentsData?.assignments.find(
-        (assignment) => {
-          const assignmentUser = assignmentToUser(assignment);
-          return assignmentUser?.user_id === userId;
-        },
-      );
-
-      if (existingAssignment) {
-        // Update existing assignment
-        await editUserDayMutation.mutateAsync({
-          userDayId: existingAssignment.user_day_id,
-          data: {
-            position_id: positionId,
-            hall_id: hallId || null,
-          },
-        });
-      } else {
-        // Create new assignment
-        await addUserDayMutation.mutateAsync({
-          application_form_id: user.form_id,
-          day_id: Number(dayId),
-          information: "",
-          attendance: "unknown",
-          position_id: positionId,
-          hall_id: hallId || null,
-        });
-      }
-    } catch (error) {
-      console.error("Failed to save assignment:", error);
-    }
-  };
-
   const { data: halls } = useYearHalls(yearId);
 
   const sensors = useSensors(
@@ -564,6 +760,7 @@ function RouteComponent() {
       activationConstraint: {
         distance: 8,
       },
+      disabled: isMobile, // Disable drag sensors on mobile
     }),
   );
 
@@ -615,6 +812,21 @@ function RouteComponent() {
     },
     [registrationFormsData, assignmentsData, assignmentToUser],
   );
+
+  // Assignment manager hook
+  const {
+    optimisticUpdates,
+    clickSelectedUserId,
+    handleUserCardClick,
+    handlePositionClick,
+    clearSelection,
+    handleDragAssignment,
+    handleDragRemoval,
+  } = useDayAssignmentManager(dayId, {
+    assignments: assignmentsData?.assignments || [],
+    assignmentToUser,
+    findUserById,
+  });
 
   // Transform data for drag and drop - computed from fetched data with optimistic updates
   const positions: PositionWithHalls[] = React.useMemo(() => {
@@ -777,36 +989,10 @@ function RouteComponent() {
 
       if (!user) return;
 
-      // Generate unique key for this operation
-      const operationKey = `${userId}-${Date.now()}`;
-
       // If dropping on a position (general assignment)
       if (overId.startsWith("position-")) {
         const positionId = Number.parseInt(overId.replace("position-", ""), 10);
-
-        // Add optimistic update
-        setOptimisticUpdates((prev) => ({
-          ...prev,
-          [operationKey]: { userId, positionId, type: "add" },
-        }));
-
-        // Save assignment to backend
-        saveAssignment(userId, positionId)
-          .then(() => {
-            // Remove optimistic update on success
-            setOptimisticUpdates((prev) => {
-              const { [operationKey]: _, ...rest } = prev;
-              return rest;
-            });
-          })
-          .catch((error) => {
-            console.error("Failed to save assignment:", error);
-            // Remove optimistic update on error
-            setOptimisticUpdates((prev) => {
-              const { [operationKey]: _, ...rest } = prev;
-              return rest;
-            });
-          });
+        handleDragAssignment(userId, positionId);
       }
 
       // If dropping on a hall (hall-specific assignment)
@@ -815,90 +1001,25 @@ function RouteComponent() {
           .replace("hall-", "")
           .split("-")
           .map(Number);
-
-        // Add optimistic update
-        setOptimisticUpdates((prev) => ({
-          ...prev,
-          [operationKey]: { userId, positionId, hallId, type: "add" },
-        }));
-
-        // Save assignment to backend
-        saveAssignment(userId, positionId, hallId)
-          .then(() => {
-            // Remove optimistic update on success
-            setOptimisticUpdates((prev) => {
-              const { [operationKey]: _, ...rest } = prev;
-              return rest;
-            });
-          })
-          .catch((error) => {
-            console.error("Failed to save assignment:", error);
-            // Remove optimistic update on error
-            setOptimisticUpdates((prev) => {
-              const { [operationKey]: _, ...rest } = prev;
-              return rest;
-            });
-          });
+        handleDragAssignment(userId, positionId, hallId);
       }
 
       // If dropping on hover drawer area (remove assignment)
       if (overId === "hover-drawer-area") {
-        const existingAssignment = assignmentsData?.assignments.find(
-          (assignment) => {
-            const assignmentUser = assignmentToUser(assignment);
-            return assignmentUser?.user_id === userId;
-          },
-        );
-
-        if (existingAssignment) {
-          // Find which position/hall the user is currently assigned to
-          const currentPosition = positions.find(
-            (pos) =>
-              pos.assigned_users.some((u) => u.user_id === userId) ||
-              pos.halls?.some((hall) =>
-                hall.assigned_users.some((u) => u.user_id === userId),
-              ),
-          );
-
-          if (currentPosition) {
-            const currentHall = currentPosition.halls?.find((hall) =>
-              hall.assigned_users.some((u) => u.user_id === userId),
-            );
-
-            // Add optimistic update for removal
-            setOptimisticUpdates((prev) => ({
-              ...prev,
-              [operationKey]: {
-                userId,
-                positionId: currentPosition.position_id,
-                hallId: currentHall?.hall_id,
-                type: "remove",
-              },
-            }));
-
-            // Remove assignment from backend
-            deleteUserDayMutation.mutate(existingAssignment.user_day_id, {
-              onSuccess: () => {
-                // Remove optimistic update on success
-                setOptimisticUpdates((prev) => {
-                  const { [operationKey]: _, ...rest } = prev;
-                  return rest;
-                });
-              },
-              onError: (error) => {
-                console.error("Failed to delete assignment:", error);
-                // Remove optimistic update on error
-                setOptimisticUpdates((prev) => {
-                  const { [operationKey]: _, ...rest } = prev;
-                  return rest;
-                });
-              },
-            });
-          }
-        }
+        handleDragRemoval(userId);
       }
     }
   };
+
+  const handleRemoveAssignment = useCallback(
+    (userId: number) => {
+      handleDragRemoval(userId, () => {
+        // Clear selection after successful removal
+        clearSelection();
+      });
+    },
+    [handleDragRemoval, clearSelection],
+  );
 
   if (formsLoading || positionsLoading || assignmentsLoading) {
     return (
@@ -946,37 +1067,67 @@ function RouteComponent() {
         </Alert>
       )}
       <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-        {t("Drag and drop volunteers to assign them to positions for this day")}
+        {isMobile
+          ? t("Click volunteers to assign them to positions for this day")
+          : t(
+              "Drag and drop or click volunteers to assign them to positions for this day",
+            )}
       </Typography>
 
       <DndContext
         sensors={sensors}
-        collisionDetection={customCollisionDetection}
-        onDragStart={handleDragStart}
-        onDragOver={handleDragOver}
-        onDragEnd={handleDragEnd}
+        collisionDetection={isMobile ? undefined : customCollisionDetection}
+        onDragStart={isMobile ? undefined : handleDragStart}
+        onDragOver={isMobile ? undefined : handleDragOver}
+        onDragEnd={isMobile ? undefined : handleDragEnd}
       >
         <Box
-          sx={{
-            display: "flex",
-            gap: 2,
-            flexWrap: "wrap",
-            pr: isDrawerPinned ? "500px" : "60px",
-            transition: "padding-right 0.3s ease-in-out",
-          }}
+          onClick={clearSelection}
+          sx={{ minHeight: "100vh", width: "100%" }}
         >
-          {/* Positions Columns */}
-          {positions.map((position) => (
-            <Box
-              key={position.position_id}
-              sx={{ flex: "0 0 250px", minWidth: "400px" }}
-            >
-              <PositionColumn
-                position={position}
-                optimisticUpdates={optimisticUpdates}
-              />
-            </Box>
-          ))}
+          <Box
+            sx={{
+              display: "flex",
+              gap: 2,
+              flexWrap: "wrap",
+              flexDirection: isMobile ? "column" : "row",
+              // Desktop: right padding for right drawer
+              ...(isMobile
+                ? {}
+                : {
+                    pr: isDrawerPinned ? "500px" : "60px",
+                    transition: "padding-right 0.3s ease-in-out",
+                  }),
+              // Mobile: bottom padding for bottom drawer
+              ...(isMobile
+                ? {
+                    pb: isDrawerPinned ? "60vh" : "80px",
+                    transition: "padding-bottom 0.3s ease-in-out",
+                  }
+                : {}),
+            }}
+          >
+            {/* Positions Columns */}
+            {positions.map((position) => (
+              <Box
+                key={position.position_id}
+                sx={{
+                  flex: isMobile ? "1 1 100%" : "0 0 250px",
+                  minWidth: isMobile ? "100%" : "400px",
+                  maxWidth: isMobile ? "100%" : "none",
+                }}
+              >
+                <PositionColumn
+                  position={position}
+                  optimisticUpdates={optimisticUpdates}
+                  clickSelectedUserId={clickSelectedUserId}
+                  onPositionClick={handlePositionClick}
+                  onUserClick={handleUserCardClick}
+                  isMobile={isMobile}
+                />
+              </Box>
+            ))}
+          </Box>
         </Box>
 
         {/* Hover Drawer for Available Volunteers */}
@@ -985,6 +1136,10 @@ function RouteComponent() {
           activeId={activeId}
           isPinned={isDrawerPinned}
           onPinChange={setIsDrawerPinned}
+          clickSelectedUserId={clickSelectedUserId}
+          onUserClick={handleUserCardClick}
+          onRemoveAssignment={handleRemoveAssignment}
+          isMobile={isMobile}
         />
 
         <DragOverlay>

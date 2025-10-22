@@ -46,7 +46,10 @@ export function DetailedUserCard({
           alignItems: "center",
           justifyContent: "space-between",
         }}
-        onClick={() => expandable && setExpanded(!expanded)}
+        // onClick={(e) => {
+        //   e.stopPropagation();
+        //   expandable && setExpanded(!expanded);
+        // }}
       >
         <Box sx={{ flex: 1 }}>
           <Typography variant="body2" sx={{ fontWeight: 600 }}>
@@ -55,15 +58,18 @@ export function DetailedUserCard({
         </Box>
         {hasExtraInfo && expandable && (
           <IconButton
-            size="small"
-            onClick={() => setExpanded(!expanded)}
+            size="large"
+            onClick={(e) => {
+              e.stopPropagation();
+              setExpanded(!expanded);
+            }}
             sx={{
               p: 0.25,
               transform: expanded ? "rotate(180deg)" : "rotate(0deg)",
               transition: "transform 0.2s ease-in-out",
             }}
           >
-            <ExpandMoreIcon sx={{ fontSize: "1rem" }} />
+            <ExpandMoreIcon />
           </IconButton>
         )}
       </Box>
