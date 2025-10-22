@@ -54,7 +54,7 @@ client.setConfig({
 client.instance.interceptors.response.use(
   (response) => response,
   async (error) => {
-    return Promise.reject(handleApiError(error, "API error"));
+    return Promise.reject(handleApiError(error));
   },
 );
 
