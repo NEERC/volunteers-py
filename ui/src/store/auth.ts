@@ -65,14 +65,17 @@ class AuthStore {
 
   @action
   async loginTelegram(data: TelegramLoginRequest) {
-    const response = await loginApiV1AuthTelegramLoginPost({ body: data });
+    const response = await loginApiV1AuthTelegramLoginPost({
+      body: data,
+      throwOnError: true,
+    });
 
     if (response.status === 403) {
       throw new UserNotFoundError("User not found");
     }
 
-    if (!response.data || response.data.success !== true) {
-      throw new Error(`Failed to login: ${response.error?.detail}`);
+    if (response.data.success !== true) {
+      throw new Error(`Failed to login: ${response.data.description}`);
     }
 
     this.accessToken = response.data.token;
@@ -85,11 +88,8 @@ class AuthStore {
   async registerTelegram(telegramData: RegistrationRequest) {
     const response = await registerApiV1AuthTelegramRegisterPost({
       body: telegramData,
+      throwOnError: true,
     });
-
-    if (!response.data || response.data.success !== true) {
-      throw new Error(`Failed to register: ${response.error?.detail}`);
-    }
 
     this.accessToken = response.data.token;
     this.refreshToken = response.data.refresh_token;
@@ -101,11 +101,8 @@ class AuthStore {
   async migrateTelegram(telegramData: TelegramMigrateRequest) {
     const response = await migrateApiV1AuthTelegramMigratePost({
       body: telegramData,
+      throwOnError: true,
     });
-
-    if (!response.data || response.data.success !== true) {
-      throw new Error(`Failed to migrate: ${response.error?.detail}`);
-    }
 
     this.accessToken = response.data.token;
     this.refreshToken = response.data.refresh_token;

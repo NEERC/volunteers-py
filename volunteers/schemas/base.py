@@ -1,4 +1,4 @@
-from typing import Literal
+from typing import Literal, TypeVar
 
 from pydantic import BaseModel
 
@@ -7,14 +7,17 @@ class Base(BaseModel):
     pass
 
 
-class BaseResponse(Base):
-    pass
+SuccessT = TypeVar("SuccessT", bound=Literal[True])
 
 
-class BaseSuccessResponse(BaseResponse):
+class BaseResponse[SuccessT](Base):
+    success: SuccessT
+
+
+class BaseSuccessResponse(BaseResponse[Literal[True]]):
     success: Literal[True] = True
 
 
-class BaseErrorResponse(BaseResponse):
+class BaseErrorResponse(BaseResponse[Literal[False]]):
     success: Literal[False] = False
     description: str

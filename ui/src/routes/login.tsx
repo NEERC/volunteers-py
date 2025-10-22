@@ -193,6 +193,7 @@ function RouteComponent() {
           await authStore.loginTelegram(loginData);
           navigate({ to: "/" });
         } catch (error) {
+          console.error("Login error:", error);
           if (error instanceof UserNotFoundError) {
             setStoredTelegramData(loginData);
             setAuthFlow("migrate");
@@ -358,11 +359,6 @@ function RouteComponent() {
                 )}
               </Formik>
             )}
-            {error && (
-              <Alert severity="error" sx={{ mt: 2 }}>
-                {error}
-              </Alert>
-            )}
           </>
         )}
         <Box
@@ -406,6 +402,11 @@ function RouteComponent() {
             />
           )}
         </Box>
+        {error && (
+          <Alert severity="error" sx={{ mt: 2 }}>
+            {error}
+          </Alert>
+        )}
       </Paper>
     </Container>
   );
