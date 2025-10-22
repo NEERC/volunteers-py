@@ -1,5 +1,5 @@
 import { useCallback } from "react";
-import type { RegistrationFormItem } from "@/client/types.gen";
+import type { AssignmentItem, RegistrationFormItem } from "@/client/types.gen";
 import {
   useAddUserDay,
   useDeleteUserDay,
@@ -8,8 +8,8 @@ import {
 import { useOptimisticUpdates } from "./useOptimisticUpdates";
 
 interface AssignmentData {
-  assignments: any[];
-  assignmentToUser: (assignment: any) => RegistrationFormItem | null;
+  assignments: AssignmentItem[];
+  assignmentToUser: (assignment: AssignmentItem) => RegistrationFormItem | null;
   findUserById: (userId: number) => RegistrationFormItem | null;
 }
 
@@ -115,7 +115,11 @@ export function useAssignmentOperations(
         onSuccess?.();
       } catch (error) {
         removeOptimisticUpdate(operationKey);
-        onError?.(error);
+        if (error instanceof Error) {
+          onError?.(error);
+        } else {
+          onError?.(new Error("Unknown error"));
+        }
       }
     },
     [addOptimisticUpdate, removeOptimisticUpdate, saveAssignment],
@@ -143,7 +147,7 @@ export function useAssignmentOperations(
       const operationKey = addOptimisticUpdate({
         userId,
         positionId: currentAssignment.position_id,
-        hallId: currentAssignment.hall_id,
+        hallId: currentAssignment.hall_id || undefined,
         type: "remove",
       });
 
@@ -153,7 +157,11 @@ export function useAssignmentOperations(
         onSuccess?.();
       } catch (error) {
         removeOptimisticUpdate(operationKey);
-        onError?.(error);
+        if (error instanceof Error) {
+          onError?.(error);
+        } else {
+          onError?.(new Error("Unknown error"));
+        }
       }
     },
     [

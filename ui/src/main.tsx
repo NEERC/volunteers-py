@@ -25,6 +25,7 @@ import reportWebVitals from "./reportWebVitals.ts";
 
 // Initialize i18n
 import "./i18n";
+import { handleApiError } from "./utils/apiErrorHandling.ts";
 
 // Create a new router instance
 const router = createRouter({
@@ -53,15 +54,7 @@ client.setConfig({
 client.instance.interceptors.response.use(
   (response) => response,
   async (error) => {
-    const maybeDescription = error.response?.data?.description;
-    if (maybeDescription) {
-      error.message += `: ${maybeDescription}`;
-    }
-    const maybeDetail = error.response?.data?.detail;
-    if (maybeDetail) {
-      error.message += `: ${maybeDetail}`;
-    }
-    return Promise.reject(error);
+    return Promise.reject(handleApiError(error, "API error"));
   },
 );
 

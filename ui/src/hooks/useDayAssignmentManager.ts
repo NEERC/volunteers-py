@@ -1,12 +1,12 @@
 import { useCallback } from "react";
-import type { RegistrationFormItem } from "@/client/types.gen";
+import type { AssignmentItem, RegistrationFormItem } from "@/client/types.gen";
 import { createErrorHandler } from "@/utils/apiErrorHandling";
 import { useAssignmentOperations } from "./useAssignmentOperations";
 import { useClickSelection } from "./useClickSelection";
 
 interface AssignmentData {
-  assignments: any[];
-  assignmentToUser: (assignment: any) => RegistrationFormItem | null;
+  assignments: AssignmentItem[];
+  assignmentToUser: (assignment: AssignmentItem) => RegistrationFormItem | null;
   findUserById: (userId: number) => RegistrationFormItem | null;
 }
 
