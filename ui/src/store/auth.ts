@@ -67,11 +67,15 @@ class AuthStore {
   async loginTelegram(data: TelegramLoginRequest) {
     const response = await loginApiV1AuthTelegramLoginPost({
       body: data,
-      throwOnError: true,
+      // throwOnError: true,
     });
 
     if (response.status === 403) {
       throw new UserNotFoundError("User not found");
+    }
+
+    if (response.data === undefined) {
+      throw new Error("Failed to login");
     }
 
     if (response.data.success !== true) {
