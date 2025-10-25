@@ -7,7 +7,7 @@ export type AddAssessmentRequest = {
 };
 
 export type AddAssessmentResponse = {
-    success?: true;
+    success: true;
     assessment_id: number;
 };
 
@@ -20,7 +20,7 @@ export type AddDayRequest = {
 };
 
 export type AddDayResponse = {
-    success?: true;
+    success: true;
     day_id: number;
 };
 
@@ -31,7 +31,7 @@ export type AddHallRequest = {
 };
 
 export type AddHallResponse = {
-    success?: true;
+    success: true;
     hall_id: number;
 };
 
@@ -43,7 +43,7 @@ export type AddPositionRequest = {
 };
 
 export type AddPositionResponse = {
-    success?: true;
+    success: true;
     position_id: number;
 };
 
@@ -57,7 +57,7 @@ export type AddUserDayRequest = {
 };
 
 export type AddUserDayResponse = {
-    success?: true;
+    success: true;
     user_day_id: number;
 };
 
@@ -66,7 +66,7 @@ export type AddYearRequest = {
 };
 
 export type AddYearResponse = {
-    success?: true;
+    success: true;
     year_id: number;
 };
 
@@ -77,12 +77,12 @@ export type ApplicationFormYearSaveRequest = {
 };
 
 export type ApplicationFormYearSavedResponse = {
-    success?: true;
+    success: true;
     positions: Array<PositionOut>;
     days: Array<DayOutUser>;
     desired_positions: Array<PositionOut>;
-    itmo_group?: string | null;
-    comments?: string;
+    itmo_group: string | null;
+    comments: string;
     open_for_registration: boolean;
 };
 
@@ -166,7 +166,7 @@ export type EditYearRequest = {
 };
 
 export type ErrorLoginResponse = {
-    success?: false;
+    success: false;
     description: string;
 };
 
@@ -243,7 +243,7 @@ export type RegistrationRequest = {
 };
 
 export type SuccessfulLoginResponse = {
-    success?: true;
+    success: true;
     token: string;
     refresh_token: string;
     expires_in: number;
@@ -325,7 +325,7 @@ export type YearOut = {
 };
 
 export type YearsResponse = {
-    success?: true;
+    success: true;
     years: Array<YearOut>;
 };
 

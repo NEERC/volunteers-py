@@ -1,6 +1,6 @@
 from typing import Literal, TypeVar
 
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 
 
 class Base(BaseModel):
@@ -11,6 +11,7 @@ SuccessT = TypeVar("SuccessT", bound=Literal[True])
 
 
 class BaseResponse[SuccessT](Base):
+    model_config = ConfigDict(json_schema_serialization_defaults_required=True)
     success: SuccessT
 
 

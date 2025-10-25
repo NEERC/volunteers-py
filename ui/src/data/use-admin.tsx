@@ -109,7 +109,7 @@ export const useEditDay = () => {
   return useMutation({
     mutationFn: async ({
       dayId,
-      yearId,
+      yearId: _,
       data,
     }: {
       dayId: string | number;

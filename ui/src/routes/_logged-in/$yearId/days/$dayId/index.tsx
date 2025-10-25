@@ -41,7 +41,7 @@ import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import type { DayAssignmentItem } from "@/client/types.gen";
 import { LinkButton } from "@/components/LinkButton";
-import { useUserDayAssignments, useYearDays } from "@/data";
+import { useUserDayAssignments } from "@/data";
 
 export const Route = createFileRoute("/_logged-in/$yearId/days/$dayId/")({
   component: RouteComponent,

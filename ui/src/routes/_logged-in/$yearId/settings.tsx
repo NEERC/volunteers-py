@@ -330,7 +330,7 @@ function RouteComponent() {
     setEditingDay(day);
     setEditDayName(day.name);
     setEditDayInformation(day.information);
-    setEditDayScore(day.score);
+    setEditDayScore(day.score ?? 0);
     setEditDayMandatory(day.mandatory);
     setIsEditDayDialogOpen(true);
   };
