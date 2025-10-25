@@ -26,13 +26,16 @@ import {
 import { createFileRoute } from "@tanstack/react-router";
 import React, { useState } from "react";
 import { useTranslation } from "react-i18next";
-import type { HallOut, PositionOut } from "@/client/types.gen";
+import type { DayOutAdmin, HallOut, PositionOut } from "@/client/types.gen";
 import {
+  useAddDay,
   useAddHall,
   useAddPosition,
+  useEditDay,
   useEditHall,
   useEditPosition,
   useEditYear,
+  useYearDays,
   useYearHalls,
   useYearPositions,
   useYears,
@@ -73,6 +76,19 @@ function RouteComponent() {
   const [newHallDescription, setNewHallDescription] = useState("");
   const [editHallDescription, setEditHallDescription] = useState("");
 
+  // Day management state
+  const [isAddDayDialogOpen, setIsAddDayDialogOpen] = useState(false);
+  const [isEditDayDialogOpen, setIsEditDayDialogOpen] = useState(false);
+  const [editingDay, setEditingDay] = useState<DayOutAdmin | null>(null);
+  const [newDayName, setNewDayName] = useState("");
+  const [editDayName, setEditDayName] = useState("");
+  const [newDayInformation, setNewDayInformation] = useState("");
+  const [editDayInformation, setEditDayInformation] = useState("");
+  const [newDayScore, setNewDayScore] = useState(0);
+  const [editDayScore, setEditDayScore] = useState(0);
+  const [newDayMandatory, setNewDayMandatory] = useState(false);
+  const [editDayMandatory, setEditDayMandatory] = useState(false);
+
   // Year settings state
   const [yearName, setYearName] = useState("");
   const [openForRegistration, setOpenForRegistration] = useState(false);
@@ -83,6 +99,9 @@ function RouteComponent() {
 
   // Fetch all halls for admin
   const { data: halls } = useYearHalls(yearId);
+
+  // Fetch all days for admin
+  const { data: days } = useYearDays(yearId);
 
   // Fetch years data to get current year info
   const { data: yearsData } = useYears();
@@ -101,6 +120,12 @@ function RouteComponent() {
 
   // Edit hall mutation
   const editHallMutation = useEditHall();
+
+  // Add day mutation
+  const addDayMutation = useAddDay();
+
+  // Edit day mutation
+  const editDayMutation = useEditDay();
 
   // Edit year mutation
   const editYearMutation = useEditYear();
@@ -245,6 +270,69 @@ function RouteComponent() {
     setEditHallName(hall.name);
     setEditHallDescription(hall.description || "");
     setIsEditHallDialogOpen(true);
+  };
+
+  // Day management functions
+  const handleAddDay = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (newDayName.trim()) {
+      addDayMutation.mutate(
+        {
+          year_id: Number(yearId),
+          name: newDayName.trim(),
+          information: newDayInformation.trim(),
+          score: newDayScore,
+          mandatory: newDayMandatory,
+        },
+        {
+          onSuccess: () => {
+            setIsAddDayDialogOpen(false);
+            setNewDayName("");
+            setNewDayInformation("");
+            setNewDayScore(0);
+            setNewDayMandatory(false);
+          },
+        },
+      );
+    }
+  };
+
+  const handleEditDay = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (editingDay && editDayName.trim()) {
+      console.log("editingDay", editingDay);
+      editDayMutation.mutate(
+        {
+          dayId: editingDay.day_id,
+          yearId: yearId,
+          data: {
+            name: editDayName.trim(),
+            information: editDayInformation.trim(),
+            score: editDayScore,
+            mandatory: editDayMandatory,
+          },
+        },
+        {
+          onSuccess: () => {
+            setIsEditDayDialogOpen(false);
+            setEditingDay(null);
+            setEditDayName("");
+            setEditDayInformation("");
+            setEditDayScore(0);
+            setEditDayMandatory(false);
+          },
+        },
+      );
+    }
+  };
+
+  const openEditDayDialog = (day: DayOutAdmin) => {
+    setEditingDay(day);
+    setEditDayName(day.name);
+    setEditDayInformation(day.information);
+    setEditDayScore(day.score);
+    setEditDayMandatory(day.mandatory);
+    setIsEditDayDialogOpen(true);
   };
 
   const closeAddDialog = () => {
@@ -474,7 +562,7 @@ function RouteComponent() {
 
         {halls && halls.length > 0 ? (
           <List>
-            {halls.map((hall) => (
+            {halls.map((hall: HallOut) => (
               <ListItem
                 key={hall.hall_id}
                 sx={{
@@ -504,6 +592,76 @@ function RouteComponent() {
         ) : (
           <Typography color="text.secondary" sx={{ fontStyle: "italic" }}>
             {t("No halls found. Add your first hall to get started.")}
+          </Typography>
+        )}
+      </Paper>
+
+      {/* Days Section */}
+      <Paper sx={{ p: 3, mb: 3 }}>
+        <Box
+          sx={{
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            mb: 2,
+          }}
+        >
+          <Typography variant="h6" component="h2">
+            {t("Days")}
+          </Typography>
+          <Button
+            variant="contained"
+            startIcon={<AddIcon />}
+            onClick={() => setIsAddDayDialogOpen(true)}
+          >
+            {t("Add Day")}
+          </Button>
+        </Box>
+
+        {days && days.length > 0 ? (
+          <List>
+            {days.map((day) => (
+              <ListItem
+                key={day.day_id}
+                sx={{
+                  border: "1px solid",
+                  borderColor: "divider",
+                  borderRadius: 1,
+                  mb: 1,
+                  "&:hover": {
+                    backgroundColor: "action.hover",
+                  },
+                }}
+              >
+                <ListItemText
+                  primary={
+                    <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                      {day.name}
+                      {day.mandatory && (
+                        <Tooltip title={t("Mandatory day")}>
+                          <VisibilityIcon color="warning" fontSize="small" />
+                        </Tooltip>
+                      )}
+                      <Typography variant="caption" color="text.secondary">
+                        {t("Score")}: {day.score}
+                      </Typography>
+                    </Box>
+                  }
+                  secondary={day.information}
+                />
+                <IconButton
+                  onClick={() => openEditDayDialog(day)}
+                  color="primary"
+                  size="small"
+                >
+                  <EditIcon />
+                </IconButton>
+              </ListItem>
+            ))}
+          </List>
+        ) : (
+          <Typography color="text.secondary" sx={{ fontStyle: "italic" }}>
+            {t("No days found. Add your first day to get started.")}
           </Typography>
         )}
       </Paper>
@@ -743,6 +901,156 @@ function RouteComponent() {
               disabled={!editHallName.trim() || editHallMutation.isPending}
             >
               {editHallMutation.isPending ? t("Saving...") : t("Save Changes")}
+            </Button>
+          </DialogActions>
+        </form>
+      </Dialog>
+
+      {/* Add Day Dialog */}
+      <Dialog
+        open={isAddDayDialogOpen}
+        onClose={() => setIsAddDayDialogOpen(false)}
+        maxWidth="sm"
+        fullWidth
+      >
+        <form onSubmit={handleAddDay}>
+          <DialogTitle>{t("Add New Day")}</DialogTitle>
+          <DialogContent>
+            <TextField
+              autoFocus
+              margin="dense"
+              label={t("Day Name")}
+              fullWidth
+              variant="outlined"
+              value={newDayName}
+              onChange={(e) => setNewDayName(e.target.value)}
+              error={addDayMutation.isError}
+              helperText={addDayMutation.error?.message}
+              disabled={addDayMutation.isPending}
+              required
+            />
+            <TextField
+              margin="dense"
+              label={t("Information")}
+              fullWidth
+              variant="outlined"
+              value={newDayInformation}
+              onChange={(e) => setNewDayInformation(e.target.value)}
+              multiline
+              rows={3}
+              disabled={addDayMutation.isPending}
+            />
+            <TextField
+              margin="dense"
+              label={t("Score")}
+              fullWidth
+              variant="outlined"
+              type="number"
+              value={newDayScore}
+              onChange={(e) => setNewDayScore(Number(e.target.value))}
+              disabled={addDayMutation.isPending}
+              inputProps={{ step: "0.1" }}
+            />
+            <FormControlLabel
+              control={
+                <Checkbox
+                  checked={newDayMandatory}
+                  onChange={(e) => setNewDayMandatory(e.target.checked)}
+                  disabled={addDayMutation.isPending}
+                />
+              }
+              label={t("Mandatory day")}
+              sx={{ mt: 1 }}
+            />
+          </DialogContent>
+          <DialogActions>
+            <Button
+              onClick={() => setIsAddDayDialogOpen(false)}
+              disabled={addDayMutation.isPending}
+            >
+              {t("Cancel")}
+            </Button>
+            <Button
+              type="submit"
+              variant="contained"
+              disabled={!newDayName.trim() || addDayMutation.isPending}
+            >
+              {addDayMutation.isPending ? t("Adding...") : t("Add Day")}
+            </Button>
+          </DialogActions>
+        </form>
+      </Dialog>
+
+      {/* Edit Day Dialog */}
+      <Dialog
+        open={isEditDayDialogOpen}
+        onClose={() => setIsEditDayDialogOpen(false)}
+        maxWidth="sm"
+        fullWidth
+      >
+        <form onSubmit={handleEditDay}>
+          <DialogTitle>{t("Edit Day")}</DialogTitle>
+          <DialogContent>
+            <TextField
+              autoFocus
+              margin="dense"
+              label={t("Day Name")}
+              fullWidth
+              variant="outlined"
+              value={editDayName}
+              onChange={(e) => setEditDayName(e.target.value)}
+              error={editDayMutation.isError}
+              helperText={editDayMutation.error?.message}
+              disabled={editDayMutation.isPending}
+              required
+            />
+            <TextField
+              margin="dense"
+              label={t("Information")}
+              fullWidth
+              variant="outlined"
+              value={editDayInformation}
+              onChange={(e) => setEditDayInformation(e.target.value)}
+              multiline
+              rows={3}
+              disabled={editDayMutation.isPending}
+            />
+            <TextField
+              margin="dense"
+              label={t("Score")}
+              fullWidth
+              variant="outlined"
+              type="number"
+              value={editDayScore}
+              onChange={(e) => setEditDayScore(Number(e.target.value))}
+              disabled={editDayMutation.isPending}
+              inputProps={{ step: "0.1" }}
+            />
+            <FormControlLabel
+              control={
+                <Checkbox
+                  checked={editDayMandatory}
+                  onChange={(e) => setEditDayMandatory(e.target.checked)}
+                  disabled={editDayMutation.isPending}
+                />
+              }
+              label={t("Mandatory day")}
+              sx={{ mt: 1 }}
+            />
+          </DialogContent>
+          <DialogActions>
+            <Button
+              onClick={() => setIsEditDayDialogOpen(false)}
+              disabled={editDayMutation.isPending}
+            >
+              {t("Cancel")}
+            </Button>
+            <Button
+              type="submit"
+              variant="contained"
+              disabled={!editDayName.trim() || editDayMutation.isPending}
+            >
+              {editDayMutation.isPending ? t("Saving...") : t("Save Changes")}
             </Button>
           </DialogActions>
         </form>

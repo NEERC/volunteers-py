@@ -247,7 +247,13 @@ class YearService(BaseService):
             await session.commit()
 
     async def add_day(self, day_in: DayIn) -> Day:
-        created_day = Day(year_id=day_in.year_id, name=day_in.name, information=day_in.information)
+        created_day = Day(
+            year_id=day_in.year_id,
+            name=day_in.name,
+            information=day_in.information,
+            score=day_in.score,
+            mandatory=day_in.mandatory,
+        )
         async with self.session_scope() as session:
             session.add(created_day)
             await session.commit()
@@ -265,6 +271,10 @@ class YearService(BaseService):
                 updated_day.name = name
             if (information := day_edit_in.information) is not None:
                 updated_day.information = information
+            if (score := day_edit_in.score) is not None:
+                updated_day.score = score
+            if (mandatory := day_edit_in.mandatory) is not None:
+                updated_day.mandatory = mandatory
 
             await session.commit()
 

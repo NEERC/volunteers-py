@@ -8,7 +8,7 @@ from volunteers.auth.deps import with_user
 from volunteers.core.di import Container
 from volunteers.models import User
 from volunteers.schemas.application_form import ApplicationFormIn
-from volunteers.schemas.day import DayOut
+from volunteers.schemas.day import DayOutUser
 from volunteers.schemas.day_assignment import DayAssignmentItem
 from volunteers.schemas.position import PositionOut
 from volunteers.schemas.year import YearOut
@@ -74,10 +74,7 @@ async def get_form_year(
             for p in positions
             if p.can_desire
         ],
-        days=[
-            DayOut(day_id=d.id, year_id=d.year_id, name=d.name, information=d.information)
-            for d in days
-        ],
+        days=[DayOutUser(day_id=d.id, name=d.name) for d in days],
         desired_positions=[
             PositionOut(
                 position_id=p.id,

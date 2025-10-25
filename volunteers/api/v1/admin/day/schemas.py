@@ -7,6 +7,8 @@ class AddDayRequest(BaseModel):
     year_id: int
     name: str
     information: str
+    score: float
+    mandatory: bool
 
 
 class AddDayResponse(BaseSuccessResponse):
@@ -16,3 +18,5 @@ class AddDayResponse(BaseSuccessResponse):
 class EditDayRequest(BaseModel):
     name: str | None = None
     information: str | None = None
+    score: float | None = None
+    mandatory: bool | None = None

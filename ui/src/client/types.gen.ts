@@ -7,7 +7,7 @@ export type AddAssessmentRequest = {
 };
 
 export type AddAssessmentResponse = {
-    success: true;
+    success?: true;
     assessment_id: number;
 };
 
@@ -15,10 +15,12 @@ export type AddDayRequest = {
     year_id: number;
     name: string;
     information: string;
+    score: number;
+    mandatory: boolean;
 };
 
 export type AddDayResponse = {
-    success: true;
+    success?: true;
     day_id: number;
 };
 
@@ -29,7 +31,7 @@ export type AddHallRequest = {
 };
 
 export type AddHallResponse = {
-    success: true;
+    success?: true;
     hall_id: number;
 };
 
@@ -41,7 +43,7 @@ export type AddPositionRequest = {
 };
 
 export type AddPositionResponse = {
-    success: true;
+    success?: true;
     position_id: number;
 };
 
@@ -55,7 +57,7 @@ export type AddUserDayRequest = {
 };
 
 export type AddUserDayResponse = {
-    success: true;
+    success?: true;
     user_day_id: number;
 };
 
@@ -64,7 +66,7 @@ export type AddYearRequest = {
 };
 
 export type AddYearResponse = {
-    success: true;
+    success?: true;
     year_id: number;
 };
 
@@ -75,9 +77,9 @@ export type ApplicationFormYearSaveRequest = {
 };
 
 export type ApplicationFormYearSavedResponse = {
-    success: true;
+    success?: true;
     positions: Array<PositionOut>;
-    days: Array<DayOut>;
+    days: Array<DayOutUser>;
     desired_positions: Array<PositionOut>;
     itmo_group?: string | null;
     comments?: string;
@@ -114,11 +116,18 @@ export type DayAssignmentsResponse = {
     assignments: Array<DayAssignmentItem>;
 };
 
-export type DayOut = {
+export type DayOutAdmin = {
+    day_id: number;
     year_id: number;
     name: string;
     information: string;
+    score: number | null;
+    mandatory: boolean;
+};
+
+export type DayOutUser = {
     day_id: number;
+    name: string;
 };
 
 export type EditAssessmentRequest = {
@@ -129,6 +138,8 @@ export type EditAssessmentRequest = {
 export type EditDayRequest = {
     name?: string | null;
     information?: string | null;
+    score?: number | null;
+    mandatory?: boolean | null;
 };
 
 export type EditHallRequest = {
@@ -155,7 +166,7 @@ export type EditYearRequest = {
 };
 
 export type ErrorLoginResponse = {
-    success: false;
+    success?: false;
     description: string;
 };
 
@@ -232,7 +243,7 @@ export type RegistrationRequest = {
 };
 
 export type SuccessfulLoginResponse = {
-    success: true;
+    success?: true;
     token: string;
     refresh_token: string;
     expires_in: number;
@@ -314,7 +325,7 @@ export type YearOut = {
 };
 
 export type YearsResponse = {
-    success: true;
+    success?: true;
     years: Array<YearOut>;
 };
 
@@ -371,6 +382,33 @@ export type EditAssessmentApiV1AdminAssessmentAssessmentIdEditPostResponses = {
      */
     200: unknown;
 };
+
+export type GetYearDaysApiV1AdminDayYearYearIdGetData = {
+    body?: never;
+    path: {
+        year_id: number;
+    };
+    query?: never;
+    url: '/api/v1/admin/day/year/{year_id}';
+};
+
+export type GetYearDaysApiV1AdminDayYearYearIdGetErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type GetYearDaysApiV1AdminDayYearYearIdGetError = GetYearDaysApiV1AdminDayYearYearIdGetErrors[keyof GetYearDaysApiV1AdminDayYearYearIdGetErrors];
+
+export type GetYearDaysApiV1AdminDayYearYearIdGetResponses = {
+    /**
+     * Successful Response
+     */
+    200: Array<DayOutAdmin>;
+};
+
+export type GetYearDaysApiV1AdminDayYearYearIdGetResponse = GetYearDaysApiV1AdminDayYearYearIdGetResponses[keyof GetYearDaysApiV1AdminDayYearYearIdGetResponses];
 
 export type AddDayApiV1AdminDayAddPostData = {
     body: AddDayRequest;

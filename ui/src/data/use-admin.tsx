@@ -16,6 +16,7 @@ import {
   getDayAssignmentsApiV1AdminUserDayDayDayIdAssignmentsGet,
   getRegistrationFormsApiV1AdminYearYearIdRegistrationFormsGet,
   getUsersListApiV1AdminYearYearIdUsersGet,
+  getYearDaysApiV1AdminDayYearYearIdGet,
   getYearHallsApiV1AdminHallYearYearIdGet,
   getYearPositionsApiV1AdminYearYearIdPositionsGet,
 } from "@/client";
@@ -94,7 +95,6 @@ export const useAddDay = () => {
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: queryKeys.admin.days.all() });
       if (variables.year_id) {
-        console.log("variables.year_id", variables.year_id);
         queryClient.invalidateQueries({
           queryKey: queryKeys.year.all(variables.year_id),
         });
@@ -109,9 +109,11 @@ export const useEditDay = () => {
   return useMutation({
     mutationFn: async ({
       dayId,
+      yearId,
       data,
     }: {
       dayId: string | number;
+      yearId: string | number;
       data: EditDayRequest;
     }) => {
       const response = await editDayApiV1AdminDayDayIdEditPost({
@@ -121,8 +123,9 @@ export const useEditDay = () => {
       });
       return response.data;
     },
-    onSuccess: () => {
+    onSuccess: (_, { yearId }) => {
       queryClient.invalidateQueries({ queryKey: queryKeys.admin.days.all() });
+      queryClient.invalidateQueries({ queryKey: queryKeys.year.all(yearId) });
     },
   });
 };
@@ -345,6 +348,20 @@ export const useYearHalls = (yearId: string | number) => {
     queryKey: queryKeys.admin.halls.year(yearId),
     queryFn: async () => {
       const response = await getYearHallsApiV1AdminHallYearYearIdGet({
+        path: { year_id: Number(yearId) },
+        throwOnError: true,
+      });
+      return response.data;
+    },
+    enabled: !!yearId,
+  });
+};
+
+export const useYearDays = (yearId: string | number) => {
+  return useQuery({
+    queryKey: queryKeys.admin.days.year(yearId),
+    queryFn: async () => {
+      const response = await getYearDaysApiV1AdminDayYearYearIdGet({
         path: { year_id: Number(yearId) },
         throwOnError: true,
       });

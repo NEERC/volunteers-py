@@ -246,7 +246,7 @@ async def test_edit_position_by_position_id_not_found(year_service: YearService)
 
 @pytest.mark.asyncio
 async def test_add_day(year_service: YearService) -> None:
-    day_in = DayIn(year_id=1, name="Monday", information="Info")
+    day_in = DayIn(year_id=1, name="Monday", information="Info", score=10.0, mandatory=True)
     mock_session = MagicMock()
     mock_session.add = MagicMock()
     mock_session.commit = AsyncMock()
@@ -255,13 +255,15 @@ async def test_add_day(year_service: YearService) -> None:
         assert day.year_id == day_in.year_id
         assert day.name == day_in.name
         assert day.information == day_in.information
+        assert day.score == day_in.score
+        assert day.mandatory == day_in.mandatory
         mock_session.add.assert_called_once_with(day)
         mock_session.commit.assert_awaited_once()
 
 
 @pytest.mark.asyncio
 async def test_edit_day_by_day_id_success(year_service: YearService) -> None:
-    day_edit = DayEditIn(name="Tuesday", information="Updated info")
+    day_edit = DayEditIn(name="Tuesday", information="Updated info", score=15.0, mandatory=False)
     dummy_day = Day(id=1, name="OldDay", information="Old info")
     mock_result = MagicMock()
     mock_result.scalar_one_or_none.return_value = dummy_day
@@ -272,12 +274,14 @@ async def test_edit_day_by_day_id_success(year_service: YearService) -> None:
         await year_service.edit_day_by_day_id(1, day_edit)
         assert dummy_day.name == day_edit.name
         assert dummy_day.information == day_edit.information
+        assert dummy_day.score == day_edit.score
+        assert dummy_day.mandatory == day_edit.mandatory
         mock_session.commit.assert_awaited_once()
 
 
 @pytest.mark.asyncio
 async def test_edit_day_by_day_id_not_found(year_service: YearService) -> None:
-    day_edit = DayEditIn(name="Wednesday", information="missing")
+    day_edit = DayEditIn(name="Wednesday", information="missing", score=5.0, mandatory=True)
     mock_result = MagicMock()
     mock_result.scalar_one_or_none.return_value = None
     mock_session = MagicMock()

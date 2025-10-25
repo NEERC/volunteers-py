@@ -41,7 +41,7 @@ import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import type { DayAssignmentItem } from "@/client/types.gen";
 import { LinkButton } from "@/components/LinkButton";
-import { useUserDayAssignments } from "@/data";
+import { useUserDayAssignments, useYearDays } from "@/data";
 
 export const Route = createFileRoute("/_logged-in/$yearId/days/$dayId/")({
   component: RouteComponent,
@@ -95,7 +95,8 @@ function RouteComponent() {
       }}
     >
       <Typography variant="h4" component="h1" gutterBottom>
-        {t("Volunteer Assignments")}
+        {t("Volunteer Assignments")}{" "}
+        {/* TODO: show day name instead of "Assignments" */}
       </Typography>
       {user.is_admin && (
         <LinkButton to="/$yearId/days/$dayId/edit" params={{ yearId, dayId }}>

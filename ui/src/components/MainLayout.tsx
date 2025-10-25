@@ -109,19 +109,12 @@ const getRoutesConfig = (
     labelKey: "Days",
     icon: CalendarMonthIcon,
     path: `/${selectedYear}/days`,
-    children: [
-      ...(yearData?.days?.map((day: { day_id: number; name: string }) => ({
+    children:
+      yearData?.days?.map((day: { day_id: number; name: string }) => ({
         id: `day-${day.day_id}`,
         label: day.name,
         path: `/${selectedYear}/days/${day.day_id}`,
-      })) || []),
-      {
-        id: "create-day",
-        labelKey: "Create Day",
-        path: `/${selectedYear}/days/create`,
-        adminOnly: true,
-      },
-    ],
+      })) ?? [],
   },
   {
     id: "results",

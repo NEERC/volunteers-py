@@ -109,6 +109,13 @@ class Day(Base, TimestampMixin):
     name: Mapped[str] = mapped_column(String)
     information: Mapped[str] = mapped_column(String)
 
+    score: Mapped[float] = mapped_column(
+        Double, nullable=True
+    )  # Day score. Should be not null for scores to compute.
+    mandatory: Mapped[bool] = mapped_column(
+        Boolean, default=False, server_default="false"
+    )  # Whether the day should be included in the score computation.
+
     user_days: Mapped[set[UserDay]] = relationship(
         back_populates="day", cascade="all, delete-orphan"
     )

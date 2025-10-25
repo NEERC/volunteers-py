@@ -41,6 +41,8 @@ export const queryKeys = {
       details: () => [...queryKeys.admin.days.all(), "detail"] as const,
       detail: (id: string | number) =>
         [...queryKeys.admin.days.details(), id] as const,
+      year: (yearId: string | number) =>
+        [...queryKeys.admin.days.all(), "year", String(yearId)] as const,
     },
 
     // Admin - Positions

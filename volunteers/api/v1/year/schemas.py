@@ -1,7 +1,7 @@
 from pydantic import BaseModel
 
 from volunteers.schemas.base import BaseSuccessResponse
-from volunteers.schemas.day import DayOut
+from volunteers.schemas.day import DayOutUser
 from volunteers.schemas.day_assignment import DayAssignmentItem
 from volunteers.schemas.position import PositionOut
 from volunteers.schemas.year import YearOut
@@ -9,7 +9,7 @@ from volunteers.schemas.year import YearOut
 
 class ApplicationFormYearSavedResponse(BaseSuccessResponse):
     positions: list[PositionOut]
-    days: list[DayOut]
+    days: list[DayOutUser]
     desired_positions: list[PositionOut]
     itmo_group: str | None = ""
     comments: str = ""
