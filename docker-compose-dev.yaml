@@ -69,6 +69,27 @@ services:
       - /var/lib/docker:/var/lib/docker:ro
     restart: unless-stopped
 
+  backup:
+    build:
+      context: backup
+      dockerfile: Dockerfile
+    networks:
+      - app-network
+    environment:
+      - DB_HOST=db
+      - DB_PORT=5432
+      - DB_NAME=postgres
+      - DB_USER=postgres
+      - DB_PASSWORD=postgres
+      - BACKUP_DIR=/backups
+      - RETENTION_DAYS=2
+    volumes:
+      - ./backups:/backups
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: unless-stopped
+
 volumes:
   dev-db:
 
