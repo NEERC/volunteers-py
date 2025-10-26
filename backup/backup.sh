@@ -30,6 +30,7 @@ export PGPASSWORD="$DB_PASSWORD"
 pg_dumpall -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USER" \
     --verbose \
     --no-password \
+    -c \
     > "$BACKUP_FILE"
 
 # Check if backup was successful
