@@ -17,6 +17,7 @@ export type AddDayRequest = {
     information: string;
     score: number;
     mandatory: boolean;
+    assignment_published: boolean;
 };
 
 export type AddDayResponse = {
@@ -114,6 +115,7 @@ export type DayAssignmentItem = {
  */
 export type DayAssignmentsResponse = {
     assignments: Array<DayAssignmentItem>;
+    is_published: boolean;
 };
 
 export type DayOutAdmin = {
@@ -123,6 +125,7 @@ export type DayOutAdmin = {
     information: string;
     score: number | null;
     mandatory: boolean;
+    assignment_published: boolean;
 };
 
 export type DayOutUser = {
@@ -140,6 +143,7 @@ export type EditDayRequest = {
     information?: string | null;
     score?: number | null;
     mandatory?: boolean | null;
+    assignment_published?: boolean | null;
 };
 
 export type EditHallRequest = {

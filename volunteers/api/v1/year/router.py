@@ -161,6 +161,11 @@ async def get_day_assignments(
     if not day or day.year_id != year_id:
         raise HTTPException(status_code=404, detail="Day not found")
 
+    # Check if assignments are published
+    if not (day.assignment_published or user.is_admin):
+        logger.debug(f"{DB_PREFIX} Assignments not published for day {day_id}")
+        return DayAssignmentsResponse(assignments=[], is_published=False)
+
     assignments = await year_service.get_all_assignments_by_day_id(day_id=day_id)
 
     assignment_items = [
@@ -175,4 +180,6 @@ async def get_day_assignments(
     ]
 
     logger.debug(f"{DB_PREFIX} Got day assignments for user-facing API")
-    return DayAssignmentsResponse(assignments=assignment_items)
+    return DayAssignmentsResponse(
+        assignments=assignment_items, is_published=day.assignment_published
+    )

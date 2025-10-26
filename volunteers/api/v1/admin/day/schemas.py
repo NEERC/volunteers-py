@@ -9,6 +9,7 @@ class AddDayRequest(BaseModel):
     information: str
     score: float
     mandatory: bool
+    assignment_published: bool
 
 
 class AddDayResponse(BaseSuccessResponse):
@@ -20,3 +21,4 @@ class EditDayRequest(BaseModel):
     information: str | None = None
     score: float | None = None
     mandatory: bool | None = None
+    assignment_published: bool | None = None

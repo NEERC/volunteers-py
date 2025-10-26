@@ -7,6 +7,7 @@ class DayIn(BaseModel):
     information: str
     score: float
     mandatory: bool
+    assignment_published: bool
 
 
 class DayEditIn(BaseModel):
@@ -14,6 +15,7 @@ class DayEditIn(BaseModel):
     information: str | None
     score: float | None
     mandatory: bool | None
+    assignment_published: bool | None
 
 
 class DayOutUser(BaseModel):
@@ -28,3 +30,4 @@ class DayOutAdmin(BaseModel):
     information: str
     score: float | None
     mandatory: bool
+    assignment_published: bool

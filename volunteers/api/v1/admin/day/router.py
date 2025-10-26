@@ -35,6 +35,7 @@ async def get_year_days(
             information=day.information,
             score=day.score,
             mandatory=day.mandatory,
+            assignment_published=day.assignment_published,
         )
         for day in days
     ]
@@ -63,6 +64,7 @@ async def add_day(
         information=request.information,
         score=request.score,
         mandatory=request.mandatory,
+        assignment_published=request.assignment_published,
     )
     day = await year_service.add_day(day_in=day_in)
     logger.info(f"Added day {day.name}")
@@ -84,6 +86,7 @@ async def edit_day(
         information=request.information,
         score=request.score,
         mandatory=request.mandatory,
+        assignment_published=request.assignment_published,
     )
     await year_service.edit_day_by_day_id(day_id=day_id, day_edit_in=day_edit_in)
     logger.info("Day has been edited")

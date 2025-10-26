@@ -30,8 +30,10 @@ import {
   CardContent,
   CircularProgress,
   Divider,
+  FormControlLabel,
   IconButton,
   Paper,
+  Switch,
   Typography,
   useMediaQuery,
   useTheme,
@@ -47,7 +49,9 @@ import type {
 import { DetailedUserCard } from "@/components/DetailedUserCard";
 import {
   useDayAssignments,
+  useEditDay,
   useRegistrationForms,
+  useYearDays,
   useYearHalls,
   useYearPositions,
 } from "@/data/use-admin";
@@ -755,6 +759,42 @@ function RouteComponent() {
 
   const { data: halls } = useYearHalls(yearId);
 
+  // Fetch days to get current assignment_published value
+  // TODO: highly vibe-coded, works for now. Not sure i'd recommend ever touching this.
+  const { data: daysData } = useYearDays(yearId);
+  const currentDay = daysData?.find((d) => d.day_id === Number(dayId));
+  const [assignmentPublished, setAssignmentPublished] = useState(
+    currentDay?.assignment_published ?? false,
+  );
+  const editDayMutation = useEditDay();
+
+  // Update local state when data loads
+  React.useEffect(() => {
+    if (currentDay) {
+      setAssignmentPublished(currentDay.assignment_published);
+    }
+  }, [currentDay]);
+
+  const handleTogglePublished = () => {
+    const newValue = !assignmentPublished;
+    setAssignmentPublished(newValue);
+    editDayMutation.mutate(
+      {
+        dayId,
+        yearId,
+        data: {
+          assignment_published: newValue,
+        },
+      },
+      {
+        onError: () => {
+          // Revert on error
+          setAssignmentPublished(!newValue);
+        },
+      },
+    );
+  };
+
   const sensors = useSensors(
     useSensor(PointerSensor, {
       activationConstraint: {
@@ -1056,8 +1096,25 @@ function RouteComponent() {
         `}
       </style>
       <Typography variant="h5" gutterBottom>
-        {t("Day Assignments")} - Day {dayId}
+        {t("Day Assignments")} - id={dayId}
       </Typography>
+      {/* Publish Toggle */}
+      <FormControlLabel
+        control={
+          <Switch
+            checked={assignmentPublished}
+            onChange={handleTogglePublished}
+            disabled={editDayMutation.isPending}
+            color="primary"
+          />
+        }
+        label={
+          <Typography variant="body1" fontWeight="medium">
+            {t("Publish Assignments")}
+            {editDayMutation.isPending && "..."}
+          </Typography>
+        }
+      />
 
       {/* Existing Assignments Summary */}
       {assignmentsData && assignmentsData.assignments.length > 0 && (

@@ -88,6 +88,10 @@ function RouteComponent() {
   const [editDayScore, setEditDayScore] = useState(0);
   const [newDayMandatory, setNewDayMandatory] = useState(false);
   const [editDayMandatory, setEditDayMandatory] = useState(false);
+  const [newDayAssignmentPublished, setNewDayAssignmentPublished] =
+    useState(false);
+  const [editDayAssignmentPublished, setEditDayAssignmentPublished] =
+    useState(false);
 
   // Year settings state
   const [yearName, setYearName] = useState("");
@@ -283,6 +287,7 @@ function RouteComponent() {
           information: newDayInformation.trim(),
           score: newDayScore,
           mandatory: newDayMandatory,
+          assignment_published: newDayAssignmentPublished,
         },
         {
           onSuccess: () => {
@@ -291,6 +296,7 @@ function RouteComponent() {
             setNewDayInformation("");
             setNewDayScore(0);
             setNewDayMandatory(false);
+            setNewDayAssignmentPublished(false);
           },
         },
       );
@@ -310,6 +316,7 @@ function RouteComponent() {
             information: editDayInformation.trim(),
             score: editDayScore,
             mandatory: editDayMandatory,
+            assignment_published: editDayAssignmentPublished,
           },
         },
         {
@@ -320,6 +327,7 @@ function RouteComponent() {
             setEditDayInformation("");
             setEditDayScore(0);
             setEditDayMandatory(false);
+            setEditDayAssignmentPublished(false);
           },
         },
       );
@@ -332,6 +340,7 @@ function RouteComponent() {
     setEditDayInformation(day.information);
     setEditDayScore(day.score ?? 0);
     setEditDayMandatory(day.mandatory);
+    setEditDayAssignmentPublished(day.assignment_published);
     setIsEditDayDialogOpen(true);
   };
 
@@ -640,6 +649,18 @@ function RouteComponent() {
                       {day.mandatory && (
                         <Tooltip title={t("Mandatory day")}>
                           <VisibilityIcon color="warning" fontSize="small" />
+                        </Tooltip>
+                      )}
+                      {day.assignment_published ? (
+                        <Tooltip title={t("Assignments published")}>
+                          <VisibilityIcon color="success" fontSize="small" />
+                        </Tooltip>
+                      ) : (
+                        <Tooltip title={t("Assignments not published")}>
+                          <VisibilityOffIcon
+                            color="disabled"
+                            fontSize="small"
+                          />
                         </Tooltip>
                       )}
                       <Typography variant="caption" color="text.secondary">
@@ -962,6 +983,19 @@ function RouteComponent() {
               label={t("Mandatory day")}
               sx={{ mt: 1 }}
             />
+            <FormControlLabel
+              control={
+                <Checkbox
+                  checked={newDayAssignmentPublished}
+                  onChange={(e) =>
+                    setNewDayAssignmentPublished(e.target.checked)
+                  }
+                  disabled={addDayMutation.isPending}
+                />
+              }
+              label={t("Publish assignments")}
+              sx={{ mt: 1 }}
+            />
           </DialogContent>
           <DialogActions>
             <Button
@@ -1035,6 +1069,19 @@ function RouteComponent() {
                 />
               }
               label={t("Mandatory day")}
+              sx={{ mt: 1 }}
+            />
+            <FormControlLabel
+              control={
+                <Checkbox
+                  checked={editDayAssignmentPublished}
+                  onChange={(e) =>
+                    setEditDayAssignmentPublished(e.target.checked)
+                  }
+                  disabled={editDayMutation.isPending}
+                />
+              }
+              label={t("Publish assignments")}
               sx={{ mt: 1 }}
             />
           </DialogContent>

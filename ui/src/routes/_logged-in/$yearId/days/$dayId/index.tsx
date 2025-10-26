@@ -2,6 +2,7 @@ import ExpandLessIcon from "@mui/icons-material/ExpandLess";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import FilterListIcon from "@mui/icons-material/FilterList";
 import {
+  Alert,
   Box,
   Button,
   Chip,
@@ -97,13 +98,22 @@ function RouteComponent() {
       <Typography variant="h4" component="h1" gutterBottom>
         {t("Volunteer Assignments")}{" "}
         {/* TODO: show day name instead of "Assignments" */}
+        {user.is_admin && (
+          <LinkButton to="/$yearId/days/$dayId/edit" params={{ yearId, dayId }}>
+            {t("Edit Assignments")}
+          </LinkButton>
+        )}
       </Typography>
-      {user.is_admin && (
-        <LinkButton to="/$yearId/days/$dayId/edit" params={{ yearId, dayId }}>
-          {t("Edit Assignments")}
-        </LinkButton>
+      {!assignmentsData.is_published && (
+        <Alert severity="warning">
+          {t("Assignments are not yet published")}
+          {user.is_admin &&
+            t(", but you can see them because you are an admin")}
+        </Alert>
       )}
-      <AssignmentsTable assignments={assignmentsData.assignments} />
+      {(user.is_admin || assignmentsData.is_published) && (
+        <AssignmentsTable assignments={assignmentsData.assignments} />
+      )}
     </Box>
   );
 }

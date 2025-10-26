@@ -30,3 +30,4 @@ class DayAssignmentsResponse(BaseModel):
     """Response containing a plain array of day assignments"""
 
     assignments: list[DayAssignmentItem]
+    is_published: bool

@@ -253,6 +253,7 @@ class YearService(BaseService):
             information=day_in.information,
             score=day_in.score,
             mandatory=day_in.mandatory,
+            assignment_published=day_in.assignment_published,
         )
         async with self.session_scope() as session:
             session.add(created_day)
@@ -275,6 +276,8 @@ class YearService(BaseService):
                 updated_day.score = score
             if (mandatory := day_edit_in.mandatory) is not None:
                 updated_day.mandatory = mandatory
+            if (assignment_published := day_edit_in.assignment_published) is not None:
+                updated_day.assignment_published = assignment_published
 
             await session.commit()
 

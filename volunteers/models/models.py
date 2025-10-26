@@ -115,6 +115,9 @@ class Day(Base, TimestampMixin):
     mandatory: Mapped[bool] = mapped_column(
         Boolean, default=False, server_default="false"
     )  # Whether the day should be included in the score computation.
+    assignment_published: Mapped[bool] = mapped_column(
+        Boolean, default=False, server_default="false"
+    )  # Whether the day's assignments are published and visible to users.
 
     user_days: Mapped[set[UserDay]] = relationship(
         back_populates="day", cascade="all, delete-orphan"
