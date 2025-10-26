@@ -561,7 +561,7 @@ function PositionColumn({
       onMouseLeave={() => setIsHovered(false)}
       sx={{
         p: 1.5,
-        minHeight: 300,
+        // minHeight: 300,
         border: isOver
           ? "2px dashed"
           : isHovered && clickSelectedUserId
@@ -678,7 +678,7 @@ function HallColumn({
       onMouseLeave={() => setIsHovered(false)}
       sx={{
         p: 1,
-        minHeight: 200,
+        // minHeight: 200,
         border: isOver
           ? "2px dashed"
           : isHovered && clickSelectedUserId
@@ -1148,7 +1148,7 @@ function RouteComponent() {
               display: "flex",
               gap: 2,
               flexWrap: "wrap",
-              flexDirection: isMobile ? "column" : "row",
+              flexDirection: "column",
               // Desktop: right padding for right drawer
               ...(isMobile
                 ? {}
@@ -1170,7 +1170,7 @@ function RouteComponent() {
               <Box
                 key={position.position_id}
                 sx={{
-                  flex: isMobile ? "1 1 100%" : "0 0 250px",
+                  flex: isMobile ? "1 1" : "0 0",
                   minWidth: isMobile ? "100%" : "400px",
                   maxWidth: isMobile ? "100%" : "none",
                 }}
