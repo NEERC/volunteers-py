@@ -9,6 +9,7 @@ import {
 } from "@mui/material";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { useAddYear } from "@/data";
 import { shouldBeLoggedIn } from "@/utils/should-be-logged-in";
 
@@ -17,12 +18,13 @@ export const Route = createFileRoute("/_logged-in/create")({
   beforeLoad: async ({ context }) => {
     shouldBeLoggedIn(context);
     return {
-      title: "Создать год",
+      title: "Create new year",
     };
   },
 });
 
 function RouteComponent() {
+  const { t } = useTranslation();
   const [yearName, setYearName] = useState("");
   const navigate = useNavigate();
 
@@ -55,12 +57,12 @@ function RouteComponent() {
         <form onSubmit={handleSubmit}>
           <CardContent>
             <Typography variant="h5" component="div" gutterBottom>
-              Создать новый год
+              {t("Create new year")}
             </Typography>
             <TextField
               autoFocus
               margin="normal"
-              label="Название года"
+              label={t("Year Name")}
               fullWidth
               value={yearName}
               onChange={(e) => setYearName(e.target.value)}
@@ -70,13 +72,13 @@ function RouteComponent() {
             />
           </CardContent>
           <CardActions sx={{ justifyContent: "flex-end", p: 2 }}>
-            <Button onClick={() => navigate({ to: "/" })}>Отмена</Button>
+            <Button onClick={() => navigate({ to: "/" })}>{t("Cancel")}</Button>
             <Button
               type="submit"
               variant="contained"
               disabled={!yearName.trim() || createYearMutation.isPending}
             >
-              Создать
+              {t("Create Year")}
             </Button>
           </CardActions>
         </form>

@@ -290,7 +290,9 @@ function RouteComponent() {
   if (error) {
     return (
       <Box p={4}>
-        <Alert severity="error">Failed to load contacts: {error.message}</Alert>
+        <Alert severity="error">
+          {t("Failed to load contacts")}: {error.message}
+        </Alert>
       </Box>
     );
   }

@@ -104,7 +104,7 @@ function RouteComponent() {
     return (
       <Box p={4}>
         <Alert severity="error">
-          Failed to load registration forms: {error.message}
+          {t("Failed to load registration forms")}: {error.message}
         </Alert>
       </Box>
     );

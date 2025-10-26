@@ -187,6 +187,7 @@ function HoverDrawer({
   onRemoveAssignment: (userId: number) => void;
   isMobile?: boolean;
 }) {
+  const { t } = useTranslation();
   const [isHovered, setIsHovered] = useState(false);
   const { isOver, setNodeRef } = useDroppable({
     id: "hover-drawer-area",
@@ -384,7 +385,7 @@ function HoverDrawer({
           sx={{ mb: 1, display: "flex", alignItems: "center", gap: 1 }}
         >
           <PersonIcon />
-          Available Volunteers
+          {t("Available Volunteers")}
         </Typography>
 
         {clickSelectedUserId && (
@@ -394,13 +395,13 @@ function HoverDrawer({
               variant="contained"
               color="error"
             >
-              Click here to remove assignment
+              {t("Click here to remove assignment")}
             </Button>
           </Box>
         )}
 
         <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-          {unassignedUsers.length} volunteers available
+          {unassignedUsers.length} {t("volunteers available")}
         </Typography>
 
         <Divider sx={{ mb: 2 }} />
@@ -411,7 +412,7 @@ function HoverDrawer({
             color="text.secondary"
             sx={{ textAlign: "center", py: 4 }}
           >
-            All volunteers have been assigned to positions
+            {t("All volunteers have been assigned to positions")}
           </Typography>
         ) : (
           unassignedUsers.map((user) => (
@@ -1119,8 +1120,8 @@ function RouteComponent() {
       {/* Existing Assignments Summary */}
       {assignmentsData && assignmentsData.assignments.length > 0 && (
         <Alert severity="success" sx={{ mb: 2 }}>
-          {t("Current assignments")}: {assignmentsData.assignments.length}{" "}
-          volunteers assigned to positions
+          {t("Current assignments:")} {assignmentsData.assignments.length}{" "}
+          {t("volunteers assigned to positions")}
         </Alert>
       )}
       <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
@@ -1219,7 +1220,7 @@ function RouteComponent() {
                 <Card sx={{ maxWidth: 250, opacity: 0.9, boxShadow: 3 }}>
                   <CardContent sx={{ p: 1 }}>
                     <Typography variant="body2">
-                      Dragging position...
+                      {t("Dragging position...")}
                     </Typography>
                   </CardContent>
                 </Card>

@@ -15,6 +15,7 @@ import {
   Typography,
 } from "@mui/material";
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import type { RegistrationFormItem } from "@/client";
 
 export function DetailedUserCard({
@@ -26,6 +27,7 @@ export function DetailedUserCard({
   expandedDefault: boolean;
   expandable?: boolean;
 }) {
+  const { t } = useTranslation();
   const [expanded, setExpanded] = useState(expandedDefault);
   const fullName = user.patronymic_ru
     ? `${user.last_name_ru} ${user.first_name_ru} ${user.patronymic_ru}`
@@ -86,12 +88,12 @@ export function DetailedUserCard({
 
         {user.itmo_group && (
           <Typography variant="body2" sx={{ mb: 0.25, fontSize: "0.75rem" }}>
-            <strong>Group:</strong> {user.itmo_group}
+            <strong>{t("Group:")}</strong> {user.itmo_group}
           </Typography>
         )}
         {user.telegram_username && (
           <Typography variant="body2" sx={{ mb: 0.25, fontSize: "0.75rem" }}>
-            <strong>Telegram:</strong> 📱{" "}
+            <strong>{t("Telegram:")}</strong> 📱{" "}
             <Link
               href={`https://t.me/${user.telegram_username}`}
               target="_blank"
@@ -107,7 +109,7 @@ export function DetailedUserCard({
               variant="body2"
               sx={{ mb: 0.25, fontWeight: 600, fontSize: "0.75rem" }}
             >
-              Desired Positions:
+              {t("Desired Positions:")}
             </Typography>
             <Box sx={{ display: "flex", flexWrap: "wrap", gap: 0.25 }}>
               {user.desired_positions.map((position) => (
@@ -130,7 +132,7 @@ export function DetailedUserCard({
               variant="body2"
               sx={{ fontWeight: 600, mb: 0.25, fontSize: "0.75rem" }}
             >
-              Comments:
+              {t("Comments:")}
             </Typography>
             <Typography
               variant="body2"
@@ -154,22 +156,22 @@ export function DetailedUserCard({
               variant="body2"
               sx={{ fontWeight: 600, mb: 0.25, fontSize: "0.75rem" }}
             >
-              Experience:
+              {t("Experience:")}
             </Typography>
             <Table size="small" sx={{ fontSize: "0.7rem" }}>
               <TableHead>
                 <TableRow>
                   <TableCell sx={{ fontSize: "0.65rem", py: 0.25, px: 0.5 }}>
-                    Year
+                    {t("Year")}
                   </TableCell>
                   <TableCell sx={{ fontSize: "0.65rem", py: 0.25, px: 0.5 }}>
-                    Positions
+                    {t("Positions")}
                   </TableCell>
                   <TableCell sx={{ fontSize: "0.65rem", py: 0.25, px: 0.5 }}>
-                    Attendance
+                    {t("Attendance:")}
                   </TableCell>
                   <TableCell sx={{ fontSize: "0.65rem", py: 0.25, px: 0.5 }}>
-                    Assessments
+                    {t("Assessments:")}
                   </TableCell>
                 </TableRow>
               </TableHead>
@@ -197,7 +199,7 @@ export function DetailedUserCard({
                         </Box>
                       ) : (
                         <Typography variant="caption" color="text.secondary">
-                          None
+                          {t("None")}
                         </Typography>
                       )}
                     </TableCell>
@@ -243,7 +245,7 @@ export function DetailedUserCard({
                         </Box>
                       ) : (
                         <Typography variant="caption" color="text.secondary">
-                          None
+                          {t("None")}
                         </Typography>
                       )}
                     </TableCell>

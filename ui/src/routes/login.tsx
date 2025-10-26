@@ -198,7 +198,9 @@ function RouteComponent() {
             setStoredTelegramData(loginData);
             setAuthFlow("migrate");
           } else {
-            setError(error instanceof Error ? error.message : "Unknown error");
+            setError(
+              error instanceof Error ? error.message : t("Unknown error"),
+            );
           }
         }
       }
@@ -207,7 +209,7 @@ function RouteComponent() {
     return () => {
       window.removeEventListener("message", listener);
     };
-  }, [navigate]);
+  }, [navigate, t]);
 
   return (
     <Container

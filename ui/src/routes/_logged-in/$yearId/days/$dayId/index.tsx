@@ -61,7 +61,7 @@ function RouteComponent() {
   if (isLoading) {
     return (
       <Box p={3}>
-        <Typography>Loading assignments...</Typography>
+        <Typography>{t("Loading assignments...")}</Typography>
       </Box>
     );
   }
@@ -70,7 +70,7 @@ function RouteComponent() {
     return (
       <Box p={3}>
         <Typography color="error">
-          Error loading assignments: {error.message}
+          {t("Error loading assignments")}: {error.message}
         </Typography>
       </Box>
     );
@@ -79,7 +79,7 @@ function RouteComponent() {
   if (!assignmentsData?.assignments) {
     return (
       <Box p={3}>
-        <Typography>No assignments found for this day.</Typography>
+        <Typography>{t("No assignments found for this day.")}</Typography>
       </Box>
     );
   }
@@ -139,10 +139,10 @@ function AssignmentsTable({ assignments }: AssignmentsTableProps) {
 
   // Get unique values for filter options
   const positionOptions = Array.from(
-    new Set(assignments.map((item) => item.position || "No Position")),
+    new Set(assignments.map((item) => item.position || t("No Position"))),
   ).sort();
   const hallOptions = Array.from(
-    new Set(assignments.map((item) => item.hall || "No Hall")),
+    new Set(assignments.map((item) => item.hall || t("No Hall"))),
   ).sort();
   // const attendanceOptions = Array.from(
   //   new Set(assignments.map((item) => item.attendance)),
@@ -152,12 +152,12 @@ function AssignmentsTable({ assignments }: AssignmentsTableProps) {
 
   const columns = [
     columnHelper.accessor("name", {
-      header: "Name",
+      header: t("Name"),
       enableGrouping: false,
       enableColumnFilter: false,
     }),
     columnHelper.accessor("telegram", {
-      header: "Telegram",
+      header: t("Telegram"),
       cell: (info) => {
         const username = info.getValue();
         return username ? `@${username}` : "-";
@@ -166,15 +166,15 @@ function AssignmentsTable({ assignments }: AssignmentsTableProps) {
       enableColumnFilter: false,
     }),
     columnHelper.accessor("position", {
-      header: "Position",
-      cell: (info) => info.getValue() || "No Position",
+      header: t("Position"),
+      cell: (info) => info.getValue() || t("No Position"),
       enableGrouping: true,
       enableGlobalFilter: true,
       filterFn: "equals",
     }),
     columnHelper.accessor("hall", {
-      header: "Hall",
-      cell: (info) => info.getValue() || "No Hall",
+      header: t("Hall"),
+      cell: (info) => info.getValue() || t("No Hall"),
       enableGrouping: true,
       enableGlobalFilter: true,
       filterFn: "equals",
@@ -300,9 +300,9 @@ function AssignmentsTable({ assignments }: AssignmentsTableProps) {
                       onChange={(e) =>
                         column.setFilterValue(e.target.value || undefined)
                       }
-                      label={`Filter ${column.columnDef.header as string}`}
+                      label={t("Filter")}
                     >
-                      <MenuItem value="">Any</MenuItem>
+                      <MenuItem value="">{t("Any")}</MenuItem>
                       {getFilterOptions().map((option) => (
                         <MenuItem key={option} value={option}>
                           {option}
@@ -388,7 +388,7 @@ function AssignmentsTable({ assignments }: AssignmentsTableProps) {
                           {{
                             asc: " ↑",
                             desc: " ↓",
-                          }[header.column.getIsSorted() as string] ?? null}
+                          }[header.column.getIsSorted() as string] ?? ""}
                         </Box>
                       </Box>
                     )}

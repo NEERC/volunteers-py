@@ -10,7 +10,7 @@ export const Route = createFileRoute("/_logged-in/$yearId/")({
     const data = await context.queryClient.ensureQueryData(yearsQueryOptions);
     const thisYear = data.years.find((year) => year.year_id === yearId);
     return {
-      title: thisYear?.year_name ?? "Год не найден",
+      title: thisYear?.year_name ?? "Year not found",
     };
   },
 });
