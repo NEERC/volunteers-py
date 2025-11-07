@@ -17,8 +17,9 @@ import { Route as LoggedInIndexImport } from './routes/_logged-in/index'
 import { Route as LoggedInForbiddenImport } from './routes/_logged-in/forbidden'
 import { Route as LoggedInCreateImport } from './routes/_logged-in/create'
 import { Route as LoggedInYearIdImport } from './routes/_logged-in/$yearId'
+import { Route as LoggedInUsersIndexImport } from './routes/_logged-in/users/index'
 import { Route as LoggedInYearIdIndexImport } from './routes/_logged-in/$yearId/index'
-import { Route as LoggedInYearIdUsersImport } from './routes/_logged-in/$yearId/users'
+import { Route as LoggedInUsersUserIdImport } from './routes/_logged-in/users/$userId'
 import { Route as LoggedInYearIdSettingsImport } from './routes/_logged-in/$yearId/settings'
 import { Route as LoggedInYearIdResultsImport } from './routes/_logged-in/$yearId/results'
 import { Route as LoggedInYearIdRegistrationFormsImport } from './routes/_logged-in/$yearId/registration-forms'
@@ -65,16 +66,22 @@ const LoggedInYearIdRoute = LoggedInYearIdImport.update({
   getParentRoute: () => LoggedInRoute,
 } as any)
 
+const LoggedInUsersIndexRoute = LoggedInUsersIndexImport.update({
+  id: '/users/',
+  path: '/users/',
+  getParentRoute: () => LoggedInRoute,
+} as any)
+
 const LoggedInYearIdIndexRoute = LoggedInYearIdIndexImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => LoggedInYearIdRoute,
 } as any)
 
-const LoggedInYearIdUsersRoute = LoggedInYearIdUsersImport.update({
-  id: '/users',
-  path: '/users',
-  getParentRoute: () => LoggedInYearIdRoute,
+const LoggedInUsersUserIdRoute = LoggedInUsersUserIdImport.update({
+  id: '/users/$userId',
+  path: '/users/$userId',
+  getParentRoute: () => LoggedInRoute,
 } as any)
 
 const LoggedInYearIdSettingsRoute = LoggedInYearIdSettingsImport.update({
@@ -218,12 +225,12 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LoggedInYearIdSettingsImport
       parentRoute: typeof LoggedInYearIdImport
     }
-    '/_logged-in/$yearId/users': {
-      id: '/_logged-in/$yearId/users'
-      path: '/users'
-      fullPath: '/$yearId/users'
-      preLoaderRoute: typeof LoggedInYearIdUsersImport
-      parentRoute: typeof LoggedInYearIdImport
+    '/_logged-in/users/$userId': {
+      id: '/_logged-in/users/$userId'
+      path: '/users/$userId'
+      fullPath: '/users/$userId'
+      preLoaderRoute: typeof LoggedInUsersUserIdImport
+      parentRoute: typeof LoggedInImport
     }
     '/_logged-in/$yearId/': {
       id: '/_logged-in/$yearId/'
@@ -231,6 +238,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/$yearId/'
       preLoaderRoute: typeof LoggedInYearIdIndexImport
       parentRoute: typeof LoggedInYearIdImport
+    }
+    '/_logged-in/users/': {
+      id: '/_logged-in/users/'
+      path: '/users'
+      fullPath: '/users'
+      preLoaderRoute: typeof LoggedInUsersIndexImport
+      parentRoute: typeof LoggedInImport
     }
     '/_logged-in/$yearId/days/$dayId/edit': {
       id: '/_logged-in/$yearId/days/$dayId/edit'
@@ -258,7 +272,6 @@ interface LoggedInYearIdRouteChildren {
   LoggedInYearIdRegistrationFormsRoute: typeof LoggedInYearIdRegistrationFormsRoute
   LoggedInYearIdResultsRoute: typeof LoggedInYearIdResultsRoute
   LoggedInYearIdSettingsRoute: typeof LoggedInYearIdSettingsRoute
-  LoggedInYearIdUsersRoute: typeof LoggedInYearIdUsersRoute
   LoggedInYearIdIndexRoute: typeof LoggedInYearIdIndexRoute
   LoggedInYearIdDaysDayIdEditRoute: typeof LoggedInYearIdDaysDayIdEditRoute
   LoggedInYearIdDaysDayIdIndexRoute: typeof LoggedInYearIdDaysDayIdIndexRoute
@@ -271,7 +284,6 @@ const LoggedInYearIdRouteChildren: LoggedInYearIdRouteChildren = {
   LoggedInYearIdRegistrationFormsRoute: LoggedInYearIdRegistrationFormsRoute,
   LoggedInYearIdResultsRoute: LoggedInYearIdResultsRoute,
   LoggedInYearIdSettingsRoute: LoggedInYearIdSettingsRoute,
-  LoggedInYearIdUsersRoute: LoggedInYearIdUsersRoute,
   LoggedInYearIdIndexRoute: LoggedInYearIdIndexRoute,
   LoggedInYearIdDaysDayIdEditRoute: LoggedInYearIdDaysDayIdEditRoute,
   LoggedInYearIdDaysDayIdIndexRoute: LoggedInYearIdDaysDayIdIndexRoute,
@@ -286,6 +298,8 @@ interface LoggedInRouteChildren {
   LoggedInCreateRoute: typeof LoggedInCreateRoute
   LoggedInForbiddenRoute: typeof LoggedInForbiddenRoute
   LoggedInIndexRoute: typeof LoggedInIndexRoute
+  LoggedInUsersUserIdRoute: typeof LoggedInUsersUserIdRoute
+  LoggedInUsersIndexRoute: typeof LoggedInUsersIndexRoute
 }
 
 const LoggedInRouteChildren: LoggedInRouteChildren = {
@@ -293,6 +307,8 @@ const LoggedInRouteChildren: LoggedInRouteChildren = {
   LoggedInCreateRoute: LoggedInCreateRoute,
   LoggedInForbiddenRoute: LoggedInForbiddenRoute,
   LoggedInIndexRoute: LoggedInIndexRoute,
+  LoggedInUsersUserIdRoute: LoggedInUsersUserIdRoute,
+  LoggedInUsersIndexRoute: LoggedInUsersIndexRoute,
 }
 
 const LoggedInRouteWithChildren = LoggedInRoute._addFileChildren(
@@ -312,8 +328,9 @@ export interface FileRoutesByFullPath {
   '/$yearId/registration-forms': typeof LoggedInYearIdRegistrationFormsRoute
   '/$yearId/results': typeof LoggedInYearIdResultsRoute
   '/$yearId/settings': typeof LoggedInYearIdSettingsRoute
-  '/$yearId/users': typeof LoggedInYearIdUsersRoute
+  '/users/$userId': typeof LoggedInUsersUserIdRoute
   '/$yearId/': typeof LoggedInYearIdIndexRoute
+  '/users': typeof LoggedInUsersIndexRoute
   '/$yearId/days/$dayId/edit': typeof LoggedInYearIdDaysDayIdEditRoute
   '/$yearId/days/$dayId': typeof LoggedInYearIdDaysDayIdIndexRoute
 }
@@ -329,8 +346,9 @@ export interface FileRoutesByTo {
   '/$yearId/registration-forms': typeof LoggedInYearIdRegistrationFormsRoute
   '/$yearId/results': typeof LoggedInYearIdResultsRoute
   '/$yearId/settings': typeof LoggedInYearIdSettingsRoute
-  '/$yearId/users': typeof LoggedInYearIdUsersRoute
+  '/users/$userId': typeof LoggedInUsersUserIdRoute
   '/$yearId': typeof LoggedInYearIdIndexRoute
+  '/users': typeof LoggedInUsersIndexRoute
   '/$yearId/days/$dayId/edit': typeof LoggedInYearIdDaysDayIdEditRoute
   '/$yearId/days/$dayId': typeof LoggedInYearIdDaysDayIdIndexRoute
 }
@@ -349,8 +367,9 @@ export interface FileRoutesById {
   '/_logged-in/$yearId/registration-forms': typeof LoggedInYearIdRegistrationFormsRoute
   '/_logged-in/$yearId/results': typeof LoggedInYearIdResultsRoute
   '/_logged-in/$yearId/settings': typeof LoggedInYearIdSettingsRoute
-  '/_logged-in/$yearId/users': typeof LoggedInYearIdUsersRoute
+  '/_logged-in/users/$userId': typeof LoggedInUsersUserIdRoute
   '/_logged-in/$yearId/': typeof LoggedInYearIdIndexRoute
+  '/_logged-in/users/': typeof LoggedInUsersIndexRoute
   '/_logged-in/$yearId/days/$dayId/edit': typeof LoggedInYearIdDaysDayIdEditRoute
   '/_logged-in/$yearId/days/$dayId/': typeof LoggedInYearIdDaysDayIdIndexRoute
 }
@@ -370,8 +389,9 @@ export interface FileRouteTypes {
     | '/$yearId/registration-forms'
     | '/$yearId/results'
     | '/$yearId/settings'
-    | '/$yearId/users'
+    | '/users/$userId'
     | '/$yearId/'
+    | '/users'
     | '/$yearId/days/$dayId/edit'
     | '/$yearId/days/$dayId'
   fileRoutesByTo: FileRoutesByTo
@@ -386,8 +406,9 @@ export interface FileRouteTypes {
     | '/$yearId/registration-forms'
     | '/$yearId/results'
     | '/$yearId/settings'
-    | '/$yearId/users'
+    | '/users/$userId'
     | '/$yearId'
+    | '/users'
     | '/$yearId/days/$dayId/edit'
     | '/$yearId/days/$dayId'
   id:
@@ -404,8 +425,9 @@ export interface FileRouteTypes {
     | '/_logged-in/$yearId/registration-forms'
     | '/_logged-in/$yearId/results'
     | '/_logged-in/$yearId/settings'
-    | '/_logged-in/$yearId/users'
+    | '/_logged-in/users/$userId'
     | '/_logged-in/$yearId/'
+    | '/_logged-in/users/'
     | '/_logged-in/$yearId/days/$dayId/edit'
     | '/_logged-in/$yearId/days/$dayId/'
   fileRoutesById: FileRoutesById
@@ -441,7 +463,9 @@ export const routeTree = rootRoute
         "/_logged-in/$yearId",
         "/_logged-in/create",
         "/_logged-in/forbidden",
-        "/_logged-in/"
+        "/_logged-in/",
+        "/_logged-in/users/$userId",
+        "/_logged-in/users/"
       ]
     },
     "/login": {
@@ -457,7 +481,6 @@ export const routeTree = rootRoute
         "/_logged-in/$yearId/registration-forms",
         "/_logged-in/$yearId/results",
         "/_logged-in/$yearId/settings",
-        "/_logged-in/$yearId/users",
         "/_logged-in/$yearId/",
         "/_logged-in/$yearId/days/$dayId/edit",
         "/_logged-in/$yearId/days/$dayId/"
@@ -499,13 +522,17 @@ export const routeTree = rootRoute
       "filePath": "_logged-in/$yearId/settings.tsx",
       "parent": "/_logged-in/$yearId"
     },
-    "/_logged-in/$yearId/users": {
-      "filePath": "_logged-in/$yearId/users.tsx",
-      "parent": "/_logged-in/$yearId"
+    "/_logged-in/users/$userId": {
+      "filePath": "_logged-in/users/$userId.tsx",
+      "parent": "/_logged-in"
     },
     "/_logged-in/$yearId/": {
       "filePath": "_logged-in/$yearId/index.tsx",
       "parent": "/_logged-in/$yearId"
+    },
+    "/_logged-in/users/": {
+      "filePath": "_logged-in/users/index.tsx",
+      "parent": "/_logged-in"
     },
     "/_logged-in/$yearId/days/$dayId/edit": {
       "filePath": "_logged-in/$yearId/days/$dayId/edit.tsx",

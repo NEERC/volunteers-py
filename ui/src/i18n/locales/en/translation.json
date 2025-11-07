@@ -167,5 +167,14 @@
   "Dragging position...": "Dragging position...",
   "Publish Assignments": "Publish Assignments",
   "Create new year": "Create new year",
-  "Failed to load registration forms": "Failed to load registration forms"
+  "Failed to load registration forms": "Failed to load registration forms",
+  "List of all users": "List of all users",
+  "Search users...": "Search users...",
+  "Failed to load users": "Failed to load users",
+  "Edit User": "Edit User",
+  "Failed to load user": "Failed to load user",
+  "User not found": "User not found",
+  "Failed to update user": "Failed to update user",
+  "Telegram Username": "Telegram Username",
+  "Telegram ID": "Telegram ID"
 }

@@ -11,7 +11,7 @@ import type {
   RegistrationRequest,
   TelegramLoginRequest,
   TelegramMigrateRequest,
-  UserResponse,
+  VolunteersApiV1AuthSchemasUserResponse,
 } from "@/client/types.gen";
 import { client } from "../client/client.gen";
 
@@ -23,7 +23,7 @@ export class UserNotFoundError extends Error {
 }
 
 class AuthStore {
-  private _user: UserResponse | null = null;
+  private _user: VolunteersApiV1AuthSchemasUserResponse | null = null;
   private accessToken: string | null = null;
   refreshToken: string | null = null;
   private hydrationPromise: Promise<void> | null = null;

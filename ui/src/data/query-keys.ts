@@ -99,6 +99,10 @@ export const queryKeys = {
       lists: () => [...queryKeys.admin.users.all(), "list"] as const,
       list: (yearId: string | number, filters: Record<string, unknown> = {}) =>
         [...queryKeys.admin.users.lists(), { yearId, filters }] as const,
+      allUsers: () => [...queryKeys.admin.users.all(), "all"] as const,
+      details: () => [...queryKeys.admin.users.all(), "detail"] as const,
+      detail: (id: string | number) =>
+        [...queryKeys.admin.users.details(), id] as const,
     },
 
     // Admin - Registration Forms

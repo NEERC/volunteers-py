@@ -18,6 +18,11 @@ class UserService(BaseService):
             result = await session.execute(select(User).where(User.id == id))
             return result.scalar_one_or_none()
 
+    async def get_all_users(self) -> list[User]:
+        async with self.session_scope() as session:
+            result = await session.execute(select(User).order_by(User.id))
+            return list(result.scalars().all())
+
     async def create_user(self, user_in: UserIn) -> User:
         user = User(
             telegram_id=user_in.telegram_id,

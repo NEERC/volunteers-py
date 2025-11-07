@@ -12,9 +12,12 @@ import {
   editHallApiV1AdminHallHallIdEditPost,
   editPositionApiV1AdminPositionPositionIdEditPost,
   editPositionApiV1AdminUserDayUserDayIdEditPost,
+  editUserApiV1AdminUserUserIdEditPost,
   editYearApiV1AdminYearYearIdEditPost,
+  getAllUsersApiV1AdminUserGet,
   getDayAssignmentsApiV1AdminUserDayDayDayIdAssignmentsGet,
   getRegistrationFormsApiV1AdminYearYearIdRegistrationFormsGet,
+  getUserByIdApiV1AdminUserUserIdGet,
   getUsersListApiV1AdminYearYearIdUsersGet,
   getYearDaysApiV1AdminDayYearYearIdGet,
   getYearHallsApiV1AdminHallYearYearIdGet,
@@ -325,6 +328,72 @@ export const useUsersList = (yearId: string | number) => {
         throwOnError: true,
       });
       return response.data;
+    },
+  });
+};
+
+export const useAllUsers = () => {
+  return useQuery({
+    queryKey: queryKeys.admin.users.allUsers(),
+    queryFn: async () => {
+      const response = await getAllUsersApiV1AdminUserGet({
+        throwOnError: true,
+      });
+      return response.data;
+    },
+  });
+};
+
+export const useUser = (userId: string | number) => {
+  return useQuery({
+    queryKey: queryKeys.admin.users.detail(userId),
+    queryFn: async () => {
+      const response = await getUserByIdApiV1AdminUserUserIdGet({
+        path: { user_id: Number(userId) },
+        throwOnError: true,
+      });
+      return response.data;
+    },
+    enabled: !!userId,
+  });
+};
+
+export const useEditUser = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({
+      userId,
+      data,
+    }: {
+      userId: string | number;
+      data: {
+        first_name_ru?: string | null;
+        last_name_ru?: string | null;
+        full_name_en?: string | null;
+        isu_id?: number | null;
+        patronymic_ru?: string | null;
+        phone?: string | null;
+        email?: string | null;
+        telegram_username?: string | null;
+        is_admin?: boolean | null;
+        telegram_id?: number | null;
+      };
+    }) => {
+      const response = await editUserApiV1AdminUserUserIdEditPost({
+        path: { user_id: Number(userId) },
+        body: data,
+        throwOnError: true,
+      });
+      return response.data;
+    },
+    onSuccess: (_, { userId }) => {
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.admin.users.all(),
+      });
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.admin.users.detail(userId),
+      });
     },
   });
 };

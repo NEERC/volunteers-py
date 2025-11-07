@@ -177,5 +177,13 @@
   "Publish Assignments": "Опубликовать назначения",
   "Create new year": "Создать новый год",
   "Failed to load registration forms": "Не удалось загрузить формы регистрации",
-  "Group By": "Группировка"
+  "Group By": "Группировка",
+  "List of all users": "Список всех пользователей",
+  "Admin": "Администратор",
+  "Telegram Username": "Имя пользователя в Telegram",
+  "Telegram ID": "ID пользователя в Telegram",
+  "Edit User": "Редактировать пользователя",
+  "Failed to load user": "Не удалось загрузить пользователя",
+  "User not found": "Пользователь не найден",
+  "Failed to update user": "Не удалось обновить пользователя"
 }

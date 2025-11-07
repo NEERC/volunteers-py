@@ -77,75 +77,79 @@ const drawerWidth = 240;
 
 // Routes configuration
 const getRoutesConfig = (
-  selectedYear: string,
+  selectedYear: string | null,
   yearData: { days?: Array<{ day_id: number; name: string }> },
 ): RouteConfig[] => [
-  {
-    id: "registration",
-    type: "simple",
-    labelKey: "Registration Form",
-    icon: AssignmentIcon,
-    path: `/${selectedYear}/registration`,
-  },
-  {
-    id: "contacts",
-    type: "simple",
-    labelKey: "Contacts",
-    icon: ContactsIcon,
-    path: `/${selectedYear}/contacts`,
-    adminOnly: true,
-  },
-  {
-    id: "registration-forms",
-    type: "simple",
-    labelKey: "Registration Forms",
-    icon: DescriptionIcon,
-    path: `/${selectedYear}/registration-forms`,
-    adminOnly: true,
-  },
-  {
-    id: "days",
-    type: "collapsible",
-    labelKey: "Days",
-    icon: CalendarMonthIcon,
-    path: `/${selectedYear}/days`,
-    children:
-      yearData?.days?.map((day: { day_id: number; name: string }) => ({
-        id: `day-${day.day_id}`,
-        label: day.name,
-        path: `/${selectedYear}/days/${day.day_id}`,
-      })) ?? [],
-  },
-  {
-    id: "results",
-    type: "simple",
-    labelKey: "Results",
-    icon: AssessmentIcon,
-    path: `/${selectedYear}/results`,
-    adminOnly: true,
-  },
-  {
-    id: "medals",
-    type: "simple",
-    labelKey: "User Medals",
-    icon: EmojiEventsIcon,
-    path: `/${selectedYear}/medals`,
-    adminOnly: true,
-  },
-  {
-    id: "settings",
-    type: "simple",
-    labelKey: "Settings",
-    icon: SettingsIcon,
-    path: `/${selectedYear}/settings`,
-    adminOnly: true,
-  },
+  ...(selectedYear !== null
+    ? ([
+        {
+          id: "registration",
+          type: "simple",
+          labelKey: "Registration Form",
+          icon: AssignmentIcon,
+          path: `/${selectedYear}/registration`,
+        },
+        {
+          id: "contacts",
+          type: "simple",
+          labelKey: "Contacts",
+          icon: ContactsIcon,
+          path: `/${selectedYear}/contacts`,
+          adminOnly: true,
+        },
+        {
+          id: "registration-forms",
+          type: "simple",
+          labelKey: "Registration Forms",
+          icon: DescriptionIcon,
+          path: `/${selectedYear}/registration-forms`,
+          adminOnly: true,
+        },
+        {
+          id: "days",
+          type: "collapsible",
+          labelKey: "Days",
+          icon: CalendarMonthIcon,
+          path: `/${selectedYear}/days`,
+          children:
+            yearData?.days?.map((day: { day_id: number; name: string }) => ({
+              id: `day-${day.day_id}`,
+              label: day.name,
+              path: `/${selectedYear}/days/${day.day_id}`,
+            })) ?? [],
+        },
+        {
+          id: "results",
+          type: "simple",
+          labelKey: "Results",
+          icon: AssessmentIcon,
+          path: `/${selectedYear}/results`,
+          adminOnly: true,
+        },
+        {
+          id: "medals",
+          type: "simple",
+          labelKey: "User Medals",
+          icon: EmojiEventsIcon,
+          path: `/${selectedYear}/medals`,
+          adminOnly: true,
+        },
+        {
+          id: "settings",
+          type: "simple",
+          labelKey: "Settings",
+          icon: SettingsIcon,
+          path: `/${selectedYear}/settings`,
+          adminOnly: true,
+        },
+      ] as RouteConfig[])
+    : []),
   {
     id: "users",
     type: "simple",
     labelKey: "Users",
     icon: GroupIcon,
-    path: `/${selectedYear}/users`,
+    path: "/users",
     adminOnly: true,
   },
 ];
@@ -276,10 +280,10 @@ export default observer(function MainLayout({
       from: "/_logged-in/$yearId",
       select: (match) => match.params.yearId,
       shouldThrow: false,
-    }) ?? "";
+    }) ?? null;
 
   const yearData = useQuery({
-    queryKey: queryKeys.year.form(selectedYear),
+    queryKey: selectedYear !== null ? queryKeys.year.form(selectedYear) : [],
     queryFn: async () => {
       if (!selectedYear) return null;
       const response = await getFormYearApiV1YearYearIdGet({
@@ -287,12 +291,12 @@ export default observer(function MainLayout({
       });
       return response.data;
     },
-    enabled: !!selectedYear,
+    enabled: selectedYear !== null,
   });
 
   const navigate = useNavigate();
 
-  const handleYearChange = (event: SelectChangeEvent<string>) => {
+  const handleYearChange = (event: SelectChangeEvent<string | null>) => {
     const yearId = event.target.value;
     if (yearId === "create") {
       navigate({ to: "/create" });
@@ -373,12 +377,10 @@ export default observer(function MainLayout({
         </FormControl>
       </Toolbar>
       <Divider />
-      {selectedYear && (
-        <List>
-          {renderRoutes(routes, isLinkActive, daysOpen, setDaysOpen, t, user)}
-          <Divider />
-        </List>
-      )}
+      <List>
+        {renderRoutes(routes, isLinkActive, daysOpen, setDaysOpen, t, user)}
+        <Divider />
+      </List>
     </div>
   );
 

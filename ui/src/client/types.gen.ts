@@ -71,6 +71,10 @@ export type AddYearResponse = {
     year_id: number;
 };
 
+export type AllUsersResponse = {
+    users: Array<VolunteersApiV1AdminUserSchemasUserResponse>;
+};
+
 export type ApplicationFormYearSaveRequest = {
     desired_positions_ids: Array<number>;
     itmo_group?: string | null;
@@ -162,6 +166,19 @@ export type EditUserDayRequest = {
     attendance?: Attendance | null;
     position_id: number;
     hall_id?: number | null;
+};
+
+export type EditUserRequest = {
+    first_name_ru?: string | null;
+    last_name_ru?: string | null;
+    full_name_en?: string | null;
+    isu_id?: number | null;
+    patronymic_ru?: string | null;
+    phone?: string | null;
+    email?: string | null;
+    telegram_username?: string | null;
+    is_admin?: boolean | null;
+    telegram_id?: number | null;
 };
 
 export type EditYearRequest = {
@@ -293,19 +310,6 @@ export type UserListResponse = {
     users: Array<UserListItem>;
 };
 
-export type UserResponse = {
-    user_id: number;
-    first_name_ru: string;
-    last_name_ru: string;
-    full_name_en: string;
-    is_admin: boolean;
-    isu_id: number | null;
-    patronymic_ru: string | null;
-    phone: string | null;
-    email: string | null;
-    telegram_username: string | null;
-};
-
 export type UserUpdateRequest = {
     first_name_ru?: string | null;
     last_name_ru?: string | null;
@@ -331,6 +335,33 @@ export type YearOut = {
 export type YearsResponse = {
     success: true;
     years: Array<YearOut>;
+};
+
+export type VolunteersApiV1AdminUserSchemasUserResponse = {
+    user_id: number;
+    telegram_id: number | null;
+    first_name_ru: string;
+    last_name_ru: string;
+    patronymic_ru: string | null;
+    full_name_en: string;
+    isu_id: number | null;
+    phone: string | null;
+    email: string | null;
+    telegram_username: string | null;
+    is_admin: boolean;
+};
+
+export type VolunteersApiV1AuthSchemasUserResponse = {
+    user_id: number;
+    first_name_ru: string;
+    last_name_ru: string;
+    full_name_en: string;
+    is_admin: boolean;
+    isu_id: number | null;
+    patronymic_ru: string | null;
+    phone: string | null;
+    email: string | null;
+    telegram_username: string | null;
 };
 
 export type AddAssessmentApiV1AdminAssessmentAddPostData = {
@@ -602,6 +633,76 @@ export type EditPositionApiV1AdminPositionPositionIdEditPostResponses = {
      */
     200: unknown;
 };
+
+export type GetAllUsersApiV1AdminUserGetData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/v1/admin/user';
+};
+
+export type GetAllUsersApiV1AdminUserGetResponses = {
+    /**
+     * Successful Response
+     */
+    200: AllUsersResponse;
+};
+
+export type GetAllUsersApiV1AdminUserGetResponse = GetAllUsersApiV1AdminUserGetResponses[keyof GetAllUsersApiV1AdminUserGetResponses];
+
+export type GetUserByIdApiV1AdminUserUserIdGetData = {
+    body?: never;
+    path: {
+        user_id: number;
+    };
+    query?: never;
+    url: '/api/v1/admin/user/{user_id}';
+};
+
+export type GetUserByIdApiV1AdminUserUserIdGetErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type GetUserByIdApiV1AdminUserUserIdGetError = GetUserByIdApiV1AdminUserUserIdGetErrors[keyof GetUserByIdApiV1AdminUserUserIdGetErrors];
+
+export type GetUserByIdApiV1AdminUserUserIdGetResponses = {
+    /**
+     * Successful Response
+     */
+    200: VolunteersApiV1AdminUserSchemasUserResponse;
+};
+
+export type GetUserByIdApiV1AdminUserUserIdGetResponse = GetUserByIdApiV1AdminUserUserIdGetResponses[keyof GetUserByIdApiV1AdminUserUserIdGetResponses];
+
+export type EditUserApiV1AdminUserUserIdEditPostData = {
+    body: EditUserRequest;
+    path: {
+        user_id: number;
+    };
+    query?: never;
+    url: '/api/v1/admin/user/{user_id}/edit';
+};
+
+export type EditUserApiV1AdminUserUserIdEditPostErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type EditUserApiV1AdminUserUserIdEditPostError = EditUserApiV1AdminUserUserIdEditPostErrors[keyof EditUserApiV1AdminUserUserIdEditPostErrors];
+
+export type EditUserApiV1AdminUserUserIdEditPostResponses = {
+    /**
+     * Successful Response
+     */
+    200: VolunteersApiV1AdminUserSchemasUserResponse;
+};
+
+export type EditUserApiV1AdminUserUserIdEditPostResponse = EditUserApiV1AdminUserUserIdEditPostResponses[keyof EditUserApiV1AdminUserUserIdEditPostResponses];
 
 export type AddUserDayApiV1AdminUserDayAddPostData = {
     body: AddUserDayRequest;
@@ -957,7 +1058,7 @@ export type MeApiV1AuthMeGetResponses = {
     /**
      * Successful Response
      */
-    200: UserResponse;
+    200: VolunteersApiV1AuthSchemasUserResponse;
 };
 
 export type MeApiV1AuthMeGetResponse = MeApiV1AuthMeGetResponses[keyof MeApiV1AuthMeGetResponses];
@@ -982,7 +1083,7 @@ export type UpdateUserApiV1AuthUpdatePostResponses = {
     /**
      * Successful Response
      */
-    200: UserResponse;
+    200: VolunteersApiV1AuthSchemasUserResponse;
 };
 
 export type UpdateUserApiV1AuthUpdatePostResponse = UpdateUserApiV1AuthUpdatePostResponses[keyof UpdateUserApiV1AuthUpdatePostResponses];
