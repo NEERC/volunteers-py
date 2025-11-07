@@ -7,3 +7,4 @@ class ApplicationFormIn(BaseModel):
     desired_positions_ids: set[int]
     itmo_group: str | None
     comments: str = ""
+    needs_invitation: bool = False

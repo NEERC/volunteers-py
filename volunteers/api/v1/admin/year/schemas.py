@@ -55,6 +55,7 @@ class RegistrationFormItem(BaseModel):
     telegram_username: str | None
     itmo_group: str | None
     comments: str
+    needs_invitation: bool
     desired_positions: list[PositionOut]
     experience: list[ExperienceItem]
     created_at: str

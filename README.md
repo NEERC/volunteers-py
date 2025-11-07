@@ -71,3 +71,7 @@ volunteers/
 - [ ] Year specific positions should be copied from the previous year with theirs scores saved
 - [ ] Diploma generation
 - [ ] csv export
+- [ ] Reactive assignments broadcasts
+- [ ] swap halls and positions so that positions are inside halls.
+- [ ] Gender in regestration form
+- [ ] Notifications by selecting users

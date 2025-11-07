@@ -38,6 +38,7 @@ export function DetailedUserCard({
     user.telegram_username ||
     user.desired_positions.length > 0 ||
     user.comments ||
+    user.needs_invitation ||
     (user.experience && user.experience.length > 0);
 
   return (
@@ -146,6 +147,14 @@ export function DetailedUserCard({
               }}
             >
               "{user.comments}"
+            </Typography>
+          </Box>
+        )}
+
+        {user.needs_invitation && (
+          <Box sx={{ mt: 0.5 }}>
+            <Typography variant="body2" sx={{ mb: 0.25, fontSize: "0.75rem" }}>
+              <strong>{t("I need an invitation for work/study")}</strong> ✓
             </Typography>
           </Box>
         )}

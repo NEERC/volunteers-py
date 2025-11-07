@@ -43,6 +43,7 @@ function RouteComponent() {
         year?.desired_positions?.map((p) => p.position_id) ?? [],
       itmo_group: year?.itmo_group ?? "",
       comments: year?.comments ?? "",
+      needs_invitation: year?.needs_invitation ?? false,
       first_name_ru: user?.first_name_ru ?? "",
       last_name_ru: user?.last_name_ru ?? "",
       full_name_en: user?.full_name_en ?? "",
@@ -58,6 +59,7 @@ function RouteComponent() {
         .min(1, t("Please select at least one position")),
       itmo_group: Yup.string().nullable(),
       comments: Yup.string(),
+      needs_invitation: Yup.boolean(),
       first_name_ru: Yup.string().required(t("Required")),
       last_name_ru: Yup.string().required(t("Required")),
       full_name_en: Yup.string().required(t("Required")),
@@ -76,6 +78,7 @@ function RouteComponent() {
             desired_positions_ids: values.desired_positions,
             itmo_group: values.itmo_group,
             comments: values.comments,
+            needs_invitation: values.needs_invitation,
           },
           userData: {
             first_name_ru: values.first_name_ru,
@@ -305,6 +308,22 @@ function RouteComponent() {
             helperText={formik.touched.comments && formik.errors.comments}
             sx={{ mb: 3 }}
           />
+
+          <Box sx={{ mb: 3 }}>
+            <FormControl>
+              <Box sx={{ display: "flex", alignItems: "center" }}>
+                <Checkbox
+                  checked={formik.values.needs_invitation}
+                  onChange={formik.handleChange}
+                  name="needs_invitation"
+                  disabled={!year.open_for_registration}
+                />
+                <Typography>
+                  {t("I need an invitation for work/study")}
+                </Typography>
+              </Box>
+            </FormControl>
+          </Box>
 
           <Box sx={{ display: "flex", gap: 2, justifyContent: "flex-end" }}>
             <Button onClick={() => navigate({ to: `/${yearId}` })}>

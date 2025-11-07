@@ -246,7 +246,14 @@ async def test_edit_position_by_position_id_not_found(year_service: YearService)
 
 @pytest.mark.asyncio
 async def test_add_day(year_service: YearService) -> None:
-    day_in = DayIn(year_id=1, name="Monday", information="Info", score=10.0, mandatory=True)
+    day_in = DayIn(
+        year_id=1,
+        name="Monday",
+        information="Info",
+        score=10.0,
+        mandatory=True,
+        assignment_published=True,
+    )
     mock_session = MagicMock()
     mock_session.add = MagicMock()
     mock_session.commit = AsyncMock()
@@ -263,7 +270,13 @@ async def test_add_day(year_service: YearService) -> None:
 
 @pytest.mark.asyncio
 async def test_edit_day_by_day_id_success(year_service: YearService) -> None:
-    day_edit = DayEditIn(name="Tuesday", information="Updated info", score=15.0, mandatory=False)
+    day_edit = DayEditIn(
+        name="Tuesday",
+        information="Updated info",
+        score=15.0,
+        mandatory=False,
+        assignment_published=True,
+    )
     dummy_day = Day(id=1, name="OldDay", information="Old info")
     mock_result = MagicMock()
     mock_result.scalar_one_or_none.return_value = dummy_day
@@ -281,7 +294,13 @@ async def test_edit_day_by_day_id_success(year_service: YearService) -> None:
 
 @pytest.mark.asyncio
 async def test_edit_day_by_day_id_not_found(year_service: YearService) -> None:
-    day_edit = DayEditIn(name="Wednesday", information="missing", score=5.0, mandatory=True)
+    day_edit = DayEditIn(
+        name="Wednesday",
+        information="missing",
+        score=5.0,
+        mandatory=True,
+        assignment_published=True,
+    )
     mock_result = MagicMock()
     mock_result.scalar_one_or_none.return_value = None
     mock_session = MagicMock()

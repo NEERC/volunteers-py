@@ -153,6 +153,7 @@ async def get_registration_forms(
                 telegram_username=form.user.telegram_username,
                 itmo_group=form.itmo_group,
                 comments=form.comments,
+                needs_invitation=form.needs_invitation,
                 desired_positions=[
                     PositionOut(
                         position_id=p.id,
