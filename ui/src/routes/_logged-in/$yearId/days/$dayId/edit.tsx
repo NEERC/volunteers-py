@@ -544,11 +544,21 @@ function PositionColumn({
   onUserClick: (userId: number) => void;
   isMobile?: boolean;
 }) {
+  const { t } = useTranslation();
   const { setNodeRef, isOver } = useDroppable({
     id: `position-${position.position_id}`,
   });
 
   const [isHovered, setIsHovered] = useState(false);
+
+  // Calculate total volunteer count for this position
+  const directCount = position.assigned_users.length;
+  const hallCount =
+    position.halls?.reduce(
+      (sum, hall) => sum + hall.assigned_users.length,
+      0,
+    ) || 0;
+  const totalCount = directCount + hallCount;
 
   return (
     <Paper
@@ -581,9 +591,21 @@ function PositionColumn({
         transition: "all 0.2s ease-in-out",
       }}
     >
-      <Typography variant="subtitle1" gutterBottom sx={{ fontWeight: 600 }}>
-        {position.name}
-      </Typography>
+      <Box
+        sx={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          mb: 1,
+        }}
+      >
+        <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>
+          {position.name}
+        </Typography>
+        <Typography variant="body2" color="text.secondary">
+          {totalCount} {totalCount === 1 ? t("volunteer") : t("volunteers")}
+        </Typography>
+      </Box>
       <Divider sx={{ mb: 1 }} />
 
       {/* Direct position assignments (always available) */}
@@ -661,11 +683,15 @@ function HallColumn({
   onUserClick: (userId: number) => void;
   isMobile?: boolean;
 }) {
+  const { t } = useTranslation();
   const { setNodeRef, isOver } = useDroppable({
     id: `hall-${positionId}-${hall.hall_id}`,
   });
 
   const [isHovered, setIsHovered] = useState(false);
+
+  // Calculate volunteer count for this hall
+  const hallCount = hall.assigned_users.length;
 
   return (
     <Paper
@@ -698,9 +724,21 @@ function HallColumn({
         transition: "all 0.2s ease-in-out",
       }}
     >
-      <Typography variant="body2" gutterBottom sx={{ fontWeight: 600 }}>
-        {hall.name}
-      </Typography>
+      <Box
+        sx={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          mb: 1,
+        }}
+      >
+        <Typography variant="body2" sx={{ fontWeight: 600 }}>
+          {hall.name}
+        </Typography>
+        <Typography variant="caption" color="text.secondary">
+          {hallCount} {hallCount === 1 ? t("volunteer") : t("volunteers")}
+        </Typography>
+      </Box>
       <Divider sx={{ mb: 1 }} />
       <SortableContext
         items={hall.assigned_users.map((user) => `user-${user.user_id}`)}

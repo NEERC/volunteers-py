@@ -176,5 +176,7 @@
   "User not found": "User not found",
   "Failed to update user": "Failed to update user",
   "Telegram Username": "Telegram Username",
-  "Telegram ID": "Telegram ID"
+  "Telegram ID": "Telegram ID",
+  "volunteer": "volunteer",
+  "volunteers": "volunteers"
 }
