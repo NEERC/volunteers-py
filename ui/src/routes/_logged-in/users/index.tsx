@@ -97,7 +97,7 @@ function RouteComponent() {
         {
           id: "name_en",
           header: t("Name (English)"),
-          accessorKey: "full_name_en",
+          accessorFn: (row) => `${row.first_name_en} ${row.last_name_en}`,
           size: 150,
           cell: (info) => (
             <Typography variant="body2" fontSize="0.875rem">

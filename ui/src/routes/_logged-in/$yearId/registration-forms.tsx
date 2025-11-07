@@ -72,7 +72,8 @@ function RouteComponent() {
       filtered = filtered.filter((form) => {
         const fullNameRu =
           `${form.last_name_ru} ${form.first_name_ru}${form.patronymic_ru ? ` ${form.patronymic_ru}` : ""}`.toLowerCase();
-        const fullNameEn = form.full_name_en.toLowerCase();
+        const fullNameEn =
+          `${form.first_name_en} ${form.last_name_en}`.toLowerCase();
 
         return (
           fullNameRu.includes(searchTerm) || fullNameEn.includes(searchTerm)

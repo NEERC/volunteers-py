@@ -30,7 +30,8 @@ export const Route = createFileRoute("/_logged-in/users/$userId")({
 const validationSchema = yup.object({
   first_name_ru: yup.string().required("First name (RU) is required"),
   last_name_ru: yup.string().required("Last name (RU) is required"),
-  full_name_en: yup.string().required("Full name (EN) is required"),
+  first_name_en: yup.string().required("First name (EN) is required"),
+  last_name_en: yup.string().required("Last name (EN) is required"),
   isu_id: yup.number().nullable(),
   patronymic_ru: yup.string().nullable(),
   phone: yup.string().nullable(),
@@ -52,7 +53,8 @@ function RouteComponent() {
       first_name_ru: "",
       last_name_ru: "",
       patronymic_ru: "",
-      full_name_en: "",
+      first_name_en: "",
+      last_name_en: "",
       isu_id: null as number | null,
       phone: "",
       email: "",
@@ -69,7 +71,8 @@ function RouteComponent() {
             first_name_ru: values.first_name_ru || null,
             last_name_ru: values.last_name_ru || null,
             patronymic_ru: values.patronymic_ru || null,
-            full_name_en: values.full_name_en || null,
+            first_name_en: values.first_name_en || null,
+            last_name_en: values.last_name_en || null,
             isu_id: values.isu_id || null,
             phone: values.phone || null,
             email: values.email || null,
@@ -175,15 +178,32 @@ function RouteComponent() {
 
           <TextField
             fullWidth
-            label={t("Full Name (EN)")}
-            name="full_name_en"
-            value={formik.values.full_name_en}
+            label={t("First Name (EN)")}
+            name="first_name_en"
+            value={formik.values.first_name_en}
             onChange={formik.handleChange}
             error={
-              formik.touched.full_name_en && Boolean(formik.errors.full_name_en)
+              formik.touched.first_name_en &&
+              Boolean(formik.errors.first_name_en)
             }
             helperText={
-              formik.touched.full_name_en && formik.errors.full_name_en
+              formik.touched.first_name_en && formik.errors.first_name_en
+            }
+            sx={{ mb: 2 }}
+            required
+          />
+
+          <TextField
+            fullWidth
+            label={t("Last Name (EN)")}
+            name="last_name_en"
+            value={formik.values.last_name_en}
+            onChange={formik.handleChange}
+            error={
+              formik.touched.last_name_en && Boolean(formik.errors.last_name_en)
+            }
+            helperText={
+              formik.touched.last_name_en && formik.errors.last_name_en
             }
             sx={{ mb: 2 }}
             required

@@ -173,7 +173,8 @@ export type EditUserDayRequest = {
 export type EditUserRequest = {
     first_name_ru?: string | null;
     last_name_ru?: string | null;
-    full_name_en?: string | null;
+    first_name_en?: string | null;
+    last_name_en?: string | null;
     isu_id?: number | null;
     patronymic_ru?: string | null;
     phone?: string | null;
@@ -231,7 +232,8 @@ export type RegistrationFormItem = {
     first_name_ru: string;
     last_name_ru: string;
     patronymic_ru: string | null;
-    full_name_en: string;
+    first_name_en: string;
+    last_name_en: string;
     isu_id: number | null;
     phone: string | null;
     email: string | null;
@@ -259,7 +261,8 @@ export type RegistrationRequest = {
     telegram_photo_url?: string | null;
     first_name_ru: string;
     last_name_ru: string;
-    full_name_en: string;
+    first_name_en: string;
+    last_name_en: string;
     isu_id?: number | null;
     patronymic_ru?: string | null;
     phone?: string | null;
@@ -301,7 +304,8 @@ export type UserListItem = {
     first_name_ru: string;
     last_name_ru: string;
     patronymic_ru: string | null;
-    full_name_en: string;
+    first_name_en: string;
+    last_name_en: string;
     itmo_group: string | null;
     email: string | null;
     phone: string | null;
@@ -316,7 +320,8 @@ export type UserListResponse = {
 export type UserUpdateRequest = {
     first_name_ru?: string | null;
     last_name_ru?: string | null;
-    full_name_en?: string | null;
+    first_name_en?: string | null;
+    last_name_en?: string | null;
     isu_id?: number | null;
     patronymic_ru?: string | null;
     phone?: string | null;
@@ -346,7 +351,8 @@ export type VolunteersApiV1AdminUserSchemasUserResponse = {
     first_name_ru: string;
     last_name_ru: string;
     patronymic_ru: string | null;
-    full_name_en: string;
+    first_name_en: string;
+    last_name_en: string;
     isu_id: number | null;
     phone: string | null;
     email: string | null;
@@ -358,7 +364,8 @@ export type VolunteersApiV1AuthSchemasUserResponse = {
     user_id: number;
     first_name_ru: string;
     last_name_ru: string;
-    full_name_en: string;
+    first_name_en: string;
+    last_name_en: string;
     is_admin: boolean;
     isu_id: number | null;
     patronymic_ru: string | null;

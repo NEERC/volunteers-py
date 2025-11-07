@@ -370,7 +370,8 @@ export const useEditUser = () => {
       data: {
         first_name_ru?: string | null;
         last_name_ru?: string | null;
-        full_name_en?: string | null;
+        first_name_en?: string | null;
+        last_name_en?: string | null;
         isu_id?: number | null;
         patronymic_ru?: string | null;
         phone?: string | null;

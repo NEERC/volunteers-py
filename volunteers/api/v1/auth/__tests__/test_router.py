@@ -35,7 +35,8 @@ def test_user() -> User:
         first_name_ru="Денис",
         last_name_ru="Потехин",
         patronymic_ru="Александрович",
-        full_name_en="Denis Potekhin",
+        first_name_en="Denis",
+        last_name_en="Potekhin",
         is_admin=False,
         isu_id=312656,
     )
@@ -69,7 +70,8 @@ def registration_request() -> dict[str, Any]:
         "telegram_photo_url": "http://example.com/photo.jpg",
         "first_name_ru": "Денис",
         "last_name_ru": "Потехин",
-        "full_name_en": "Denis Potekhin",
+        "first_name_en": "Denis",
+        "last_name_en": "Potekhin",
         "isu_id": 313656,
         "patronymic_ru": "Александрович",
     }
@@ -232,7 +234,8 @@ async def test_me_success(app: FastAPIWithContainer, test_user: User) -> None:
     assert data["user_id"] == test_user.id
     assert data["first_name_ru"] == test_user.first_name_ru
     assert data["last_name_ru"] == test_user.last_name_ru
-    assert data["full_name_en"] == test_user.full_name_en
+    assert data["first_name_en"] == test_user.first_name_en
+    assert data["last_name_en"] == test_user.last_name_en
     assert data["is_admin"] == test_user.is_admin
     assert data["isu_id"] == test_user.isu_id
     assert data["patronymic_ru"] == test_user.patronymic_ru

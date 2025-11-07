@@ -23,7 +23,8 @@ class UserListItem(BaseModel):
     first_name_ru: str
     last_name_ru: str
     patronymic_ru: str | None
-    full_name_en: str
+    first_name_en: str
+    last_name_en: str
     itmo_group: str | None
     email: str | None
     phone: str | None
@@ -48,7 +49,8 @@ class RegistrationFormItem(BaseModel):
     first_name_ru: str
     last_name_ru: str
     patronymic_ru: str | None
-    full_name_en: str
+    first_name_en: str
+    last_name_en: str
     isu_id: int | None
     phone: str | None
     email: str | None

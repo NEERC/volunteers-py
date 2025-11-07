@@ -39,7 +39,8 @@ class User(Base, TimestampMixin):
     first_name_ru: Mapped[str] = mapped_column(String)
     last_name_ru: Mapped[str] = mapped_column(String)
     patronymic_ru: Mapped[str | None] = mapped_column(String, nullable=True)
-    full_name_en: Mapped[str] = mapped_column(String)
+    first_name_en: Mapped[str] = mapped_column(String)
+    last_name_en: Mapped[str] = mapped_column(String)
 
     phone: Mapped[str | None] = mapped_column(String, nullable=True)
     email: Mapped[str | None] = mapped_column(String, nullable=True)

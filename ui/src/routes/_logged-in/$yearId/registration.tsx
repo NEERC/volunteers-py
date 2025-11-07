@@ -46,7 +46,8 @@ function RouteComponent() {
       needs_invitation: year?.needs_invitation ?? false,
       first_name_ru: user?.first_name_ru ?? "",
       last_name_ru: user?.last_name_ru ?? "",
-      full_name_en: user?.full_name_en ?? "",
+      first_name_en: user?.first_name_en ?? "",
+      last_name_en: user?.last_name_en ?? "",
       isu_id: user?.isu_id ?? null,
       patronymic_ru: user?.patronymic_ru ?? "",
       phone: user?.phone ?? "",
@@ -62,7 +63,8 @@ function RouteComponent() {
       needs_invitation: Yup.boolean(),
       first_name_ru: Yup.string().required(t("Required")),
       last_name_ru: Yup.string().required(t("Required")),
-      full_name_en: Yup.string().required(t("Required")),
+      first_name_en: Yup.string().required(t("Required")),
+      last_name_en: Yup.string().required(t("Required")),
       isu_id: Yup.number().nullable(),
       patronymic_ru: Yup.string().nullable(),
       phone: Yup.string().required(t("Phone is required")),
@@ -83,7 +85,8 @@ function RouteComponent() {
           userData: {
             first_name_ru: values.first_name_ru,
             last_name_ru: values.last_name_ru,
-            full_name_en: values.full_name_en,
+            first_name_en: values.first_name_en,
+            last_name_en: values.last_name_en,
             isu_id: values.isu_id,
             patronymic_ru: values.patronymic_ru,
             phone: values.phone,
@@ -178,16 +181,33 @@ function RouteComponent() {
 
           <TextField
             fullWidth
-            label={t("Full Name (EN)")}
-            name="full_name_en"
-            value={formik.values.full_name_en}
+            label={t("First Name (EN)")}
+            name="first_name_en"
+            value={formik.values.first_name_en}
             onChange={formik.handleChange}
             disabled={!year.open_for_registration}
             error={
-              formik.touched.full_name_en && Boolean(formik.errors.full_name_en)
+              formik.touched.first_name_en &&
+              Boolean(formik.errors.first_name_en)
             }
             helperText={
-              formik.touched.full_name_en && formik.errors.full_name_en
+              formik.touched.first_name_en && formik.errors.first_name_en
+            }
+            sx={{ mb: 2 }}
+          />
+
+          <TextField
+            fullWidth
+            label={t("Last Name (EN)")}
+            name="last_name_en"
+            value={formik.values.last_name_en}
+            onChange={formik.handleChange}
+            disabled={!year.open_for_registration}
+            error={
+              formik.touched.last_name_en && Boolean(formik.errors.last_name_en)
+            }
+            helperText={
+              formik.touched.last_name_en && formik.errors.last_name_en
             }
             sx={{ mb: 2 }}
           />

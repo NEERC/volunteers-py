@@ -83,7 +83,7 @@ export function DetailedUserCard({
           color="text.secondary"
           sx={{ fontSize: "0.75rem" }}
         >
-          {user.full_name_en}
+          {user.first_name_en} {user.last_name_en}
         </Typography>
         <Divider sx={{ my: 0.5 }} />
 

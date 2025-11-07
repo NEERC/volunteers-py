@@ -6,7 +6,8 @@ class UserIn(BaseModel):
 
     first_name_ru: str
     last_name_ru: str
-    full_name_en: str
+    first_name_en: str
+    last_name_en: str
     is_admin: bool
 
     isu_id: int | None
@@ -19,7 +20,8 @@ class UserIn(BaseModel):
 class UserUpdate(BaseModel):
     first_name_ru: str | None = None
     last_name_ru: str | None = None
-    full_name_en: str | None = None
+    first_name_en: str | None = None
+    last_name_en: str | None = None
     isu_id: int | None = None
     patronymic_ru: str | None = None
     phone: str | None = None

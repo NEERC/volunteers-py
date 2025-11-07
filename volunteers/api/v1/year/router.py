@@ -172,7 +172,7 @@ async def get_day_assignments(
 
     assignment_items = [
         DayAssignmentItem(
-            name=assignment.application_form.user.full_name_en,
+            name=f"{assignment.application_form.user.first_name_en} {assignment.application_form.user.last_name_en}",
             telegram=assignment.application_form.user.telegram_username,
             position=assignment.position.name,
             hall=assignment.hall.name if assignment.hall else None,

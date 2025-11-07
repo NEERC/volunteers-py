@@ -7,7 +7,8 @@ class UserResponse(BaseModel):
     first_name_ru: str
     last_name_ru: str
     patronymic_ru: str | None
-    full_name_en: str
+    first_name_en: str
+    last_name_en: str
     isu_id: int | None
     phone: str | None
     email: str | None
@@ -22,7 +23,8 @@ class AllUsersResponse(BaseModel):
 class EditUserRequest(BaseModel):
     first_name_ru: str | None = None
     last_name_ru: str | None = None
-    full_name_en: str | None = None
+    first_name_en: str | None = None
+    last_name_en: str | None = None
     isu_id: int | None = None
     patronymic_ru: str | None = None
     phone: str | None = None

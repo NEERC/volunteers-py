@@ -38,7 +38,8 @@ def admin_user() -> User:
         first_name_ru="Админ",
         last_name_ru="Тестов",
         patronymic_ru="Тестович",
-        full_name_en="Admin Testov",
+        first_name_en="Admin",
+        last_name_en="Testov",
         is_admin=True,
         isu_id=1111,
     )
@@ -130,7 +131,8 @@ async def test_get_registration_forms_with_experience(app: AppWithContainer) -> 
         first_name_ru="Иван",
         last_name_ru="Иванов",
         patronymic_ru="Иванович",
-        full_name_en="Ivan Ivanov",
+        first_name_en="Ivan",
+        last_name_en="Ivanov",
         isu_id=12345,
         phone="+1234567890",
         email="ivan@example.com",
@@ -173,7 +175,8 @@ async def test_get_registration_forms_with_experience(app: AppWithContainer) -> 
     assert form_data["first_name_ru"] == "Иван"
     assert form_data["last_name_ru"] == "Иванов"
     assert form_data["patronymic_ru"] == "Иванович"
-    assert form_data["full_name_en"] == "Ivan Ivanov"
+    assert form_data["first_name_en"] == "Ivan"
+    assert form_data["last_name_en"] == "Ivanov"
     assert form_data["isu_id"] == 12345
     assert form_data["phone"] == "+1234567890"
     assert form_data["email"] == "ivan@example.com"

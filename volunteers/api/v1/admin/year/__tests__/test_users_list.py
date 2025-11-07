@@ -36,7 +36,8 @@ def admin_user() -> User:
         telegram_id=123456789,
         first_name_ru="Admin",
         last_name_ru="User",
-        full_name_en="Admin User",
+        first_name_en="Admin",
+        last_name_en="User",
         is_admin=True,
     )
 
@@ -61,7 +62,8 @@ def sample_users() -> list[User]:
         first_name_ru="Иван",
         last_name_ru="Иванов",
         patronymic_ru="Иванович",
-        full_name_en="Ivan Ivanov",
+        first_name_en="Ivan",
+        last_name_en="Ivanov",
         email="ivan@example.com",
         phone="+1234567890",
         telegram_username="ivan_user",
@@ -73,7 +75,8 @@ def sample_users() -> list[User]:
         first_name_ru="Петр",
         last_name_ru="Петров",
         patronymic_ru=None,
-        full_name_en="Petr Petrov",
+        first_name_en="Petr",
+        last_name_en="Petrov",
         email="petr@example.com",
         phone="+0987654321",
         telegram_username="petr_user",
@@ -134,7 +137,8 @@ async def test_get_users_list_success(
     assert user1_data["first_name_ru"] == "Иван"
     assert user1_data["last_name_ru"] == "Иванов"
     assert user1_data["patronymic_ru"] == "Иванович"
-    assert user1_data["full_name_en"] == "Ivan Ivanov"
+    assert user1_data["first_name_en"] == "Ivan"
+    assert user1_data["last_name_en"] == "Ivanov"
     assert user1_data["itmo_group"] == "M3234"
     assert user1_data["email"] == "ivan@example.com"
     assert user1_data["phone"] == "+1234567890"
@@ -147,7 +151,8 @@ async def test_get_users_list_success(
     assert user2_data["first_name_ru"] == "Петр"
     assert user2_data["last_name_ru"] == "Петров"
     assert user2_data["patronymic_ru"] is None
-    assert user2_data["full_name_en"] == "Petr Petrov"
+    assert user2_data["first_name_en"] == "Petr"
+    assert user2_data["last_name_en"] == "Petrov"
     assert user2_data["itmo_group"] is None
     assert user2_data["email"] == "petr@example.com"
     assert user2_data["phone"] == "+0987654321"

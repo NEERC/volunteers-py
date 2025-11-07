@@ -97,7 +97,8 @@ function RouteComponent() {
     first_name_ru: string;
     last_name_ru: string;
     patronymic_ru: string | null;
-    full_name_en: string;
+    first_name_en: string;
+    last_name_en: string;
     isu_id: number | "" | null;
   }) => {
     setIsRegisterSubmitting(true);
@@ -115,7 +116,8 @@ function RouteComponent() {
         ...(values.isu_id != null && values.isu_id !== ""
           ? { isu_id: values.isu_id }
           : {}),
-        full_name_en: values.full_name_en,
+        first_name_en: values.first_name_en,
+        last_name_en: values.last_name_en,
         patronymic_ru: values.patronymic_ru,
       });
       navigate({ to: "/" });
@@ -267,7 +269,8 @@ function RouteComponent() {
                   first_name_ru: "",
                   last_name_ru: "",
                   patronymic_ru: null,
-                  full_name_en: "",
+                  first_name_en: "",
+                  last_name_en: "",
                   isu_id: null,
                 }}
                 validationSchema={Yup.object().shape({
@@ -277,8 +280,11 @@ function RouteComponent() {
                   last_name_ru: Yup.string().required(
                     t("Last name on Russian is required"),
                   ),
-                  full_name_en: Yup.string().required(
-                    t("Full name in English is required"),
+                  first_name_en: Yup.string().required(
+                    t("First name in English is required"),
+                  ),
+                  last_name_en: Yup.string().required(
+                    t("Last name in English is required"),
                   ),
                   isu_id: Yup.number().nullable(),
                   patronymic_ru: Yup.string().nullable(),
@@ -309,9 +315,16 @@ function RouteComponent() {
                       margin="dense"
                     />
                     <Field
-                      name="full_name_en"
+                      name="first_name_en"
                       component={TextFieldComponent}
-                      label={t("Full name in English")}
+                      label={t("First name in English")}
+                      fullWidth
+                      margin="dense"
+                    />
+                    <Field
+                      name="last_name_en"
+                      component={TextFieldComponent}
+                      label={t("Last name in English")}
                       fullWidth
                       margin="dense"
                     />

@@ -38,7 +38,8 @@ def admin_user() -> User:
         first_name_ru="Админ",
         last_name_ru="Тестов",
         patronymic_ru="Тестович",
-        full_name_en="Admin Testov",
+        first_name_en="Admin",
+        last_name_en="Testov",
         is_admin=True,
         isu_id=1111,
     )
