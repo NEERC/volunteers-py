@@ -1,4 +1,4 @@
-import { green, red, yellow } from "@mui/material/colors";
+import { blue, green, red, yellow } from "@mui/material/colors";
 import type { QueryClient } from "@tanstack/react-query";
 import { createRootRouteWithContext, Outlet } from "@tanstack/react-router";
 import { TanStackRouterDevtools } from "@tanstack/react-router-devtools";
@@ -36,6 +36,7 @@ const EnvBadge = ({ label, color }: { label: string; color: string }) => {
 const MODE_COLORS = {
   development: green[500],
   production: red[500],
+  staging: blue[500],
   "public-beta": yellow[500],
 };
 
