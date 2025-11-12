@@ -2,7 +2,6 @@ import asyncio
 from typing import Any
 
 from alembic import context
-from dependency_injector.wiring import inject
 from sqlalchemy import Connection
 
 from volunteers.core.di import Container
@@ -39,14 +38,13 @@ def do_run_migrations(connection: Connection) -> None:
         context.run_migrations()
 
 
-@inject
 async def run_async_migrations() -> None:
     container = Container()
-    container.wire(packages=["volunteers"])
+    container.wire(packages=["volunteers"], warn_unresolved=True)
     if init_resources := container.init_resources():
         await init_resources
 
-    engine = await container.db()
+    engine = container.db()
     async with engine.connect() as conn:
         await conn.run_sync(do_run_migrations)
     await engine.dispose()  # nice-to-have cleanup

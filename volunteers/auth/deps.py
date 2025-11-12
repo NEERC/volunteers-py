@@ -26,7 +26,6 @@ async def with_user(
     return user
 
 
-@inject
 async def with_admin(user: Annotated[User, Depends(with_user)]) -> User:
     if not user.is_admin:
         raise HTTPException(status_code=403, detail="Forbidden")

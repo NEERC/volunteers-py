@@ -2,6 +2,7 @@ from sqlalchemy import and_, delete, select
 from sqlalchemy.orm import selectinload
 
 from volunteers.api.v1.admin.year.schemas import ExperienceItem
+from volunteers.bot.notify import Notifier
 from volunteers.models import (
     ApplicationForm,
     Assessment,
@@ -9,6 +10,7 @@ from volunteers.models import (
     FormPositionAssociation,
     Hall,
     Position,
+    User,
     UserDay,
     Year,
 )
@@ -59,6 +61,10 @@ class HallNotFound(DomainError):
 
 
 class YearService(BaseService):
+    def __init__(self, notifier: Notifier) -> None:
+        self.notifier = notifier
+        super().__init__()
+
     async def get_years(self) -> list[Year]:
         async with self.session_scope() as session:
             result = await session.execute(select(Year).order_by(Year.id))
@@ -281,7 +287,7 @@ class YearService(BaseService):
 
             await session.commit()
 
-    async def add_user_day(self, user_day_in: UserDayIn) -> UserDay:
+    async def add_user_day(self, user_day_in: UserDayIn, author: User) -> UserDay:
         created_user_day = UserDay(
             application_form_id=user_day_in.application_form_id,
             day_id=user_day_in.day_id,
@@ -293,10 +299,18 @@ class YearService(BaseService):
         async with self.session_scope() as session:
             session.add(created_user_day)
             await session.commit()
+            day = await created_user_day.awaitable_attrs.day
+            application_form = await created_user_day.awaitable_attrs.application_form
+            user = await application_form.awaitable_attrs.user
+            position = await created_user_day.awaitable_attrs.position
+            hall = await created_user_day.awaitable_attrs.hall
+            await self.notifier.notify(
+                f"[{day.name}] {user.first_name_ru} {user.last_name_ru} (@{user.telegram_username}) \n(unassigned) -> {position.name} {hall.name if hall else ''}\n(by @{author.telegram_username})"
+            )
         return created_user_day
 
     async def edit_user_day_by_user_day_id(
-        self, user_day_id: int, user_day_edit_in: UserDayEditIn
+        self, user_day_id: int, user_day_edit_in: UserDayEditIn, author: User
     ) -> None:
         async with self.session_scope() as session:
             existing_user_day = await session.execute(
@@ -307,16 +321,27 @@ class YearService(BaseService):
             if not updated_user_day:
                 raise UserDayNotFound()
 
+            old_position = await updated_user_day.awaitable_attrs.position
+            old_hall = await updated_user_day.awaitable_attrs.hall
+
             if (information := user_day_edit_in.information) is not None:
                 updated_user_day.information = information
             if (attendance := user_day_edit_in.attendance) is not None:
                 updated_user_day.attendance = attendance
             updated_user_day.position_id = user_day_edit_in.position_id
             updated_user_day.hall_id = user_day_edit_in.hall_id
-
             await session.commit()
 
-    async def delete_user_day_by_user_day_id(self, user_day_id: int) -> None:
+            day = await updated_user_day.awaitable_attrs.day
+            application_form = await updated_user_day.awaitable_attrs.application_form
+            user = await application_form.awaitable_attrs.user
+            new_position = await updated_user_day.awaitable_attrs.position
+            new_hall = await updated_user_day.awaitable_attrs.hall
+            await self.notifier.notify(
+                f"[{day.name}] {user.first_name_ru} {user.last_name_ru} (@{user.telegram_username})\n{old_position.name} {old_hall.name if old_hall else ''} -> {new_position.name} {new_hall.name if new_hall else ''}\n(by @{author.telegram_username})"
+            )
+
+    async def delete_user_day_by_user_day_id(self, user_day_id: int, author: User) -> None:
         """Delete a user day by its ID."""
         async with self.session_scope() as session:
             existing_user_day = await session.execute(
@@ -328,6 +353,100 @@ class YearService(BaseService):
 
             await session.delete(user_day)
             await session.commit()
+
+            day = await user_day.awaitable_attrs.day
+            application_form = await user_day.awaitable_attrs.application_form
+            user = await application_form.awaitable_attrs.user
+            position = await user_day.awaitable_attrs.position
+            hall = await user_day.awaitable_attrs.hall
+            await self.notifier.notify(
+                f"[{day.name}] {user.first_name_ru} {user.last_name_ru} (@{user.telegram_username})\n{position.name} {hall.name if hall else ''} -> (unassigned)\n(by @{author.telegram_username})"
+            )
+
+    async def copy_assignments_from_day(
+        self, source_day_id: int, target_day_id: int, overwrite_existing: bool = False
+    ) -> int:
+        """Copy all assignments from source day to target day.
+
+        Args:
+            source_day_id: The ID of the day to copy assignments from
+            target_day_id: The ID of the day to copy assignments to
+            overwrite_existing: If True, overwrite existing assignments for users who already have assignments on target day
+
+        Returns:
+            The number of assignments copied
+        """
+        async with self.session_scope() as session:
+            # Verify both days exist
+            source_day = await session.execute(select(Day).where(Day.id == source_day_id))
+            source_day_obj = source_day.scalar_one_or_none()
+            if not source_day_obj:
+                raise DayNotFound()
+
+            target_day = await session.execute(select(Day).where(Day.id == target_day_id))
+            target_day_obj = target_day.scalar_one_or_none()
+            if not target_day_obj:
+                raise DayNotFound()
+
+            # Get all assignments from source day
+            source_assignments = await session.execute(
+                select(UserDay)
+                .where(UserDay.day_id == source_day_id)
+                .options(
+                    selectinload(UserDay.application_form),
+                    selectinload(UserDay.position),
+                    selectinload(UserDay.hall),
+                )
+            )
+            source_assignments_list = list(source_assignments.scalars().all())
+
+            if not source_assignments_list:
+                return 0
+
+            # Get existing assignments for target day (to check for conflicts)
+            existing_assignments = await session.execute(
+                select(UserDay).where(UserDay.day_id == target_day_id)
+            )
+            existing_assignments_list = list(existing_assignments.scalars().all())
+            existing_application_form_ids = {
+                assignment.application_form_id for assignment in existing_assignments_list
+            }
+
+            copied_count = 0
+
+            for source_assignment in source_assignments_list:
+                # Check if user already has an assignment on target day
+                if source_assignment.application_form_id in existing_application_form_ids:
+                    if overwrite_existing:
+                        # Delete existing assignment
+                        existing_assignment = next(
+                            (
+                                a
+                                for a in existing_assignments_list
+                                if a.application_form_id == source_assignment.application_form_id
+                            ),
+                            None,
+                        )
+                        if existing_assignment:
+                            await session.delete(existing_assignment)
+                    else:
+                        # Skip this assignment
+                        continue
+
+                # Create new assignment for target day
+                new_assignment = UserDay(
+                    application_form_id=source_assignment.application_form_id,
+                    day_id=target_day_id,
+                    information=source_assignment.information,
+                    attendance=source_assignment.attendance,
+                    position_id=source_assignment.position_id,
+                    hall_id=source_assignment.hall_id,
+                )
+                session.add(new_assignment)
+                copied_count += 1
+
+            await session.commit()
+            return copied_count
 
     async def add_assessment(self, assessment_in: AssessmentIn) -> Assessment:
         created_assessment = Assessment(

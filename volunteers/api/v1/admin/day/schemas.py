@@ -22,3 +22,13 @@ class EditDayRequest(BaseModel):
     score: float | None = None
     mandatory: bool | None = None
     assignment_published: bool | None = None
+
+
+class CopyAssignmentsRequest(BaseModel):
+    source_day_id: int
+    target_day_id: int
+    overwrite_existing: bool = False
+
+
+class CopyAssignmentsResponse(BaseSuccessResponse):
+    copied_count: int

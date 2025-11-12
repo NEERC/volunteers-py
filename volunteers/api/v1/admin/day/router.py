@@ -10,7 +10,13 @@ from volunteers.models import User
 from volunteers.schemas.day import DayEditIn, DayIn, DayOutAdmin
 from volunteers.services.year import YearService
 
-from .schemas import AddDayRequest, AddDayResponse, EditDayRequest
+from .schemas import (
+    AddDayRequest,
+    AddDayResponse,
+    CopyAssignmentsRequest,
+    CopyAssignmentsResponse,
+    EditDayRequest,
+)
 
 router = APIRouter(tags=["day"])
 
@@ -90,3 +96,25 @@ async def edit_day(
     )
     await year_service.edit_day_by_day_id(day_id=day_id, day_edit_in=day_edit_in)
     logger.info("Day has been edited")
+
+
+@router.post(
+    "/copy-assignments",
+    response_model=CopyAssignmentsResponse,
+    description="Copy all assignments from one day to another",
+)
+@inject
+async def copy_assignments(
+    request: CopyAssignmentsRequest,
+    _: Annotated[User, Depends(with_admin)],
+    year_service: Annotated[YearService, Depends(Provide[Container.year_service])],
+) -> CopyAssignmentsResponse:
+    copied_count = await year_service.copy_assignments_from_day(
+        source_day_id=request.source_day_id,
+        target_day_id=request.target_day_id,
+        overwrite_existing=request.overwrite_existing,
+    )
+    logger.info(
+        f"Copied {copied_count} assignments from day {request.source_day_id} to day {request.target_day_id}"
+    )
+    return CopyAssignmentsResponse(copied_count=copied_count)

@@ -35,16 +35,9 @@ router = APIRouter(tags=["user-day"])
 async def add_user_day(
     request: AddUserDayRequest,
     response: Response,
-    _: Annotated[User, Depends(with_admin)],
+    user: Annotated[User, Depends(with_admin)],
     year_service: Annotated[YearService, Depends(Provide[Container.year_service])],
 ) -> AddUserDayResponse:
-    position = await year_service.get_position_by_id(position_id=request.position_id)
-    if not position:
-        raise PositionNotFound()
-
-    if not position.has_halls and request.hall_id:
-        raise HallNotFound()
-
     user_day_in = UserDayIn(
         application_form_id=request.application_form_id,
         day_id=request.day_id,
@@ -53,7 +46,7 @@ async def add_user_day(
         position_id=request.position_id,
         hall_id=request.hall_id,
     )
-    user_day = await year_service.add_user_day(user_day_in=user_day_in)
+    user_day = await year_service.add_user_day(user_day_in=user_day_in, author=user)
     logger.info("Added user day")
 
     response.status_code = status.HTTP_201_CREATED
@@ -65,7 +58,7 @@ async def add_user_day(
 async def edit_position(
     user_day_id: Annotated[int, Path(title="The ID of the user day")],
     request: EditUserDayRequest,
-    _: Annotated[User, Depends(with_admin)],
+    user: Annotated[User, Depends(with_admin)],
     year_service: Annotated[YearService, Depends(Provide[Container.year_service])],
 ) -> None:
     position = await year_service.get_position_by_id(position_id=request.position_id)
@@ -82,7 +75,7 @@ async def edit_position(
         hall_id=request.hall_id,
     )
     await year_service.edit_user_day_by_user_day_id(
-        user_day_id=user_day_id, user_day_edit_in=user_day_edit_in
+        user_day_id=user_day_id, user_day_edit_in=user_day_edit_in, author=user
     )
     logger.info("User day has been edited")
 
@@ -95,10 +88,10 @@ async def edit_position(
 @inject
 async def delete_user_day(
     user_day_id: Annotated[int, Path(title="The ID of the user day")],
-    _: Annotated[User, Depends(with_admin)],
+    user: Annotated[User, Depends(with_admin)],
     year_service: Annotated[YearService, Depends(Provide[Container.year_service])],
 ) -> None:
-    await year_service.delete_user_day_by_user_day_id(user_day_id=user_day_id)
+    await year_service.delete_user_day_by_user_day_id(user_day_id=user_day_id, author=user)
     logger.info("User day has been deleted")
 
 

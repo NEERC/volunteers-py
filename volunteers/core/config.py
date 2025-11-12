@@ -27,6 +27,10 @@ class LoggingConfig(BaseModel):
     level: str
 
 
+class NotificationConfig(BaseModel):
+    tg_chat_id: int
+
+
 class Config(BaseSettings):
     model_config = SettingsConfigDict(
         env_file=".env", env_prefix="VOLUNTEERS_", env_nested_delimiter="__", extra="allow"
@@ -36,3 +40,4 @@ class Config(BaseSettings):
     database: DatabaseConfig
     server: ServerConfig
     logging: LoggingConfig
+    notification: NotificationConfig

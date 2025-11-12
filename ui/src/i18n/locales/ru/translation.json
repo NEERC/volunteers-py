@@ -193,5 +193,9 @@
   "Failed to update user": "Не удалось обновить пользователя",
   "volunteer": "волонтер",
   "volunteers": "волонтеров",
-  "I need an invitation for work/study": "Мне нужно официальное приглашение для работы/учебы"
+  "I need an invitation for work/study": "Мне нужно официальное приглашение для работы/учебы",
+  "Desired Positions:": "Желаемые позиции:",
+  "Experience": "Опыт",
+  "Attendance": "Посещаемость",
+  "Assessments": "Оценки"
 }
