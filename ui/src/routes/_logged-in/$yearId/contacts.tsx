@@ -1,17 +1,26 @@
 import CloseIcon from "@mui/icons-material/Close";
+import ContentCopyIcon from "@mui/icons-material/ContentCopy";
+import FilterListIcon from "@mui/icons-material/FilterList";
 import SearchIcon from "@mui/icons-material/Search";
 import {
   Alert,
   Box,
+  Button,
   Chip,
   CircularProgress,
+  Collapse,
   Dialog,
   DialogContent,
   DialogTitle,
+  FormControl,
   IconButton,
   InputAdornment,
+  InputLabel,
   Link,
+  MenuItem,
   Paper,
+  Select,
+  Snackbar,
   TextField,
   Typography,
 } from "@mui/material";
@@ -56,8 +65,10 @@ function RouteComponent() {
   const [sorting, setSorting] = useState<SortingState>([]);
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
   const [globalFilter, setGlobalFilter] = useState("");
+  const [showFilters, setShowFilters] = useState(false);
   const [selectedUserId, setSelectedUserId] = useState<number | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [copySuccess, setCopySuccess] = useState(false);
 
   // Handle status column click
   const handleStatusClick = useCallback((userId: number) => {
@@ -69,6 +80,20 @@ function RouteComponent() {
   const selectedUserForm = registrationForms?.forms.find(
     (form) => form.user_id === selectedUserId,
   );
+
+  // Get unique values for filter options
+  const groupOptions = useMemo(() => {
+    if (!data?.users) return [];
+    return Array.from(
+      new Set(
+        data.users
+          .map((user) => user.itmo_group)
+          .filter(
+            (group): group is string => group !== null && group !== undefined,
+          ),
+      ),
+    ).sort();
+  }, [data?.users]);
 
   // Define columns with appropriate sizing
   const columns: ColumnDef<UserListItem>[] = useMemo(
@@ -120,6 +145,8 @@ function RouteComponent() {
             </Typography>
           );
         },
+        enableColumnFilter: true,
+        filterFn: "equals",
       },
       {
         id: "email",
@@ -246,6 +273,12 @@ function RouteComponent() {
             />
           );
         },
+        enableColumnFilter: true,
+        filterFn: (row, _columnId, filterValue) => {
+          if (!filterValue) return true;
+          const value = row.original.is_registered;
+          return String(value) === filterValue;
+        },
       },
     ],
     [t, handleStatusClick],
@@ -266,7 +299,52 @@ function RouteComponent() {
     getCoreRowModel: getCoreRowModel(),
     getFilteredRowModel: getFilteredRowModel(),
     getSortedRowModel: getSortedRowModel(),
+    enableFilters: true,
   });
+
+  // Handle copy to clipboard
+  const handleCopyToClipboard = useCallback(() => {
+    const filteredRows = table.getFilteredRowModel().rows;
+    if (filteredRows.length === 0) return;
+
+    // Get all keys from the first row
+    const firstRow = filteredRows[0].original;
+    const keys = Object.keys(firstRow) as Array<keyof UserListItem>;
+
+    // Create header row
+    const headerRow = keys.join("\t");
+
+    // Create data rows
+    const dataRows = filteredRows.map((row) => {
+      return keys
+        .map((key) => {
+          const value = row.original[key];
+          // Handle null/undefined values
+          if (value === null || value === undefined) return "";
+          // Convert boolean to string
+          if (typeof value === "boolean") return String(value);
+          // Escape tabs and newlines in strings
+          if (typeof value === "string") {
+            return value.replace(/\t/g, " ").replace(/\n/g, " ");
+          }
+          return String(value);
+        })
+        .join("\t");
+    });
+
+    // Combine header and data rows
+    const tsvContent = [headerRow, ...dataRows].join("\n");
+
+    // Copy to clipboard
+    navigator.clipboard
+      .writeText(tsvContent)
+      .then(() => {
+        setCopySuccess(true);
+      })
+      .catch((err) => {
+        console.error("Failed to copy to clipboard:", err);
+      });
+  }, [table]);
 
   // Virtual scrolling setup
   const tableContainerRef = useRef<HTMLDivElement>(null);
@@ -320,20 +398,134 @@ function RouteComponent() {
 
       {/* Search and filters */}
       <Box sx={{ mt: 1.5, mb: 1.5 }}>
-        <TextField
-          placeholder={t("Search users...")}
-          value={globalFilter}
-          onChange={(e) => setGlobalFilter(e.target.value)}
-          InputProps={{
-            startAdornment: (
-              <InputAdornment position="start">
-                <SearchIcon />
-              </InputAdornment>
-            ),
-          }}
-          sx={{ minWidth: 300 }}
-          size="small"
-        />
+        <Box sx={{ display: "flex", gap: 2, alignItems: "center", mb: 2 }}>
+          <TextField
+            placeholder={t("Search users...")}
+            value={globalFilter}
+            onChange={(e) => setGlobalFilter(e.target.value)}
+            InputProps={{
+              startAdornment: (
+                <InputAdornment position="start">
+                  <SearchIcon />
+                </InputAdornment>
+              ),
+            }}
+            sx={{ minWidth: 300 }}
+            size="small"
+          />
+          <IconButton
+            onClick={() => setShowFilters(!showFilters)}
+            color={showFilters ? "primary" : "default"}
+            title={t("Show filters")}
+          >
+            <FilterListIcon />
+          </IconButton>
+          <Button
+            variant="outlined"
+            size="small"
+            startIcon={<ContentCopyIcon />}
+            onClick={handleCopyToClipboard}
+            disabled={table.getFilteredRowModel().rows.length === 0}
+            title={t("Copy filtered data to clipboard")}
+          >
+            {t("Copy")}
+          </Button>
+        </Box>
+
+        <Collapse in={showFilters}>
+          <Box sx={{ display: "flex", gap: 2, flexWrap: "wrap", mb: 2 }}>
+            {table
+              .getAllColumns()
+              .filter((column) => column.getCanFilter())
+              .map((column) => {
+                const getFilterOptions = () => {
+                  switch (column.id) {
+                    case "group":
+                      return groupOptions;
+                    case "status":
+                      return [
+                        { value: "true", label: t("Registered") },
+                        { value: "false", label: t("Not Registered") },
+                      ];
+                    default:
+                      return [];
+                  }
+                };
+
+                const options = getFilterOptions();
+
+                return (
+                  <FormControl
+                    key={column.id}
+                    size="small"
+                    sx={{ minWidth: 120 }}
+                  >
+                    <InputLabel>{column.columnDef.header as string}</InputLabel>
+                    <Select
+                      value={(column.getFilterValue() as string) || ""}
+                      onChange={(e) =>
+                        column.setFilterValue(e.target.value || undefined)
+                      }
+                      label={column.columnDef.header as string}
+                    >
+                      <MenuItem value="">{t("Any")}</MenuItem>
+                      {options.map((option) => {
+                        const value =
+                          typeof option === "string" ? option : option.value;
+                        const label =
+                          typeof option === "string" ? option : option.label;
+                        return (
+                          <MenuItem key={value} value={value}>
+                            {label}
+                          </MenuItem>
+                        );
+                      })}
+                    </Select>
+                  </FormControl>
+                );
+              })}
+
+            <Button
+              variant="outlined"
+              size="small"
+              onClick={() => {
+                table.resetColumnFilters();
+                setGlobalFilter("");
+                setSorting([]);
+              }}
+            >
+              {t("Clear All")}
+            </Button>
+          </Box>
+        </Collapse>
+
+        {/* Active Filters */}
+        {table.getState().columnFilters.length > 0 && (
+          <Box sx={{ display: "flex", gap: 1, flexWrap: "wrap", mb: 2 }}>
+            {table.getState().columnFilters.map((filter) => {
+              const column = table.getColumn(filter.id);
+              const filterValue = filter.value as string;
+              let displayValue = filterValue;
+
+              if (filter.id === "status") {
+                displayValue =
+                  filterValue === "true"
+                    ? t("Registered")
+                    : t("Not Registered");
+              }
+
+              return (
+                <Chip
+                  key={filter.id}
+                  label={`${column?.columnDef.header as string}: ${displayValue}`}
+                  onDelete={() => column?.setFilterValue(undefined)}
+                  color="secondary"
+                  size="small"
+                />
+              );
+            })}
+          </Box>
+        )}
       </Box>
 
       <Paper
@@ -509,6 +701,14 @@ function RouteComponent() {
           )}
         </DialogContent>
       </Dialog>
+
+      {/* Copy success notification */}
+      <Snackbar
+        open={copySuccess}
+        autoHideDuration={3000}
+        onClose={() => setCopySuccess(false)}
+        message={t("Data copied to clipboard")}
+      />
     </Box>
   );
 }
