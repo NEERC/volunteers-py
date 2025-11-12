@@ -22,6 +22,7 @@ import {
   PushPin as PinIcon,
   PushPinOutlined as PinOutlinedIcon,
 } from "@mui/icons-material";
+import ContentCopyIcon from "@mui/icons-material/ContentCopy";
 import {
   Alert,
   Box,
@@ -774,7 +775,7 @@ function RouteComponent() {
   const { t } = useTranslation();
   const { yearId, dayId } = Route.useParams();
   const [activeId, setActiveId] = useState<string | null>(null);
-  const [isDrawerPinned, setIsDrawerPinned] = useState(false);
+  const [isDrawerPinned, setIsDrawerPinned] = useState(true);
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down("md"));
 
@@ -1100,6 +1101,32 @@ function RouteComponent() {
     [handleDragRemoval, clearSelection],
   );
 
+  const handleCopyToClipboard = useCallback(() => {
+    const userToText = (
+      user: RegistrationFormItem,
+      position: PositionOut,
+      hall?: HallOut,
+    ) => {
+      return [
+        user.first_name_ru,
+        user.last_name_ru,
+        user.first_name_en,
+        user.last_name_en,
+        position.name,
+        hall?.name,
+      ].join("\t");
+    };
+    const data = positions.flatMap((position) => [
+      ...position.assigned_users.map((user) => userToText(user, position)),
+      ...(position.halls?.flatMap((hall) => {
+        return hall.assigned_users.map((user) =>
+          userToText(user, position, hall),
+        );
+      }) || []),
+    ]);
+    navigator.clipboard.writeText(`${data.join("\n")}\n`);
+  }, [positions]);
+
   if (formsLoading || positionsLoading || assignmentsLoading) {
     return (
       <Box
@@ -1154,6 +1181,15 @@ function RouteComponent() {
           </Typography>
         }
       />
+      <Button
+        variant="outlined"
+        size="small"
+        startIcon={<ContentCopyIcon />}
+        onClick={handleCopyToClipboard}
+        disabled={assignmentsData?.assignments.length === 0}
+      >
+        {t("Copy badges data")}
+      </Button>
 
       {/* Existing Assignments Summary */}
       {assignmentsData && assignmentsData.assignments.length > 0 && (

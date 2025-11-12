@@ -325,7 +325,10 @@ function RouteComponent() {
           if (typeof value === "boolean") return String(value);
           // Escape tabs and newlines in strings
           if (typeof value === "string") {
-            return value.replace(/\t/g, " ").replace(/\n/g, " ");
+            return value
+              .replace(/\t/g, " ")
+              .replace(/\n/g, " ")
+              .replace(/^\+/, "'+");
           }
           return String(value);
         })
