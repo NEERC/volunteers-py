@@ -324,19 +324,31 @@ class YearService(BaseService):
             old_position = await updated_user_day.awaitable_attrs.position
             old_hall = await updated_user_day.awaitable_attrs.hall
 
+            new_position = await session.get(Position, user_day_edit_in.position_id)
+            if not new_position:
+                raise PositionNotFound()
+
+            if not new_position.has_halls and user_day_edit_in.hall_id:
+                raise HallNotFound()
+
+            new_hall = (
+                await session.get(Hall, user_day_edit_in.hall_id)
+                if user_day_edit_in.hall_id
+                else None
+            )
+
             if (information := user_day_edit_in.information) is not None:
                 updated_user_day.information = information
             if (attendance := user_day_edit_in.attendance) is not None:
                 updated_user_day.attendance = attendance
-            updated_user_day.position_id = user_day_edit_in.position_id
-            updated_user_day.hall_id = user_day_edit_in.hall_id
+            updated_user_day.position = new_position
+            updated_user_day.hall = new_hall
             await session.commit()
 
             day = await updated_user_day.awaitable_attrs.day
             application_form = await updated_user_day.awaitable_attrs.application_form
             user = await application_form.awaitable_attrs.user
-            new_position = await updated_user_day.awaitable_attrs.position
-            new_hall = await updated_user_day.awaitable_attrs.hall
+
             await self.notifier.notify(
                 f"[{day.name}] {user.first_name_ru} {user.last_name_ru} (@{user.telegram_username})\n{old_position.name} {old_hall.name if old_hall else ''} -> {new_position.name} {new_hall.name if new_hall else ''}\n(by @{author.telegram_username})"
             )

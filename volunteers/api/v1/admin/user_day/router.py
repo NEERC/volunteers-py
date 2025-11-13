@@ -8,7 +8,7 @@ from volunteers.auth.deps import with_admin
 from volunteers.core.di import Container
 from volunteers.models import User
 from volunteers.schemas.user_day import UserDayEditIn, UserDayIn
-from volunteers.services.year import HallNotFound, PositionNotFound, YearService
+from volunteers.services.year import YearService
 
 from .schemas import (
     AddUserDayRequest,
@@ -61,13 +61,6 @@ async def edit_position(
     user: Annotated[User, Depends(with_admin)],
     year_service: Annotated[YearService, Depends(Provide[Container.year_service])],
 ) -> None:
-    position = await year_service.get_position_by_id(position_id=request.position_id)
-    if not position:
-        raise PositionNotFound()
-
-    if not position.has_halls and request.hall_id:
-        raise HallNotFound()
-
     user_day_edit_in = UserDayEditIn(
         information=request.information,
         attendance=request.attendance,
