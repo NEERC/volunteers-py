@@ -55,7 +55,7 @@ async def add_user_day(
 
 @router.post("/{user_day_id}/edit")
 @inject
-async def edit_position(
+async def edit_user_day(
     user_day_id: Annotated[int, Path(title="The ID of the user day")],
     request: EditUserDayRequest,
     user: Annotated[User, Depends(with_admin)],
