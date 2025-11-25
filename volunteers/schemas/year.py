@@ -9,7 +9,3 @@ class YearIn(BaseModel):
 class YearEditIn(BaseModel):
     year_name: str | None
     open_for_registration: bool | None
-
-
-class YearOut(YearIn):
-    year_id: int

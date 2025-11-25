@@ -58,7 +58,7 @@ class RegistrationFormItem(BaseModel):
     itmo_group: str | None
     comments: str
     needs_invitation: bool
-    desired_positions: list[PositionOut]
+    desired_positions: list[PositionOut]  # TODO: change to list[str]
     experience: list[ExperienceItem]
     created_at: str
     updated_at: str

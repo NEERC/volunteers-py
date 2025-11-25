@@ -11,7 +11,6 @@ from volunteers.schemas.application_form import ApplicationFormIn
 from volunteers.schemas.day import DayOutUser
 from volunteers.schemas.day_assignment import DayAssignmentItem
 from volunteers.schemas.position import PositionOut
-from volunteers.schemas.year import YearOut
 from volunteers.services.i18n import I18nService
 from volunteers.services.year import YearService
 
@@ -19,6 +18,7 @@ from .schemas import (
     ApplicationFormYearSavedResponse,
     ApplicationFormYearSaveRequest,
     DayAssignmentsResponse,
+    YearOut,
     YearsResponse,
 )
 
@@ -31,13 +31,18 @@ DB_PREFIX = "Response from database:"
 @inject
 async def get_years(
     year_service: Annotated[YearService, Depends(Provide[Container.year_service])],
+    user: Annotated[User, Depends(with_user)],
 ) -> YearsResponse:
     years = await year_service.get_years()
+    manager_for_years = await year_service.manager_for_years(user_id=user.id)
     logger.debug(f"{DB_PREFIX} Got years info")
     return YearsResponse(
         years=[
             YearOut(
-                year_id=y.id, year_name=y.year_name, open_for_registration=y.open_for_registration
+                year_id=y.id,
+                year_name=y.year_name,
+                open_for_registration=y.open_for_registration,
+                is_manager=y.id in manager_for_years,
             )
             for y in years
         ]
@@ -70,6 +75,7 @@ async def get_form_year(
                 name=p.name,
                 can_desire=p.can_desire,
                 has_halls=p.has_halls,
+                is_manager=p.is_manager,
             )
             for p in positions
             if p.can_desire
@@ -82,6 +88,7 @@ async def get_form_year(
                 name=p.name,
                 can_desire=p.can_desire,
                 has_halls=p.has_halls,
+                is_manager=p.is_manager,
             )
             for p in sorted(form.desired_positions, key=lambda x: x.id)
         ]

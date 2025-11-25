@@ -225,6 +225,7 @@ class YearService(BaseService):
             name=position_in.name,
             can_desire=position_in.can_desire,
             has_halls=position_in.has_halls,
+            is_manager=position_in.is_manager,
         )
         async with self.session_scope() as session:
             session.add(created_position)
@@ -249,6 +250,8 @@ class YearService(BaseService):
                 updated_position.can_desire = can_desire
             if (has_halls := position_edit_in.has_halls) is not None:
                 updated_position.has_halls = has_halls
+            if (is_manager := position_edit_in.is_manager) is not None:
+                updated_position.is_manager = is_manager
 
             await session.commit()
 
@@ -547,6 +550,23 @@ class YearService(BaseService):
                 )
                 session.add(association)
             await session.commit()
+
+    async def manager_for_years(self, user_id: int) -> set[int]:
+        """A user is a manager for a year if they have at least one manager assignment for this year."""
+        async with self.session_scope() as session:
+            user_days = await session.scalars(
+                select(UserDay)
+                .join(ApplicationForm)
+                .join(Position)
+                .options(selectinload(UserDay.application_form))
+                .where(
+                    and_(
+                        ApplicationForm.user_id == user_id,
+                        Position.is_manager.is_(True),
+                    )
+                )
+            )
+            return {user_day.application_form.year_id for user_day in user_days}
 
     async def get_user_experience(self, user_id: int) -> list[ExperienceItem]:
         """Get prior experience data for a user across all years."""

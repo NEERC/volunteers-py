@@ -4,7 +4,7 @@ from volunteers.schemas.base import BaseSuccessResponse
 from volunteers.schemas.day import DayOutUser
 from volunteers.schemas.day_assignment import DayAssignmentItem
 from volunteers.schemas.position import PositionOut
-from volunteers.schemas.year import YearOut
+from volunteers.schemas.year import YearIn
 
 
 class ApplicationFormYearSavedResponse(BaseSuccessResponse):
@@ -22,6 +22,11 @@ class ApplicationFormYearSaveRequest(BaseModel):
     itmo_group: str | None = None
     comments: str = ""
     needs_invitation: bool = False
+
+
+class YearOut(YearIn):
+    year_id: int
+    is_manager: bool
 
 
 class YearsResponse(BaseSuccessResponse):

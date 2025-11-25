@@ -1,13 +1,11 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
-  addAssessmentApiV1AdminAssessmentAddPost,
   addDayApiV1AdminDayAddPost,
   addHallApiV1AdminHallAddPost,
   addPositionApiV1AdminPositionAddPost,
   addUserDayApiV1AdminUserDayAddPost,
   addYearApiV1AdminYearAddPost,
   deleteUserDayApiV1AdminUserDayUserDayIdDelete,
-  editAssessmentApiV1AdminAssessmentAssessmentIdEditPost,
   editDayApiV1AdminDayDayIdEditPost,
   editHallApiV1AdminHallHallIdEditPost,
   editPositionApiV1AdminPositionPositionIdEditPost,
@@ -24,13 +22,11 @@ import {
   getYearPositionsApiV1AdminYearYearIdPositionsGet,
 } from "@/client";
 import type {
-  AddAssessmentRequest,
   AddDayRequest,
   AddHallRequest,
   AddPositionRequest,
   AddUserDayRequest,
   AddYearRequest,
-  EditAssessmentRequest,
   EditDayRequest,
   EditHallRequest,
   EditPositionRequest,
@@ -191,52 +187,6 @@ export const useEditPosition = (yearId: string | number) => {
       });
       queryClient.invalidateQueries({
         queryKey: queryKeys.year.form(yearId),
-      });
-    },
-  });
-};
-
-export const useAddAssessment = () => {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: async (data: AddAssessmentRequest) => {
-      const response = await addAssessmentApiV1AdminAssessmentAddPost({
-        body: data,
-        throwOnError: true,
-      });
-      return response.data;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({
-        queryKey: queryKeys.admin.assessments.all(),
-      });
-    },
-  });
-};
-
-export const useEditAssessment = () => {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: async ({
-      assessmentId,
-      data,
-    }: {
-      assessmentId: string | number;
-      data: EditAssessmentRequest;
-    }) => {
-      const response =
-        await editAssessmentApiV1AdminAssessmentAssessmentIdEditPost({
-          path: { assessment_id: Number(assessmentId) },
-          body: data,
-          throwOnError: true,
-        });
-      return response.data;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({
-        queryKey: queryKeys.admin.assessments.all(),
       });
     },
   });

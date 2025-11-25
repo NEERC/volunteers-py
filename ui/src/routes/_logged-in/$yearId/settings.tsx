@@ -1,4 +1,5 @@
 import AddIcon from "@mui/icons-material/Add";
+import BadgeIcon from "@mui/icons-material/Badge";
 import EditIcon from "@mui/icons-material/Edit";
 import HomeIcon from "@mui/icons-material/Home";
 import SaveIcon from "@mui/icons-material/Save";
@@ -66,6 +67,8 @@ function RouteComponent() {
   const [editPositionCanDesire, setEditPositionCanDesire] = useState(false);
   const [newPositionHasHalls, setNewPositionHasHalls] = useState(false);
   const [editPositionHasHalls, setEditPositionHasHalls] = useState(false);
+  const [newPositionIsManager, setNewPositionIsManager] = useState(false);
+  const [editPositionIsManager, setEditPositionIsManager] = useState(false);
 
   // Hall management state
   const [isAddHallDialogOpen, setIsAddHallDialogOpen] = useState(false);
@@ -179,6 +182,7 @@ function RouteComponent() {
           name: newPositionName.trim(),
           can_desire: newPositionCanDesire,
           has_halls: newPositionHasHalls,
+          is_manager: newPositionIsManager,
         },
         {
           onSuccess: () => {
@@ -186,6 +190,7 @@ function RouteComponent() {
             setNewPositionName("");
             setNewPositionCanDesire(false);
             setNewPositionHasHalls(false);
+            setNewPositionIsManager(false);
           },
         },
       );
@@ -202,6 +207,7 @@ function RouteComponent() {
             name: editPositionName.trim(),
             can_desire: editPositionCanDesire,
             has_halls: editPositionHasHalls,
+            is_manager: editPositionIsManager,
           },
         },
         {
@@ -211,6 +217,7 @@ function RouteComponent() {
             setEditPositionName("");
             setEditPositionCanDesire(false);
             setEditPositionHasHalls(false);
+            setEditPositionIsManager(false);
           },
         },
       );
@@ -222,6 +229,7 @@ function RouteComponent() {
     setEditPositionName(position.name);
     setEditPositionCanDesire(position.can_desire);
     setEditPositionHasHalls(position.has_halls);
+    setEditPositionIsManager(position.is_manager);
     setIsEditDialogOpen(true);
   };
 
@@ -348,6 +356,8 @@ function RouteComponent() {
     setIsAddDialogOpen(false);
     setNewPositionName("");
     setNewPositionCanDesire(false);
+    setNewPositionHasHalls(false);
+    setNewPositionIsManager(false);
   };
 
   const closeEditDialog = () => {
@@ -355,6 +365,8 @@ function RouteComponent() {
     setEditingPosition(null);
     setEditPositionName("");
     setEditPositionCanDesire(false);
+    setEditPositionHasHalls(false);
+    setEditPositionIsManager(false);
   };
 
   if (isLoading) {
@@ -525,6 +537,11 @@ function RouteComponent() {
                       {position.has_halls && (
                         <Tooltip title={t("Has halls")}>
                           <HomeIcon color="primary" fontSize="small" />
+                        </Tooltip>
+                      )}
+                      {position.is_manager && (
+                        <Tooltip title={t("Is manager")}>
+                          <BadgeIcon color="secondary" fontSize="small" />
                         </Tooltip>
                       )}
                     </Box>
@@ -731,6 +748,17 @@ function RouteComponent() {
               label={t("Has halls")}
               sx={{ mt: 1 }}
             />
+            <FormControlLabel
+              control={
+                <Checkbox
+                  checked={newPositionIsManager}
+                  onChange={(e) => setNewPositionIsManager(e.target.checked)}
+                  disabled={addPositionMutation.isPending}
+                />
+              }
+              label={t("Is manager")}
+              sx={{ mt: 1 }}
+            />
           </DialogContent>
           <DialogActions>
             <Button
@@ -796,6 +824,17 @@ function RouteComponent() {
                 />
               }
               label={t("Has halls")}
+              sx={{ mt: 1 }}
+            />
+            <FormControlLabel
+              control={
+                <Checkbox
+                  checked={editPositionIsManager}
+                  onChange={(e) => setEditPositionIsManager(e.target.checked)}
+                  disabled={editPositionMutation.isPending}
+                />
+              }
+              label={t("Is manager")}
               sx={{ mt: 1 }}
             />
           </DialogContent>

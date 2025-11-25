@@ -37,6 +37,7 @@ async def add_position(
         name=request.name,
         can_desire=request.can_desire,
         has_halls=request.has_halls,
+        is_manager=request.is_manager,
     )
     position = await year_service.add_position(position_in=position_in)
     logger.info(f"Added position {request.name}")
@@ -54,7 +55,10 @@ async def edit_position(
     year_service: Annotated[YearService, Depends(Provide[Container.year_service])],
 ) -> None:
     position_edit_in = PositionEditIn(
-        name=request.name, can_desire=request.can_desire, has_halls=request.has_halls
+        name=request.name,
+        can_desire=request.can_desire,
+        has_halls=request.has_halls,
+        is_manager=request.is_manager,
     )
     await year_service.edit_position_by_position_id(
         position_id=position_id, position_edit_in=position_edit_in

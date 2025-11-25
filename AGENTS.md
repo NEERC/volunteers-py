@@ -7,3 +7,4 @@ When writing backend code, follow these rules:
 
 When writing frontend code, follow these rules:
 - Use pnpm run openapi-ts to generate types from OpenAPI spec
+- Add translations for all new strings

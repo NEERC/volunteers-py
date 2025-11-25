@@ -117,6 +117,7 @@ async def get_year_positions(
             name=p.name,
             can_desire=p.can_desire,
             has_halls=p.has_halls,
+            is_manager=p.is_manager,
         )
         for p in positions
     ]
@@ -163,6 +164,7 @@ async def get_registration_forms(
                         name=p.name,
                         can_desire=p.can_desire,
                         has_halls=p.has_halls,
+                        is_manager=p.is_manager,
                     )
                     for p in form.desired_positions
                 ],

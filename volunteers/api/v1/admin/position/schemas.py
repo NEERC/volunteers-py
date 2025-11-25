@@ -8,6 +8,7 @@ class AddPositionRequest(BaseModel):
     name: str
     can_desire: bool = False
     has_halls: bool = False
+    is_manager: bool = False
 
 
 class AddPositionResponse(BaseSuccessResponse):
@@ -18,3 +19,4 @@ class EditPositionRequest(BaseModel):
     name: str | None = None
     can_desire: bool | None = None
     has_halls: bool | None = None
+    is_manager: bool | None = None
