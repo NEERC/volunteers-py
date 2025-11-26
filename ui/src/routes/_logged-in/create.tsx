@@ -11,12 +11,12 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useAddYear } from "@/data";
-import { shouldBeLoggedIn } from "@/utils/should-be-logged-in";
+import { shouldBeAdmin } from "@/utils/should-be-logged-in";
 
 export const Route = createFileRoute("/_logged-in/create")({
   component: RouteComponent,
   beforeLoad: async ({ context }) => {
-    shouldBeLoggedIn(context);
+    shouldBeAdmin(context);
     return {
       title: "Create new year",
     };

@@ -1,10 +1,10 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { shouldBeLoggedIn } from "@/utils/should-be-logged-in";
+import { shouldBeAdmin } from "@/utils/should-be-logged-in";
 
 export const Route = createFileRoute("/_logged-in/$yearId/medals")({
   component: RouteComponent,
   beforeLoad: async ({ context }) => {
-    shouldBeLoggedIn(context);
+    shouldBeAdmin(context);
     return {
       title: "Medals",
     };

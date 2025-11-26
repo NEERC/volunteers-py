@@ -1,6 +1,7 @@
 import AssessmentIcon from "@mui/icons-material/Assessment";
 import AssignmentIcon from "@mui/icons-material/Assignment";
 import CalendarMonthIcon from "@mui/icons-material/CalendarMonth";
+import CheckCircleIcon from "@mui/icons-material/CheckCircle";
 import ContactsIcon from "@mui/icons-material/Contacts";
 import DescriptionIcon from "@mui/icons-material/Description";
 import EmojiEventsIcon from "@mui/icons-material/EmojiEvents";
@@ -54,6 +55,7 @@ interface BaseRoute {
   icon: React.ComponentType;
   path: string;
   adminOnly?: boolean;
+  managerOnly?: boolean;
 }
 
 interface CollapsibleRoute extends BaseRoute {
@@ -119,6 +121,14 @@ const getRoutesConfig = (
             })) ?? [],
         },
         {
+          id: "attendance",
+          type: "simple",
+          labelKey: "Attendance",
+          icon: CheckCircleIcon,
+          path: `/${selectedYear}/attendance`,
+          managerOnly: true,
+        },
+        {
           id: "results",
           type: "simple",
           labelKey: "Results",
@@ -181,10 +191,15 @@ const renderRoutes = (
   setDaysOpen: (open: boolean) => void,
   t: (key: string) => string,
   user: { is_admin?: boolean } | null,
+  isManagerForYear: boolean,
 ) => {
   return routes.map((route) => {
     // Skip admin-only routes for non-admin users
     if (route.adminOnly && !user?.is_admin) {
+      return null;
+    }
+    // Skip manager-only routes for non-manager users
+    if (route.managerOnly && !isManagerForYear && !user?.is_admin) {
       return null;
     }
 
@@ -326,6 +341,14 @@ export default observer(function MainLayout({
     return location.pathname === path;
   };
 
+  // Check if user is manager for the selected year
+  const isManagerForYear =
+    selectedYear !== null &&
+    years.isSuccess &&
+    years.data.years.some(
+      (year) => year.year_id === Number(selectedYear) && year.is_manager,
+    );
+
   // Get routes configuration
   const routes = getRoutesConfig(selectedYear, yearData.data || {});
 
@@ -378,7 +401,15 @@ export default observer(function MainLayout({
       </Toolbar>
       <Divider />
       <List>
-        {renderRoutes(routes, isLinkActive, daysOpen, setDaysOpen, t, user)}
+        {renderRoutes(
+          routes,
+          isLinkActive,
+          daysOpen,
+          setDaysOpen,
+          t,
+          user,
+          isManagerForYear ?? false,
+        )}
         <Divider />
       </List>
     </div>

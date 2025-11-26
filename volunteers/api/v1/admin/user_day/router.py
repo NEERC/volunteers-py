@@ -7,6 +7,7 @@ from loguru import logger
 from volunteers.auth.deps import with_admin
 from volunteers.core.di import Container
 from volunteers.models import User
+from volunteers.models.attendance import Attendance
 from volunteers.schemas.user_day import UserDayEditIn, UserDayIn
 from volunteers.services.year import YearService
 
@@ -42,7 +43,7 @@ async def add_user_day(
         application_form_id=request.application_form_id,
         day_id=request.day_id,
         information=request.information,
-        attendance=request.attendance,
+        attendance=Attendance.UNKNOWN,  # Default attendance, will be set via attendance API
         position_id=request.position_id,
         hall_id=request.hall_id,
     )
@@ -63,7 +64,7 @@ async def edit_position(
 ) -> None:
     user_day_edit_in = UserDayEditIn(
         information=request.information,
-        attendance=request.attendance,
+        attendance=None,  # Attendance is managed via attendance API
         position_id=request.position_id,
         hall_id=request.hall_id,
     )

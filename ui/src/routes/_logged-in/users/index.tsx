@@ -30,12 +30,12 @@ import {
 import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useAllUsers } from "@/data/use-admin";
-import { shouldBeLoggedIn } from "@/utils/should-be-logged-in";
+import { shouldBeAdmin } from "@/utils/should-be-logged-in";
 
 export const Route = createFileRoute("/_logged-in/users/")({
   component: RouteComponent,
   beforeLoad: async ({ context }) => {
-    shouldBeLoggedIn(context);
+    shouldBeAdmin(context);
     return {
       title: "Users",
     };

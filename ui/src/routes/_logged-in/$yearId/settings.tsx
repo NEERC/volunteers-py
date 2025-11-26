@@ -41,12 +41,12 @@ import {
   useYearPositions,
   useYears,
 } from "@/data";
-import { shouldBeLoggedIn } from "@/utils/should-be-logged-in";
+import { shouldBeAdmin } from "@/utils/should-be-logged-in";
 
 export const Route = createFileRoute("/_logged-in/$yearId/settings")({
   component: RouteComponent,
   beforeLoad: async ({ context }) => {
-    shouldBeLoggedIn(context);
+    shouldBeAdmin(context);
     return {
       title: "Year Settings",
     };

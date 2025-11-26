@@ -41,12 +41,12 @@ import { useTranslation } from "react-i18next";
 import type { UserListItem } from "@/client/types.gen";
 import { DetailedUserCard } from "@/components/DetailedUserCard";
 import { useRegistrationForms, useUsersList } from "@/data/use-admin";
-import { shouldBeLoggedIn } from "@/utils/should-be-logged-in";
+import { shouldBeAdmin } from "@/utils/should-be-logged-in";
 
 export const Route = createFileRoute("/_logged-in/$yearId/contacts")({
   component: RouteComponent,
   beforeLoad: async ({ context }) => {
-    shouldBeLoggedIn(context);
+    shouldBeAdmin(context);
     return {
       title: "Contacts",
     };

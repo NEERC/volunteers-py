@@ -1,3 +1,5 @@
+from dataclasses import dataclass
+
 from sqlalchemy import and_, delete, select
 from sqlalchemy.orm import selectinload
 
@@ -14,6 +16,7 @@ from volunteers.models import (
     UserDay,
     Year,
 )
+from volunteers.models.attendance import Attendance
 from volunteers.schemas.application_form import ApplicationFormIn
 from volunteers.schemas.assessment import AssessmentEditIn, AssessmentIn
 from volunteers.schemas.day import DayEditIn, DayIn
@@ -58,6 +61,12 @@ class AssessmentNotFound(DomainError):
 
 class HallNotFound(DomainError):
     """Hall not found"""
+
+
+@dataclass(frozen=True)
+class ManagerForYear:
+    hall_id: int | None
+    day_id: int
 
 
 class YearService(BaseService):
@@ -169,6 +178,7 @@ class YearService(BaseService):
                     selectinload(UserDay.day),
                     selectinload(UserDay.position),
                     selectinload(UserDay.hall),
+                    selectinload(UserDay.assessments),
                 )
                 .order_by(UserDay.created_at)
             )
@@ -493,6 +503,17 @@ class YearService(BaseService):
 
             await session.commit()
 
+    async def update_user_day_attendance(self, user_day_id: int, attendance: Attendance) -> None:
+        """Update attendance for a user day."""
+        async with self.session_scope() as session:
+            user_day = await session.execute(select(UserDay).where(UserDay.id == user_day_id))
+            user_day_obj = user_day.scalar_one_or_none()
+            if not user_day_obj:
+                raise UserDayNotFound()
+
+            user_day_obj.attendance = attendance
+            await session.commit()
+
     async def create_form(self, form: ApplicationFormIn) -> None:
         async with self.session_scope() as session:
             created_form = ApplicationForm(
@@ -567,6 +588,41 @@ class YearService(BaseService):
                 )
             )
             return {user_day.application_form.year_id for user_day in user_days}
+
+    async def manager_for_year(self, user_id: int, year_id: int) -> set[ManagerForYear]:
+        """Gett all days and halls that the user is manager for in a year."""
+        async with self.session_scope() as session:
+            result = await session.execute(
+                select(UserDay)
+                .join(ApplicationForm)
+                .join(Position)
+                .where(
+                    and_(
+                        ApplicationForm.user_id == user_id,
+                        ApplicationForm.year_id == year_id,
+                        Position.is_manager.is_(True),
+                    )
+                )
+            )
+            return {
+                ManagerForYear(hall_id=res.hall_id, day_id=res.day_id) for res in result.scalars()
+            }
+
+    async def get_user_day_by_id(self, user_day_id: int) -> UserDay | None:
+        """Get a user day by ID with all relationships loaded."""
+        async with self.session_scope() as session:
+            result = await session.execute(
+                select(UserDay)
+                .where(UserDay.id == user_day_id)
+                .options(
+                    selectinload(UserDay.application_form).selectinload(ApplicationForm.user),
+                    selectinload(UserDay.day),
+                    selectinload(UserDay.position),
+                    selectinload(UserDay.hall),
+                    selectinload(UserDay.assessments),
+                )
+            )
+            return result.scalar_one_or_none()
 
     async def get_user_experience(self, user_id: int) -> list[ExperienceItem]:
         """Get prior experience data for a user across all years."""

@@ -200,5 +200,21 @@
   "Assessments": "Оценки",
   "Copy": "Скопировать",
   "Copy badges data": "Данные для бейджей",
-  "Is manager": "Менеджерская"
+  "Is manager": "Менеджерская",
+  "All Days": "Все дни",
+  "Day Details": "Детали дня",
+  "Yes": "Да",
+  "No": "Нет",
+  "Late": "Опоздал",
+  "Sick": "Болел",
+  "Unknown": "Неизвестно",
+  "Total": "Всего",
+  "Select a day to view details": "Выберите день для просмотра деталей",
+  "Assessment": "Оценка",
+  "Actions": "Действия",
+  "Save": "Сохранить",
+  "Comment": "Комментарий",
+  "Value": "Значение",
+  "No assessment": "Нет оценки",
+  "Select Attendance": "Выберите посещаемость"
 }

@@ -15,12 +15,12 @@ import { useFormik } from "formik";
 import { useTranslation } from "react-i18next";
 import * as yup from "yup";
 import { useEditUser, useUser } from "@/data/use-admin";
-import { shouldBeLoggedIn } from "@/utils/should-be-logged-in";
+import { shouldBeAdmin } from "@/utils/should-be-logged-in";
 
 export const Route = createFileRoute("/_logged-in/users/$userId")({
   component: RouteComponent,
   beforeLoad: async ({ context }) => {
-    shouldBeLoggedIn(context);
+    shouldBeAdmin(context);
     return {
       title: "Edit User",
     };

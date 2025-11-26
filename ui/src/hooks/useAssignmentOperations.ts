@@ -57,7 +57,6 @@ export function useAssignmentOperations(
             application_form_id: user.form_id,
             day_id: Number(dayId),
             information: "",
-            attendance: "unknown",
             position_id: positionId,
             hall_id: hallId || null,
           });

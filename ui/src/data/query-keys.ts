@@ -143,6 +143,8 @@ export const queryKeys = {
         String(dayId),
         "assignments",
       ] as const,
+    attendance: (yearId: string | number) =>
+      [...queryKeys.year.all(yearId), "attendance"] as const,
   },
 } as const;
 

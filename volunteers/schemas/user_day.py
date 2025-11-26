@@ -7,14 +7,14 @@ class UserDayIn(BaseModel):
     application_form_id: int
     day_id: int
     information: str
-    attendance: Attendance
+    attendance: Attendance  # Required for model creation, but managed via attendance API
     position_id: int | None = None
     hall_id: int | None = None
 
 
 class UserDayEditIn(BaseModel):
     information: str | None
-    attendance: Attendance | None
+    attendance: Attendance | None  # Optional, attendance managed via attendance API
     position_id: int
     hall_id: int | None
 

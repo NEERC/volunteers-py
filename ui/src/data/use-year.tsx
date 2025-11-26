@@ -1,12 +1,15 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
+  getAllAttendanceApiV1AttendanceYearIdAllGet,
   getDayAssignmentsApiV1YearYearIdDaysDayIdAssignmentsGet,
   getFormYearApiV1YearYearIdGet,
+  saveDayAttendanceApiV1AttendanceSavePost,
   saveFormYearApiV1YearYearIdPost,
   updateUserApiV1AuthUpdatePost,
 } from "@/client";
 import type {
   ApplicationFormYearSaveRequest,
+  SaveDayAttendanceRequest,
   UserUpdateRequest,
 } from "@/client/types.gen";
 import { authStore } from "@/store/auth";
@@ -110,4 +113,40 @@ export const useUserDayAssignments = (
   dayId: string | number,
 ) => {
   return useQuery(dayAssignmentsQueryOptions(yearId, dayId));
+};
+
+// Attendance query options
+export const attendanceQueryOptions = (yearId: string | number) => ({
+  queryKey: queryKeys.year.attendance(yearId),
+  queryFn: async () => {
+    const response = await getAllAttendanceApiV1AttendanceYearIdAllGet({
+      path: { year_id: Number(yearId) },
+      throwOnError: true,
+    });
+    return response.data;
+  },
+  enabled: !!yearId,
+});
+
+// Attendance hooks
+export const useAttendance = (yearId: string | number) => {
+  return useQuery(attendanceQueryOptions(yearId));
+};
+
+export const useSaveAttendance = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (data: SaveDayAttendanceRequest) => {
+      await saveDayAttendanceApiV1AttendanceSavePost({
+        body: data,
+        throwOnError: true,
+      });
+    },
+    onSuccess: () => {
+      // Invalidate all attendance queries - we don't know the year_id from the request
+      // so we invalidate all year attendance queries
+      queryClient.invalidateQueries({ queryKey: ["year"] });
+    },
+  });
 };

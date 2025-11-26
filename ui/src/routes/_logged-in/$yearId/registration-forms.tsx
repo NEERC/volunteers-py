@@ -19,12 +19,12 @@ import { useTranslation } from "react-i18next";
 import type { RegistrationFormItem } from "@/client/types.gen";
 import { DetailedUserCard } from "@/components/DetailedUserCard";
 import { useRegistrationForms } from "@/data/use-admin";
-import { shouldBeLoggedIn } from "@/utils/should-be-logged-in";
+import { shouldBeAdmin } from "@/utils/should-be-logged-in";
 
 export const Route = createFileRoute("/_logged-in/$yearId/registration-forms")({
   component: RouteComponent,
   beforeLoad: async ({ context }) => {
-    shouldBeLoggedIn(context);
+    shouldBeAdmin(context);
     return {
       title: "Registration Forms",
     };
