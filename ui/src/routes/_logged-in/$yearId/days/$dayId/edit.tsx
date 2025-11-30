@@ -118,6 +118,14 @@ type HallWithUsers = HallOut & {
   assigned_users: RegistrationFormItem[];
 };
 
+type PositionInHall = PositionOut & {
+  assigned_users: RegistrationFormItem[]; // Users assigned to this position in this specific hall
+};
+
+type HallWithPositions = HallOut & {
+  positions: PositionInHall[]; // All positions that have halls, with their users in this hall
+};
+
 export const Route = createFileRoute("/_logged-in/$yearId/days/$dayId/edit")({
   component: RouteComponent,
 });
@@ -558,6 +566,7 @@ function PositionColumn({
   const { t } = useTranslation();
   const { setNodeRef, isOver } = useDroppable({
     id: `position-${position.position_id}`,
+    disabled: position.has_halls, // Disable drop if position has halls
   });
 
   const [isHovered, setIsHovered] = useState(false);
@@ -571,35 +580,45 @@ function PositionColumn({
     ) || 0;
   const totalCount = directCount + hallCount;
 
+  // Disable assignment if position has halls
+  const isDisabled = position.has_halls;
+
   return (
     <Paper
       ref={setNodeRef}
       onClick={(e) => {
         e.stopPropagation();
-        onPositionClick(position.position_id);
+        if (!isDisabled) {
+          onPositionClick(position.position_id);
+        }
       }}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
       sx={{
         p: 1.5,
         // minHeight: 300,
-        border: isOver
-          ? "2px dashed"
-          : isHovered && clickSelectedUserId
-            ? "2px solid"
-            : "1px solid",
-        borderColor: isOver
-          ? "primary.main"
-          : isHovered && clickSelectedUserId
+        border:
+          isOver && !isDisabled
+            ? "2px dashed"
+            : isHovered && clickSelectedUserId && !isDisabled
+              ? "2px solid"
+              : "1px solid",
+        borderColor:
+          isOver && !isDisabled
             ? "primary.main"
-            : "divider",
-        backgroundColor: isOver
-          ? "action.hover"
-          : isHovered && clickSelectedUserId
-            ? "action.selected"
-            : "background.paper",
-        cursor: clickSelectedUserId ? "pointer" : "default",
+            : isHovered && clickSelectedUserId && !isDisabled
+              ? "primary.main"
+              : "divider",
+        backgroundColor:
+          isOver && !isDisabled
+            ? "action.hover"
+            : isHovered && clickSelectedUserId && !isDisabled
+              ? "action.selected"
+              : "background.paper",
+        cursor: clickSelectedUserId && !isDisabled ? "pointer" : "default",
         transition: "all 0.2s ease-in-out",
+        opacity: isDisabled ? 0.6 : 1,
+        pointerEvents: isDisabled ? "none" : "auto",
       }}
     >
       <Box
@@ -619,68 +638,65 @@ function PositionColumn({
       </Box>
       <Divider sx={{ mb: 1 }} />
 
-      {/* Direct position assignments (always available) */}
-      <Box sx={{ mb: position.halls?.length ? 2 : 0 }}>
-        <SortableContext
-          items={position.assigned_users.map((user) => `user-${user.user_id}`)}
-          strategy={verticalListSortingStrategy}
-        >
-          {position.assigned_users.map((user) => {
-            // Check if this user has an optimistic update
-            const hasOptimisticUpdate = Object.values(optimisticUpdates).some(
-              (update) =>
-                update.userId === user.user_id &&
-                update.positionId === position.position_id &&
-                !update.hallId,
-            );
+      {/* Direct position assignments (only if position doesn't have halls) */}
+      {!position.has_halls && (
+        <Box>
+          <SortableContext
+            items={position.assigned_users.map(
+              (user) => `user-${user.user_id}`,
+            )}
+            strategy={verticalListSortingStrategy}
+          >
+            {position.assigned_users.map((user) => {
+              // Check if this user has an optimistic update
+              const hasOptimisticUpdate = Object.values(optimisticUpdates).some(
+                (update) =>
+                  update.userId === user.user_id &&
+                  update.positionId === position.position_id &&
+                  !update.hallId,
+              );
 
-            return (
-              <DraggableRegistrationForm
-                key={user.user_id}
-                registrationForm={user}
-                isAssigned={true}
-                isOptimistic={hasOptimisticUpdate}
-                isSelected={clickSelectedUserId === user.user_id}
-                onClick={() => onUserClick(user.user_id)}
-                isMobile={isMobile}
-              />
-            );
-          })}
-        </SortableContext>
-      </Box>
-
-      {/* Hall-specific assignments (if position has halls) */}
-      {position.halls && position.halls.length > 0 && (
-        <Box sx={{ display: "flex", gap: 1, flexDirection: "column" }}>
-          {position.halls.map((hall) => (
-            <HallColumn
-              key={hall.hall_id}
-              hall={hall}
-              positionId={position.position_id}
-              optimisticUpdates={optimisticUpdates}
-              clickSelectedUserId={clickSelectedUserId}
-              onPositionClick={onPositionClick}
-              onUserClick={onUserClick}
-              isMobile={isMobile}
-            />
-          ))}
+              return (
+                <DraggableRegistrationForm
+                  key={user.user_id}
+                  registrationForm={user}
+                  isAssigned={true}
+                  isOptimistic={hasOptimisticUpdate}
+                  isSelected={clickSelectedUserId === user.user_id}
+                  onClick={() => onUserClick(user.user_id)}
+                  isMobile={isMobile}
+                />
+              );
+            })}
+          </SortableContext>
         </Box>
+      )}
+
+      {/* Show message if position has halls but is being displayed (shouldn't happen normally) */}
+      {position.has_halls && (
+        <Typography
+          variant="body2"
+          color="text.secondary"
+          sx={{ textAlign: "center", py: 2 }}
+        >
+          {t("This position requires assignment to a specific hall")}
+        </Typography>
       )}
     </Paper>
   );
 }
 
-function HallColumn({
-  hall,
-  positionId,
+function PositionInHallColumn({
+  position,
+  hallId,
   optimisticUpdates,
   clickSelectedUserId,
   onPositionClick,
   onUserClick,
   isMobile = false,
 }: {
-  hall: HallWithUsers;
-  positionId: number;
+  position: PositionInHall;
+  hallId: number;
   optimisticUpdates: {
     [key: string]: {
       userId: number;
@@ -696,26 +712,23 @@ function HallColumn({
 }) {
   const { t } = useTranslation();
   const { setNodeRef, isOver } = useDroppable({
-    id: `hall-${positionId}-${hall.hall_id}`,
+    id: `hall-${position.position_id}-${hallId}`,
   });
 
   const [isHovered, setIsHovered] = useState(false);
-
-  // Calculate volunteer count for this hall
-  const hallCount = hall.assigned_users.length;
 
   return (
     <Paper
       ref={setNodeRef}
       onClick={(e) => {
         e.stopPropagation();
-        onPositionClick(positionId, hall.hall_id);
+        onPositionClick(position.position_id, hallId);
       }}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
       sx={{
         p: 1,
-        // minHeight: 200,
+        mb: 1,
         border: isOver
           ? "2px dashed"
           : isHovered && clickSelectedUserId
@@ -744,24 +757,27 @@ function HallColumn({
         }}
       >
         <Typography variant="body2" sx={{ fontWeight: 600 }}>
-          {hall.name}
+          {position.name}
         </Typography>
         <Typography variant="caption" color="text.secondary">
-          {hallCount} {hallCount === 1 ? t("volunteer") : t("volunteers")}
+          {position.assigned_users.length}{" "}
+          {position.assigned_users.length === 1
+            ? t("volunteer")
+            : t("volunteers")}
         </Typography>
       </Box>
       <Divider sx={{ mb: 1 }} />
       <SortableContext
-        items={hall.assigned_users.map((user) => `user-${user.user_id}`)}
+        items={position.assigned_users.map((user) => `user-${user.user_id}`)}
         strategy={verticalListSortingStrategy}
       >
-        {hall.assigned_users.map((user) => {
-          // Check if this user has an optimistic update for this hall
+        {position.assigned_users.map((user) => {
+          // Check if this user has an optimistic update for this position+hall
           const hasOptimisticUpdate = Object.values(optimisticUpdates).some(
             (update) =>
               update.userId === user.user_id &&
-              update.positionId === positionId &&
-              update.hallId === hall.hall_id,
+              update.positionId === position.position_id &&
+              update.hallId === hallId,
           );
 
           return (
@@ -777,6 +793,87 @@ function HallColumn({
           );
         })}
       </SortableContext>
+    </Paper>
+  );
+}
+
+function HallGroupColumn({
+  hallWithPositions,
+  optimisticUpdates,
+  clickSelectedUserId,
+  onPositionClick,
+  onUserClick,
+  isMobile = false,
+}: {
+  hallWithPositions: HallWithPositions;
+  optimisticUpdates: {
+    [key: string]: {
+      userId: number;
+      positionId: number;
+      hallId?: number;
+      type: "add" | "remove";
+    };
+  };
+  clickSelectedUserId: number | null;
+  onPositionClick: (positionId: number, hallId?: number) => void;
+  onUserClick: (userId: number) => void;
+  isMobile?: boolean;
+}) {
+  const { t } = useTranslation();
+  const [isHovered, setIsHovered] = useState(false);
+
+  // Calculate total volunteer count for this hall (across all positions)
+  const totalCount = hallWithPositions.positions.reduce(
+    (sum, position) => sum + position.assigned_users.length,
+    0,
+  );
+
+  return (
+    <Paper
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
+      sx={{
+        p: 1.5,
+        border: isHovered && clickSelectedUserId ? "2px solid" : "1px solid",
+        borderColor:
+          isHovered && clickSelectedUserId ? "primary.main" : "divider",
+        backgroundColor:
+          isHovered && clickSelectedUserId
+            ? "action.selected"
+            : "background.paper",
+        transition: "all 0.2s ease-in-out",
+      }}
+    >
+      <Box
+        sx={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          mb: 1,
+        }}
+      >
+        <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>
+          {hallWithPositions.name}
+        </Typography>
+        <Typography variant="body2" color="text.secondary">
+          {totalCount} {totalCount === 1 ? t("volunteer") : t("volunteers")}
+        </Typography>
+      </Box>
+      <Divider sx={{ mb: 2 }} />
+
+      {/* Positions within this hall */}
+      {hallWithPositions.positions.map((position) => (
+        <PositionInHallColumn
+          key={position.position_id}
+          position={position}
+          hallId={hallWithPositions.hall_id}
+          optimisticUpdates={optimisticUpdates}
+          clickSelectedUserId={clickSelectedUserId}
+          onPositionClick={onPositionClick}
+          onUserClick={onUserClick}
+          isMobile={isMobile}
+        />
+      ))}
     </Paper>
   );
 }
@@ -1036,6 +1133,77 @@ function RouteComponent() {
     findUserById,
   ]);
 
+  // Group positions by hall - for positions that have halls
+  const hallsWithPositions: HallWithPositions[] = React.useMemo(() => {
+    if (!halls || !positionsData) {
+      return [];
+    }
+
+    // Get all positions that have halls
+    const positionsWithHalls = positionsData.filter((p) => p.has_halls);
+
+    return halls.map((hall) => {
+      const positionsInHall: PositionInHall[] = positionsWithHalls.map(
+        (position) => {
+          // Find assignments for this position in this hall
+          const hallAssignments =
+            assignmentsData?.assignments.filter(
+              (assignment) =>
+                assignment.position_id === position.position_id &&
+                assignment.hall_id === hall.hall_id,
+            ) || [];
+
+          // Apply optimistic updates for this position+hall combination
+          const optimisticUsers: RegistrationFormItem[] = [];
+          Object.values(optimisticUpdates).forEach((update) => {
+            if (
+              update.positionId === position.position_id &&
+              update.hallId === hall.hall_id
+            ) {
+              const user = findUserById(update.userId);
+              if (user && update.type === "add") {
+                optimisticUsers.push(user);
+              }
+            }
+          });
+
+          const assignedUsers = [
+            ...hallAssignments
+              .map(assignmentToUser)
+              .filter((user): user is RegistrationFormItem => user !== null),
+            ...optimisticUsers,
+          ].filter((user) => {
+            // Remove users that have optimistic 'remove' updates
+            return !Object.values(optimisticUpdates).some(
+              (update) =>
+                update.userId === user.user_id &&
+                update.type === "remove" &&
+                update.positionId === position.position_id &&
+                update.hallId === hall.hall_id,
+            );
+          });
+
+          return {
+            ...position,
+            assigned_users: assignedUsers,
+          };
+        },
+      );
+
+      return {
+        ...hall,
+        positions: positionsInHall,
+      };
+    });
+  }, [
+    halls,
+    positionsData,
+    assignmentsData,
+    assignmentToUser,
+    optimisticUpdates,
+    findUserById,
+  ]);
+
   // Get unassigned users (all users who haven't been manually assigned to any position yet)
   const unassignedUsers: RegistrationFormItem[] =
     registrationFormsData?.forms.filter((form) => {
@@ -1089,6 +1257,12 @@ function RouteComponent() {
       // If dropping on a position (general assignment)
       if (overId.startsWith("position-")) {
         const positionId = Number.parseInt(overId.replace("position-", ""), 10);
+        // Check if position has halls - if so, don't allow assignment without hall
+        const position = positions.find((p) => p.position_id === positionId);
+        if (position?.has_halls) {
+          // Position has halls, assignment without hall is not allowed
+          return;
+        }
         handleDragAssignment(userId, positionId);
       }
 
@@ -1287,18 +1461,18 @@ function RouteComponent() {
                 : {}),
             }}
           >
-            {/* Positions Columns */}
-            {positions.map((position) => (
+            {/* Halls with Positions (for positions that have halls) */}
+            {hallsWithPositions.map((hallWithPositions) => (
               <Box
-                key={position.position_id}
+                key={hallWithPositions.hall_id}
                 sx={{
                   flex: isMobile ? "1 1" : "0 0",
                   minWidth: isMobile ? "100%" : "400px",
                   maxWidth: isMobile ? "100%" : "none",
                 }}
               >
-                <PositionColumn
-                  position={position}
+                <HallGroupColumn
+                  hallWithPositions={hallWithPositions}
                   optimisticUpdates={optimisticUpdates}
                   clickSelectedUserId={clickSelectedUserId}
                   onPositionClick={handlePositionClick}
@@ -1307,6 +1481,29 @@ function RouteComponent() {
                 />
               </Box>
             ))}
+
+            {/* Positions without halls */}
+            {positions
+              .filter((position) => !position.has_halls)
+              .map((position) => (
+                <Box
+                  key={position.position_id}
+                  sx={{
+                    flex: isMobile ? "1 1" : "0 0",
+                    minWidth: isMobile ? "100%" : "400px",
+                    maxWidth: isMobile ? "100%" : "none",
+                  }}
+                >
+                  <PositionColumn
+                    position={position}
+                    optimisticUpdates={optimisticUpdates}
+                    clickSelectedUserId={clickSelectedUserId}
+                    onPositionClick={handlePositionClick}
+                    onUserClick={handleUserCardClick}
+                    isMobile={isMobile}
+                  />
+                </Box>
+              ))}
           </Box>
         </Box>
 
