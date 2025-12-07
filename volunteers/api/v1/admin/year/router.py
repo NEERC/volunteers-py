@@ -10,6 +10,7 @@ from volunteers.auth.deps import with_admin
 from volunteers.core.di import Container
 from volunteers.core.experience import get_rank
 from volunteers.models import User
+from volunteers.schemas.assessment import AssessmentOut
 from volunteers.schemas.position import PositionOut
 from volunteers.schemas.year import YearEditIn, YearIn
 from volunteers.services.export import ExportService
@@ -19,6 +20,7 @@ from volunteers.services.year import YearService
 from .schemas import (
     AddYearRequest,
     AddYearResponse,
+    AttendanceItem,
     EditYearRequest,
     RegistrationFormItem,
     RegistrationFormsResponse,
@@ -205,9 +207,46 @@ async def get_year_results(
 ) -> ResultsResponse:
     results_data = await year_service.get_year_results(year_id=year_id)
 
+    # Get all days for this year to match with attendance
+    days = await year_service.get_days_by_year_id(year_id=year_id)
+
     result_items: list[ResultItem] = []
-    for form, total_assessments, calculated_experience in results_data:
-        rank = get_rank(calculated_experience)
+    for result_item in results_data:
+        form = result_item.application_form
+
+        # Convert positions to PositionOut
+        positions = [
+            PositionOut(
+                position_id=p.id,
+                year_id=p.year_id,
+                name=p.name,
+                can_desire=p.can_desire,
+                has_halls=p.has_halls,
+                is_manager=p.is_manager,
+                save_for_next_year=p.save_for_next_year,
+                score=p.score,
+                description=p.description,
+            )
+            for p in result_item.positions
+        ]
+
+        # Convert assessments to AssessmentOut
+        assessments = [
+            AssessmentOut(
+                assessment_id=a.id,
+                user_day_id=a.user_day_id,
+                comment=a.comment,
+                value=a.value,
+            )
+            for a in result_item.assessments
+        ]
+
+        # Convert attendance list to AttendanceItem list
+        attendance_items = [
+            AttendanceItem(day_id=day.id, attendance=attendance)
+            for day, attendance in zip(days, result_item.attendance, strict=True)
+        ]
+
         result_items.append(
             ResultItem(
                 user_id=form.user.id,
@@ -216,9 +255,14 @@ async def get_year_results(
                 patronymic_ru=form.user.patronymic_ru,
                 first_name_en=form.user.first_name_en,
                 last_name_en=form.user.last_name_en,
-                experience=calculated_experience,
-                rank=rank,
-                total_assessments=total_assessments,
+                experience=result_item.experience,
+                experience_this_year=result_item.experience_this_year,
+                rank=result_item.rank,
+                positions=positions,
+                assessments=assessments,
+                total_assessment=result_item.total_assessment,
+                attendance=attendance_items,
+                experience_explanation=result_item.experience_explanation,
             )
         )
 
@@ -288,20 +332,26 @@ async def generate_certificates(
     )
 
     # Filter volunteers who have at least one YES or LATE attendance on mandatory days
-    certificates = []
-    for form, _total_assessments, calculated_experience in results_data:
+    certificates: list[dict[str, str]] = []
+    days = await year_service.get_days_by_year_id(year_id=year_id)
+
+    for result_item in results_data:
+        form = result_item.application_form
+        calculated_experience = result_item.experience
+
         # Check if volunteer has any attendance (YES or LATE) on mandatory days
-        has_attendance = any(
-            user_day.attendance in (Attendance.YES, Attendance.LATE) and user_day.day.mandatory
-            for user_day in form.user_days
-        )
+        has_attendance = False
+        for day, attendance in zip(days, result_item.attendance, strict=True):
+            if attendance in (Attendance.YES, Attendance.LATE) and day.mandatory:
+                has_attendance = True
+                break
 
         if has_attendance:
             # Format full name in English: Last Name, First Name (ФИО order)
             full_name = f"{form.user.last_name_en} {form.user.first_name_en}"
 
             # Get rank and format it
-            rank = get_rank(calculated_experience)
+            rank, __ = get_rank(calculated_experience)
             rank_display = rank.replace("_", " ").title()
 
             certificates.append(

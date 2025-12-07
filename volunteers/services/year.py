@@ -1,4 +1,6 @@
+import math
 from dataclasses import dataclass
+from typing import NamedTuple
 
 import socketio  # type: ignore[import-untyped]
 from sqlalchemy import and_, delete, select
@@ -6,7 +8,7 @@ from sqlalchemy.orm import selectinload
 
 from volunteers.api.v1.admin.year.schemas import ExperienceItem
 from volunteers.bot.notify import Notifier
-from volunteers.core.experience import ATTENDANCE_MAP
+from volunteers.core.experience import ATTENDANCE_MAP, get_rank
 from volunteers.models import (
     ApplicationForm,
     Assessment,
@@ -842,7 +844,9 @@ class YearService(BaseService):
 
             return list(experience_by_year.values())
 
-    async def calculate_year_experience(self, year_id: int, user_id: int) -> float:
+    async def calculate_year_experience(
+        self, year_id: int, user_id: int
+    ) -> tuple[float, list[str]]:
         """Calculate experience for a user in a specific year.
 
         Formula:
@@ -859,17 +863,32 @@ class YearService(BaseService):
             Calculated experience value for the year
         """
         async with self.session_scope() as session:
+            user_form = (
+                await session.execute(
+                    select(ApplicationForm)
+                    .where(
+                        and_(
+                            ApplicationForm.user_id == user_id,
+                            ApplicationForm.year_id == year_id,
+                        )
+                    )
+                    .options(selectinload(ApplicationForm.extra_experience))
+                )
+            ).scalar_one_or_none()
+            if not user_form:
+                raise ApplicationFormNotFound()
+
             # Get all days for this year
             days_result = await session.execute(select(Day).where(Day.year_id == year_id))
             all_days = list(days_result.scalars().all())
 
             # Get mandatory days
-            mandatory_days = [day for day in all_days if day.mandatory]
-            mandatory_days_count = len(mandatory_days)
-
-            if mandatory_days_count == 0:
+            mandatory_days_scores = sum([day.score or 0.0 for day in all_days if day.mandatory])
+            experience_explanation: list[str] = []
+            if mandatory_days_scores == 0:
                 # No mandatory days, skip attendance-based experience
                 mandatory_experience = 0.0
+                experience_explanation.append("No mandatory days")
             else:
                 # Get user's assignments for mandatory days
                 user_days_result = await session.execute(
@@ -894,64 +913,89 @@ class YearService(BaseService):
                 # Calculate attendance-based experience
                 attendance_experience_sum = 0.0
                 for user_day in user_days:
-                    day_score = user_day.day.score if user_day.day.score else 0.0
-                    attendance_weight = ATTENDANCE_MAP.get(user_day.attendance, 0.0)
-                    position_score = user_day.position.score if user_day.position.score else 1.0
-
-                    attendance_experience_sum += day_score * attendance_weight * position_score
+                    if user_day.attendance not in [Attendance.YES, Attendance.LATE]:
+                        experience_explanation.append(
+                            f"Day {user_day.day.name} attendance is {user_day.attendance}, skipping"
+                        )
+                        continue
+                    day_score = user_day.day.score or 0.0
+                    position_score = user_day.position.score
+                    added = day_score * position_score
+                    experience_explanation.append(
+                        f"{day_score} (Day {user_day.day.name}) * {position_score} ({user_day.position.name}) = {added}"
+                    )
+                    attendance_experience_sum += added
 
                 # Average over number of mandatory days
-                mandatory_experience = attendance_experience_sum / mandatory_days_count
-
-            # Get all assessments for this user in this year
-            assessments_result = await session.execute(
-                select(Assessment)
-                .join(UserDay)
-                .join(ApplicationForm)
-                .where(
-                    and_(
-                        ApplicationForm.user_id == user_id,
-                        ApplicationForm.year_id == year_id,
-                    )
+                experience_explanation.append(
+                    f"{attendance_experience_sum} / {mandatory_days_scores} = {attendance_experience_sum / mandatory_days_scores}"
                 )
+                mandatory_experience = attendance_experience_sum / mandatory_days_scores
+
+            # rounding
+            mandatory_experience = round(mandatory_experience, 2)
+            experience_explanation.append(f"Rounded to: {mandatory_experience}")
+
+            # Add extra experience
+            extra_experience = (
+                user_form.extra_experience.value if user_form.extra_experience else 0.0
             )
-            assessments = list(assessments_result.scalars().all())
+            experience_explanation.append(f"Extra experience: {extra_experience}")
+            mandatory_experience += extra_experience
+            experience_explanation.append(f"Total experience: {mandatory_experience}")
 
-            # Calculate total assessments value
-            assessments_sum = sum(assessment.value for assessment in assessments)
+            # encourage rounding up
+            if (math.ceil(mandatory_experience) - mandatory_experience) < 0.2:
+                mandatory_experience = math.ceil(mandatory_experience)
+                experience_explanation.append(f"Encouraged rounding up to: {mandatory_experience}")
 
-            return mandatory_experience + assessments_sum
+            return mandatory_experience, experience_explanation
 
-    async def get_year_results(self, year_id: int) -> list[tuple[ApplicationForm, float, float]]:
+    class YearResultItem(NamedTuple):
+        application_form: ApplicationForm
+        rank: str
+        positions: set[Position]
+        assessments: set[Assessment]
+        total_assessment: float
+        attendance: list[Attendance | None]
+        experience: float
+        experience_this_year: float
+        experience_explanation: list[tuple[str, list[str]]]
+
+    async def get_year_results(self, year_id: int) -> list[YearResultItem]:
         """Get results for all registered volunteers in a year.
-
-        Returns list of tuples: (application_form, total_assessments_sum, calculated_experience)
 
         Experience is calculated dynamically by summing experience from all previous years
         (compared by year_id) plus current year experience.
         """
         async with self.session_scope() as session:
+            # Get all days for this year (ordered by id)
+            days_result = await session.execute(
+                select(Day).where(Day.year_id == year_id).order_by(Day.id)
+            )
+            all_days = list(days_result.scalars().all())
+
             # Get all application forms for this year with user and user_days data
             result = await session.execute(
                 select(ApplicationForm)
                 .where(ApplicationForm.year_id == year_id)
                 .options(
                     selectinload(ApplicationForm.user),
+                    selectinload(ApplicationForm.year),
                     selectinload(ApplicationForm.user_days).selectinload(UserDay.assessments),
                     selectinload(ApplicationForm.user_days).selectinload(UserDay.day),
+                    selectinload(ApplicationForm.user_days).selectinload(UserDay.position),
                 )
                 .order_by(ApplicationForm.user_id)
             )
             forms = list(result.scalars().all())
 
             # Calculate total assessments sum and experience for each form
-            results: list[tuple[ApplicationForm, float, float]] = []
+            results: list[tuple[int, YearService.YearResultItem]] = []
             for form in forms:
-                total_assessments = sum(
-                    assessment.value
-                    for user_day in form.user_days
-                    for assessment in user_day.assessments
-                )
+                if form.user.is_admin:
+                    continue
+                experience_explanation: list[tuple[str, list[str]]] = []
 
                 # Calculate experience dynamically:
                 # Sum experience from all previous years (by year_id) + current year
@@ -966,20 +1010,80 @@ class YearService(BaseService):
                             ApplicationForm.year_id < year_id,
                         )
                     )
+                    .options(selectinload(ApplicationForm.year))
                     .order_by(ApplicationForm.year_id)
                 )
                 prev_forms = list(prev_forms_result.scalars().all())
 
                 # Calculate experience for each previous year
                 for prev_form in prev_forms:
-                    prev_year_exp = await self.calculate_year_experience(
+                    prev_year_exp, prev_year_exp_explanation = await self.calculate_year_experience(
                         prev_form.year_id, form.user_id
                     )
                     previous_experience += prev_year_exp
+                    experience_explanation.append(
+                        (prev_form.year.year_name, prev_year_exp_explanation)
+                    )
 
                 # Calculate current year exp
-                current_year_exp = await self.calculate_year_experience(year_id, form.user_id)
+                (
+                    current_year_exp,
+                    current_year_exp_explanation,
+                ) = await self.calculate_year_experience(year_id, form.user_id)
+                experience_explanation.append(
+                    (f"Current year: {form.year.year_name}", current_year_exp_explanation)
+                )
 
-                results.append((form, total_assessments, previous_experience + current_year_exp))
+                # Build positions set from all user_days
+                positions: set[Position] = set()
+                for user_day in form.user_days:
+                    positions.add(user_day.position)
 
-            return results
+                # Build assessments set from all user_days
+                total_assessment = 0.0
+                assessments: set[Assessment] = set()
+                for user_day in form.user_days:
+                    assessments.update(user_day.assessments)
+                    total_assessment += sum(
+                        [assessment.value for assessment in user_day.assessments]
+                    )
+
+                # Build attendance list: one entry per day in the year
+                # Create a mapping from day_id to user_day for quick lookup
+                user_days_by_day_id: dict[int, UserDay] = {
+                    user_day.day_id: user_day for user_day in form.user_days
+                }
+                attendance: list[Attendance | None] = []
+                was_at_lease_once = False
+                for day in all_days:
+                    user_day_for_day: UserDay | None = user_days_by_day_id.get(day.id)
+                    if user_day_for_day is not None:
+                        attendance.append(user_day_for_day.attendance)
+                        if user_day_for_day.attendance in [Attendance.YES, Attendance.LATE]:
+                            was_at_lease_once = True
+                        total_assessment += ATTENDANCE_MAP.get(user_day_for_day.attendance, 0.0)
+                    else:
+                        attendance.append(None)
+
+                if not was_at_lease_once:
+                    continue
+                total_experience = previous_experience + current_year_exp
+                rank, rank_index = get_rank(total_experience)
+                results.append(
+                    (
+                        rank_index,
+                        YearService.YearResultItem(
+                            application_form=form,
+                            rank=rank,
+                            positions=positions,
+                            assessments=assessments,
+                            total_assessment=total_assessment,
+                            attendance=attendance,
+                            experience=total_experience,
+                            experience_this_year=current_year_exp,
+                            experience_explanation=experience_explanation,
+                        ),
+                    )
+                )
+            results.sort(key=lambda x: (x[0], x[1].total_assessment, x[1].experience), reverse=True)
+            return [result[1] for result in results]

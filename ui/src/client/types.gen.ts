@@ -81,7 +81,7 @@ export type AddYearResponse = {
 };
 
 export type AllAttendanceResponse = {
-    attendance: Array<AttendanceItem>;
+    attendance: Array<VolunteersApiV1AttendanceSchemasAttendanceItem>;
 };
 
 export type AllUsersResponse = {
@@ -119,6 +119,16 @@ export type AssessmentItem = {
     value: number;
 };
 
+export type AssessmentOut = {
+    user_day_id: number;
+    comment: string;
+    /**
+     * Assessment value (any real number)
+     */
+    value: number;
+    assessment_id: number;
+};
+
 export type AssessmentsResponse = {
     assessments: Array<AssessmentItem>;
 };
@@ -135,21 +145,6 @@ export type AssignmentsResponse = {
 };
 
 export type Attendance = 'yes' | 'no' | 'late' | 'sick' | 'unknown';
-
-export type AttendanceItem = {
-    user_day_id: number;
-    day_id: number;
-    day_name: string;
-    user_id: number;
-    user_name: string;
-    user_telegram: string | null;
-    position_id: number;
-    position_name: string;
-    hall_id: number | null;
-    hall_name: string | null;
-    attendance: Attendance;
-    assessments: Array<AssessmentInAttendance>;
-};
 
 export type CopyAssignmentsRequest = {
     source_day_id: number;
@@ -289,9 +284,6 @@ export type PositionOut = {
     can_desire: boolean;
     has_halls: boolean;
     is_manager: boolean;
-    /**
-     * Save this position for next year when creating a new year
-     */
     save_for_next_year?: boolean;
     score?: number;
     description?: string | null;
@@ -355,8 +347,16 @@ export type ResultItem = {
     first_name_en: string;
     last_name_en: string;
     experience: number;
+    experience_this_year: number;
     rank: string;
-    total_assessments: number;
+    positions: Array<PositionOut>;
+    assessments: Array<AssessmentOut>;
+    total_assessment: number;
+    attendance: Array<VolunteersApiV1AdminYearSchemasAttendanceItem>;
+    experience_explanation: Array<[
+        string,
+        Array<string>
+    ]>;
 };
 
 export type ResultsResponse = {
@@ -461,6 +461,26 @@ export type VolunteersApiV1AdminUserSchemasUserResponse = {
     telegram_username: string | null;
     is_admin: boolean;
     gender: Gender | null;
+};
+
+export type VolunteersApiV1AdminYearSchemasAttendanceItem = {
+    day_id: number;
+    attendance: Attendance | null;
+};
+
+export type VolunteersApiV1AttendanceSchemasAttendanceItem = {
+    user_day_id: number;
+    day_id: number;
+    day_name: string;
+    user_id: number;
+    user_name: string;
+    user_telegram: string | null;
+    position_id: number;
+    position_name: string;
+    hall_id: number | null;
+    hall_name: string | null;
+    attendance: Attendance;
+    assessments: Array<AssessmentInAttendance>;
 };
 
 export type VolunteersApiV1AuthSchemasUserResponse = {
@@ -782,6 +802,10 @@ export type AddPositionApiV1AdminPositionAddPostData = {
 
 export type AddPositionApiV1AdminPositionAddPostErrors = {
     /**
+     * Position with this name already exists or other validation error
+     */
+    400: unknown;
+    /**
      * Validation Error
      */
     422: HttpValidationError;
@@ -813,6 +837,10 @@ export type EditPositionApiV1AdminPositionPositionIdEditPostData = {
 
 export type EditPositionApiV1AdminPositionPositionIdEditPostErrors = {
     /**
+     * Position with this name already exists or other validation error
+     */
+    400: unknown;
+    /**
      * Validation Error
      */
     422: HttpValidationError;
@@ -822,7 +850,7 @@ export type EditPositionApiV1AdminPositionPositionIdEditPostError = EditPosition
 
 export type EditPositionApiV1AdminPositionPositionIdEditPostResponses = {
     /**
-     * Successful Response
+     * Position successfully updated
      */
     200: unknown;
 };

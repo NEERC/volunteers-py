@@ -1,6 +1,6 @@
 import { useQueryClient } from "@tanstack/react-query";
 import { useEffect } from "react";
-import { getSocket } from "@/lib/socket";
+import { getSocket } from "@/integrations/socketio/socket";
 
 interface AssignmentUpdateEvent {
   type:

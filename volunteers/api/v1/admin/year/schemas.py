@@ -2,6 +2,7 @@ from pydantic import BaseModel
 
 from volunteers.models.attendance import Attendance
 from volunteers.models.gender import Gender
+from volunteers.schemas.assessment import AssessmentOut
 from volunteers.schemas.base import BaseSuccessResponse
 from volunteers.schemas.position import PositionOut
 
@@ -71,6 +72,11 @@ class RegistrationFormsResponse(BaseModel):
     forms: list[RegistrationFormItem]
 
 
+class AttendanceItem(BaseModel):
+    day_id: int
+    attendance: Attendance | None
+
+
 class ResultItem(BaseModel):
     user_id: int
     first_name_ru: str
@@ -79,8 +85,13 @@ class ResultItem(BaseModel):
     first_name_en: str
     last_name_en: str
     experience: float
+    experience_this_year: float
     rank: str
-    total_assessments: float
+    positions: list[PositionOut]
+    assessments: list[AssessmentOut]
+    total_assessment: float
+    attendance: list[AttendanceItem]
+    experience_explanation: list[tuple[str, list[str]]]
 
 
 class ResultsResponse(BaseModel):

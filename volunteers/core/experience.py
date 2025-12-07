@@ -2,7 +2,7 @@
 
 from volunteers.models.attendance import Attendance
 
-# Attendance weights for experience calculation
+# Attendance weights for assessments calculation
 ATTENDANCE_MAP = {
     Attendance.YES: 1.0,
     Attendance.LATE: 0.5,
@@ -11,48 +11,27 @@ ATTENDANCE_MAP = {
     Attendance.UNKNOWN: 0.0,
 }
 
-# Position multipliers for experience calculation
-# TODO: Update this dict with actual position names and their multipliers
-POSITION_MULTIPLIER = {
-    # Default multiplier for unknown positions
-    "_default": 1.0,
-}
-
-
-def get_position_multiplier(position_name: str) -> float:
-    """Get multiplier for a position name.
-
-    Args:
-        position_name: Name of the position
-
-    Returns:
-        Multiplier value for the position
-    """
-    return POSITION_MULTIPLIER.get(position_name, POSITION_MULTIPLIER["_default"])
-
 
 # Rank thresholds
-RANK_THRESHOLDS = {
-    "volunteer": 0.0,
-    "bronze_volunteer": 1.0,
-    "silver_volunteer": 2.0,
-}
+RANK_THRESHOLDS = [
+    (0, "Volunteer", 0.0),
+    (1, "Silver Volunteer", 3.0),
+    (2, "Gold Volunteer", 5.0),
+    (3, "Platinum Volunteer", 7.0),
+    (4, "Multi-Platinum Volunteer", 9.0),
+    (5, "Sapphire Volunteer", 11.0),
+    (6, "Ruby Volunteer", 13.0),
+    (7, "Emerald Volunteer", 15.0),
+    (8, "Diamond Volunteer", 17.0),
+    (9, "Volunteer Vseya IFMO", 20.0),
+]
+RANK_THRESHOLDS_SORTED = sorted(RANK_THRESHOLDS, key=lambda x: x[2])
 
 
-def get_rank(experience: float) -> str:
-    """Get rank name for given experience value.
-
-    Args:
-        experience: Total experience value
-
-    Returns:
-        Rank name (e.g., 'volunteer', 'bronze_volunteer', etc.)
-    """
-    # Sort thresholds in descending order to find the highest matching rank
-    sorted_ranks = sorted(RANK_THRESHOLDS.items(), key=lambda x: x[1], reverse=True)
-
-    for rank_name, threshold in sorted_ranks:
+def get_rank(experience: float) -> tuple[str, int]:
+    # Find the last rank that is greater than or equal to the experience
+    for index, rank_name, threshold in RANK_THRESHOLDS_SORTED[::-1]:
         if experience >= threshold:
-            return rank_name
+            return rank_name, index
 
-    return "Volunteer"  # Default rank
+    raise AssertionError("Could not find rank for experience")  # noqa: TRY003

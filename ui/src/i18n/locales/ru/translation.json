@@ -254,5 +254,8 @@
   "Failed to load results": "Не удалось загрузить результаты",
   "No volunteers found": "Волонтеров не найдено",
   "Registration Status:": "Статус регистрации:",
-  "Position name is required": "Название позиции обязательно"
+  "Position name is required": "Название позиции обязательно",
+  "This year": "Этот год",
+  "Day": "День",
+  "Experience Breakdown": "Разбивка опыта"
 }

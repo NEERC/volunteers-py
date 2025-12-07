@@ -18,7 +18,10 @@ import {
 } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
-import type { Attendance, AttendanceItem } from "@/client/types.gen";
+import type {
+  Attendance,
+  VolunteersApiV1AttendanceSchemasAttendanceItem as AttendanceItem,
+} from "@/client/types.gen";
 import { AssessmentInput } from "@/components/AssessmentInput";
 import {
   AttendanceSelector,

@@ -81,9 +81,21 @@ class ApplicationForm(Base, TimestampMixin):
         back_populates="application_form", cascade="all, delete-orphan"
     )
 
+    extra_experience: Mapped[ExtraExperience | None] = relationship(
+        back_populates="application_form", cascade="all, delete-orphan"
+    )
+
     __table_args__ = (
         UniqueConstraint("year_id", "user_id", name="application_forms_unique_year_id_user_id"),
     )
+
+
+class ExtraExperience(Base, TimestampMixin):
+    __tablename__ = "extra_experiences"
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    application_form_id: Mapped[int] = mapped_column(ForeignKey("application_forms.id"))
+    application_form: Mapped[ApplicationForm] = relationship(back_populates="extra_experience")
+    value: Mapped[float] = mapped_column(Double)
 
 
 class Position(Base, TimestampMixin):
@@ -120,7 +132,7 @@ class Day(Base, TimestampMixin):
     name: Mapped[str] = mapped_column(String)
     information: Mapped[str] = mapped_column(String)
 
-    score: Mapped[float] = mapped_column(
+    score: Mapped[float | None] = mapped_column(
         Double, nullable=True
     )  # Day score. Should be not null for scores to compute.
     mandatory: Mapped[bool] = mapped_column(
