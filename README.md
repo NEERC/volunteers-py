@@ -76,3 +76,4 @@ volunteers/
 - [X] swap halls and positions so that positions are inside halls.
 - [X] Gender in regestration form
 - [ ] Notifications by selecting users
+- [ ] Volunteer photos
