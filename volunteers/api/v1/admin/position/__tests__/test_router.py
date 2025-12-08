@@ -50,6 +50,11 @@ def add_position_request() -> dict[str, Any]:
     return {
         "year_id": 42,
         "name": "Test Position",
+        "can_desire": False,
+        "has_halls": False,
+        "is_manager": False,
+        "score": 1.0,
+        "description": None,
     }
 
 

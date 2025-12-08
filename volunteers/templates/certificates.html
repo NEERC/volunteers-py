@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Volunteer Certificates - {{ year_name }}</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Helvetica', sans-serif;
+            background: #f5f5f5;
+        }
+
+        /* Screen view - show all certificates */
+        .certificate-container {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            padding: 20px;
+        }
+
+        .certificate {
+            width: 297mm;
+            height: 210mm;
+            margin: 0 auto;
+            position: relative;
+            background: white;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+        }
+
+        /* Background image */
+        .certificate-background {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 1;
+        }
+
+        .certificate-background img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        /* Content overlay */
+        .certificate-content {
+            position: absolute;
+            bottom: 0;
+            /* Position at bottom */
+            right: 0;
+            /* Position content on the right side */
+            width: 68%;
+            height: 75%;
+            z-index: 2;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: start;
+            text-align: left;
+            line-height: 1.5;
+            /* letter-spacing: 0.05em; */
+            color: #000;
+        }
+
+        .certificate-subtitle {
+            font-size: 16pt;
+            font-weight: bold;
+        }
+
+        .certificate-name {
+            font-size: 40pt;
+            font-weight: bold;
+        }
+
+        .certificate-recognition {
+            font-size: 16pt;
+            font-weight: bold;
+        }
+
+        .certificate-rank {
+            font-size: 48pt;
+            font-weight: bold;
+            transform: scaleX(0.9);
+            transform-origin: left;
+            font-weight: bold;
+        }
+
+        .certificate-signature {
+            font-size: 18pt;
+        }
+
+        .certificate-year {
+            font-size: 14pt;
+        }
+
+        /* Print styles - each certificate on separate page */
+        @media print {
+            body {
+                background: white;
+            }
+
+            .certificate-container {
+                padding: 0;
+                gap: 0;
+            }
+
+            .certificate {
+                box-shadow: none;
+                page-break-after: always;
+                page-break-inside: avoid;
+                margin: 0;
+            }
+
+            .certificate:last-child {
+                page-break-after: auto;
+            }
+        }
+
+        @page {
+            size: A4 landscape;
+            margin: 0;
+        }
+
+        /* Control buttons for screen view */
+        .controls {
+            width: calc(100% - 40px);
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 1000;
+            display: flex;
+            gap: 10px;
+        }
+
+        .input {
+            padding: 12px 24px;
+            width: 100%;
+            border: 1px solid #1976d2;
+            border-radius: 4px;
+            font-size: 16px;
+        }
+
+        .input:focus {
+            outline: none;
+            border-color: #1565c0;
+        }
+
+        .btn {
+            padding: 12px 24px;
+            background: #1976d2;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+        }
+
+        .btn:hover {
+            background: #1565c0;
+        }
+
+        @media print {
+            .controls {
+                display: none;
+            }
+        }
+    </style>
+    <script>
+        function updateSubtitle(value) {
+            document.querySelectorAll('.certificate-year').forEach(function (node) {
+                node.textContent = value;
+            });
+        }
+    </script>
+</head>
+
+<body>
+    <div class="controls">
+        <input class="input" value="SUBTITLE GOES HERE" id="subtitle" onchange="updateSubtitle(this.value)"
+            type="text" />
+        press enter to update
+        <button class="btn" onclick="window.print()">🖨️ Print All Certificates</button>
+        <button class="btn" onclick="window.close()">✕ Close</button>
+    </div>
+
+    <div class="certificate-container">
+        {% for certificate in certificates %}
+        <div class="certificate">
+            <div class="certificate-background">
+                {% if svg_data_uri %}
+                <img src="{{ svg_data_uri }}" alt="Certificate Background">
+                {% endif %}
+            </div>
+            <div class="certificate-content">
+                <div class="certificate-subtitle">awarded to</div>
+                <div class="certificate-name">{{ certificate.full_name }}</div>
+                <div class="certificate-recognition">
+                    in recognition of participation as
+                </div>
+                <div class="certificate-rank">{{ certificate.rank_display }}</div>
+                <div class="certificate-signature">
+                    Northern Eurasia Finals
+                </div>
+                <div class="certificate-year">{{ year_name }}</div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</body>
+
+</html>

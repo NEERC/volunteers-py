@@ -2,7 +2,13 @@
 
 export type AddAssessmentRequest = {
     user_day_id: number;
+    /**
+     * Assessment comment
+     */
     comment: string;
+    /**
+     * Assessment value (any real number)
+     */
     value: number;
 };
 
@@ -42,6 +48,9 @@ export type AddPositionRequest = {
     can_desire?: boolean;
     has_halls?: boolean;
     is_manager?: boolean;
+    save_for_next_year?: boolean;
+    score?: number;
+    description?: string | null;
 };
 
 export type AddPositionResponse = {
@@ -72,7 +81,7 @@ export type AddYearResponse = {
 };
 
 export type AllAttendanceResponse = {
-    attendance: Array<AttendanceItem>;
+    attendance: Array<VolunteersApiV1AttendanceSchemasAttendanceItem>;
 };
 
 export type AllUsersResponse = {
@@ -97,11 +106,27 @@ export type ApplicationFormYearSavedResponse = {
     open_for_registration: boolean;
 };
 
+export type AssessmentInAttendance = {
+    assessment_id: number;
+    comment: string;
+    value: number;
+};
+
 export type AssessmentItem = {
     assessment_id: number;
     user_day_id: number;
     comment: string;
     value: number;
+};
+
+export type AssessmentOut = {
+    user_day_id: number;
+    comment: string;
+    /**
+     * Assessment value (any real number)
+     */
+    value: number;
+    assessment_id: number;
 };
 
 export type AssessmentsResponse = {
@@ -120,20 +145,6 @@ export type AssignmentsResponse = {
 };
 
 export type Attendance = 'yes' | 'no' | 'late' | 'sick' | 'unknown';
-
-export type AttendanceItem = {
-    user_day_id: number;
-    day_id: number;
-    day_name: string;
-    user_id: number;
-    user_name: string;
-    user_telegram: string | null;
-    position_id: number;
-    position_name: string;
-    hall_id: number | null;
-    hall_name: string | null;
-    attendance: Attendance;
-};
 
 export type CopyAssignmentsRequest = {
     source_day_id: number;
@@ -181,7 +192,13 @@ export type DayOutUser = {
 };
 
 export type EditAssessmentRequest = {
+    /**
+     * Assessment comment
+     */
     comment?: string | null;
+    /**
+     * Assessment value (any real number)
+     */
     value?: number | null;
 };
 
@@ -203,6 +220,9 @@ export type EditPositionRequest = {
     can_desire?: boolean | null;
     has_halls?: boolean | null;
     is_manager?: boolean | null;
+    save_for_next_year?: boolean | null;
+    score?: number | null;
+    description?: string | null;
 };
 
 export type EditUserDayRequest = {
@@ -223,6 +243,7 @@ export type EditUserRequest = {
     telegram_username?: string | null;
     is_admin?: boolean | null;
     telegram_id?: number | null;
+    gender: Gender | null;
 };
 
 export type EditYearRequest = {
@@ -244,6 +265,8 @@ export type ExperienceItem = {
     assessments: Array<string>;
 };
 
+export type Gender = 'male' | 'female' | 'unspecified';
+
 export type HttpValidationError = {
     detail?: Array<ValidationError>;
 };
@@ -261,6 +284,9 @@ export type PositionOut = {
     can_desire: boolean;
     has_halls: boolean;
     is_manager: boolean;
+    save_for_next_year?: boolean;
+    score?: number;
+    description?: string | null;
     position_id: number;
 };
 
@@ -280,11 +306,17 @@ export type RegistrationFormItem = {
     phone: string | null;
     email: string | null;
     telegram_username: string | null;
+    gender: Gender | null;
     itmo_group: string | null;
     comments: string;
     needs_invitation: boolean;
     desired_positions: Array<PositionOut>;
     experience: Array<ExperienceItem>;
+    previous_year_xp: number;
+    current_year_xp: number;
+    xp: number;
+    rank: string;
+    rank_stars_count: number;
     created_at: string;
     updated_at: string;
 };
@@ -309,6 +341,32 @@ export type RegistrationRequest = {
     patronymic_ru?: string | null;
     phone?: string | null;
     email?: string | null;
+    gender?: Gender | null;
+};
+
+export type ResultItem = {
+    user_id: number;
+    first_name_ru: string;
+    last_name_ru: string;
+    patronymic_ru: string | null;
+    first_name_en: string;
+    last_name_en: string;
+    experience: number;
+    experience_this_year: number;
+    rank: string;
+    rank_stars_count: number;
+    positions: Array<PositionOut>;
+    assessments: Array<AssessmentOut>;
+    total_assessment: number;
+    attendance: Array<VolunteersApiV1AdminYearSchemasAttendanceItem>;
+    experience_explanation: Array<[
+        string,
+        Array<string>
+    ]>;
+};
+
+export type ResultsResponse = {
+    results: Array<ResultItem>;
 };
 
 export type SaveDayAttendanceRequest = {
@@ -348,8 +406,8 @@ export type TelegramMigrateRequest = {
 
 export type UserListItem = {
     id: number;
-    first_name_ru: string;
-    last_name_ru: string;
+    first_name_ru: string | null;
+    last_name_ru: string | null;
     patronymic_ru: string | null;
     first_name_en: string;
     last_name_en: string;
@@ -357,6 +415,7 @@ export type UserListItem = {
     email: string | null;
     phone: string | null;
     telegram_username: string | null;
+    gender: Gender | null;
     is_registered: boolean;
 };
 
@@ -373,6 +432,7 @@ export type UserUpdateRequest = {
     patronymic_ru?: string | null;
     phone?: string | null;
     email?: string | null;
+    gender?: Gender | null;
 };
 
 export type ValidationError = {
@@ -406,6 +466,27 @@ export type VolunteersApiV1AdminUserSchemasUserResponse = {
     email: string | null;
     telegram_username: string | null;
     is_admin: boolean;
+    gender: Gender | null;
+};
+
+export type VolunteersApiV1AdminYearSchemasAttendanceItem = {
+    day_id: number;
+    attendance: Attendance | null;
+};
+
+export type VolunteersApiV1AttendanceSchemasAttendanceItem = {
+    user_day_id: number;
+    day_id: number;
+    day_name: string;
+    user_id: number;
+    user_name: string;
+    user_telegram: string | null;
+    position_id: number;
+    position_name: string;
+    hall_id: number | null;
+    hall_name: string | null;
+    attendance: Attendance;
+    assessments: Array<AssessmentInAttendance>;
 };
 
 export type VolunteersApiV1AuthSchemasUserResponse = {
@@ -420,6 +501,7 @@ export type VolunteersApiV1AuthSchemasUserResponse = {
     phone: string | null;
     email: string | null;
     telegram_username: string | null;
+    gender: Gender | null;
 };
 
 export type AddAssessmentApiV1AdminAssessmentAddPostData = {
@@ -726,6 +808,10 @@ export type AddPositionApiV1AdminPositionAddPostData = {
 
 export type AddPositionApiV1AdminPositionAddPostErrors = {
     /**
+     * Position with this name already exists or other validation error
+     */
+    400: unknown;
+    /**
      * Validation Error
      */
     422: HttpValidationError;
@@ -757,6 +843,10 @@ export type EditPositionApiV1AdminPositionPositionIdEditPostData = {
 
 export type EditPositionApiV1AdminPositionPositionIdEditPostErrors = {
     /**
+     * Position with this name already exists or other validation error
+     */
+    400: unknown;
+    /**
      * Validation Error
      */
     422: HttpValidationError;
@@ -765,6 +855,20 @@ export type EditPositionApiV1AdminPositionPositionIdEditPostErrors = {
 export type EditPositionApiV1AdminPositionPositionIdEditPostError = EditPositionApiV1AdminPositionPositionIdEditPostErrors[keyof EditPositionApiV1AdminPositionPositionIdEditPostErrors];
 
 export type EditPositionApiV1AdminPositionPositionIdEditPostResponses = {
+    /**
+     * Position successfully updated
+     */
+    200: unknown;
+};
+
+export type ExportUsersCsvApiV1AdminUserExportCsvGetData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/v1/admin/user/export-csv';
+};
+
+export type ExportUsersCsvApiV1AdminUserExportCsvGetResponses = {
     /**
      * Successful Response
      */
@@ -1083,6 +1187,85 @@ export type GetRegistrationFormsApiV1AdminYearYearIdRegistrationFormsGetResponse
 };
 
 export type GetRegistrationFormsApiV1AdminYearYearIdRegistrationFormsGetResponse = GetRegistrationFormsApiV1AdminYearYearIdRegistrationFormsGetResponses[keyof GetRegistrationFormsApiV1AdminYearYearIdRegistrationFormsGetResponses];
+
+export type GetYearResultsApiV1AdminYearYearIdResultsGetData = {
+    body?: never;
+    path: {
+        year_id: number;
+    };
+    query?: never;
+    url: '/api/v1/admin/year/{year_id}/results';
+};
+
+export type GetYearResultsApiV1AdminYearYearIdResultsGetErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type GetYearResultsApiV1AdminYearYearIdResultsGetError = GetYearResultsApiV1AdminYearYearIdResultsGetErrors[keyof GetYearResultsApiV1AdminYearYearIdResultsGetErrors];
+
+export type GetYearResultsApiV1AdminYearYearIdResultsGetResponses = {
+    /**
+     * Successful Response
+     */
+    200: ResultsResponse;
+};
+
+export type GetYearResultsApiV1AdminYearYearIdResultsGetResponse = GetYearResultsApiV1AdminYearYearIdResultsGetResponses[keyof GetYearResultsApiV1AdminYearYearIdResultsGetResponses];
+
+export type ExportYearCsvApiV1AdminYearYearIdExportCsvGetData = {
+    body?: never;
+    path: {
+        year_id: number;
+    };
+    query?: never;
+    url: '/api/v1/admin/year/{year_id}/export-csv';
+};
+
+export type ExportYearCsvApiV1AdminYearYearIdExportCsvGetErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type ExportYearCsvApiV1AdminYearYearIdExportCsvGetError = ExportYearCsvApiV1AdminYearYearIdExportCsvGetErrors[keyof ExportYearCsvApiV1AdminYearYearIdExportCsvGetErrors];
+
+export type ExportYearCsvApiV1AdminYearYearIdExportCsvGetResponses = {
+    /**
+     * Successful Response
+     */
+    200: unknown;
+};
+
+export type GenerateCertificatesApiV1AdminYearYearIdCertificatesGetData = {
+    body?: never;
+    path: {
+        year_id: number;
+    };
+    query?: never;
+    url: '/api/v1/admin/year/{year_id}/certificates';
+};
+
+export type GenerateCertificatesApiV1AdminYearYearIdCertificatesGetErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type GenerateCertificatesApiV1AdminYearYearIdCertificatesGetError = GenerateCertificatesApiV1AdminYearYearIdCertificatesGetErrors[keyof GenerateCertificatesApiV1AdminYearYearIdCertificatesGetErrors];
+
+export type GenerateCertificatesApiV1AdminYearYearIdCertificatesGetResponses = {
+    /**
+     * Successful Response
+     */
+    200: string;
+};
+
+export type GenerateCertificatesApiV1AdminYearYearIdCertificatesGetResponse = GenerateCertificatesApiV1AdminYearYearIdCertificatesGetResponses[keyof GenerateCertificatesApiV1AdminYearYearIdCertificatesGetResponses];
 
 export type SaveDayAttendanceApiV1AttendanceSavePostData = {
     body: SaveDayAttendanceRequest;

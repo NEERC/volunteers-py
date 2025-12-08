@@ -6,6 +6,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 
 from volunteers.models import User
+from volunteers.models.gender import Gender
 from volunteers.schemas.user import UserIn
 from volunteers.services.user import UserService
 
@@ -17,7 +18,9 @@ def mock_db() -> MagicMock:
 
 @pytest.fixture
 def user_service(mock_db: MagicMock) -> UserService:
-    return UserService(db=mock_db)
+    service = UserService()
+    service.db = mock_db
+    return service
 
 
 def make_async_cm(mock_session: Any) -> Any:
@@ -42,6 +45,7 @@ async def test_get_user_by_telegram_id_found(user_service: UserService) -> None:
         phone="+1234567890",
         email="test@example.com",
         telegram_username="testuser",
+        gender=Gender.MALE,
         is_admin=False,
     )
     mock_result: MagicMock = MagicMock()
@@ -80,6 +84,7 @@ async def test_create_user(user_service: UserService) -> None:
         phone="+1234567890",
         email="denis@example.com",
         telegram_username="denis_potekhin",
+        gender=Gender.MALE,
         is_admin=True,
     )
 
@@ -93,5 +98,6 @@ async def test_create_user(user_service: UserService) -> None:
         assert result.telegram_id == user_in.telegram_id
         assert result.first_name_ru == user_in.first_name_ru
         assert result.is_admin == user_in.is_admin
+        assert result.gender == user_in.gender
         mock_session.add.assert_called_once_with(result)
         mock_session.commit.assert_awaited_once()

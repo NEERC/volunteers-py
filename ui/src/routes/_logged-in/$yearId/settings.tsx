@@ -1,5 +1,6 @@
 import AddIcon from "@mui/icons-material/Add";
 import BadgeIcon from "@mui/icons-material/Badge";
+import DownloadIcon from "@mui/icons-material/Download";
 import EditIcon from "@mui/icons-material/Edit";
 import HomeIcon from "@mui/icons-material/Home";
 import SaveIcon from "@mui/icons-material/Save";
@@ -19,6 +20,7 @@ import {
   ListItem,
   ListItemText,
   Paper,
+  Snackbar,
   Switch,
   TextField,
   Tooltip,
@@ -41,6 +43,8 @@ import {
   useYearPositions,
   useYears,
 } from "@/data";
+import { downloadFile } from "@/utils/download";
+import { submitOnCtrlEnter } from "@/utils/formShortcuts";
 import { shouldBeAdmin } from "@/utils/should-be-logged-in";
 
 export const Route = createFileRoute("/_logged-in/$yearId/settings")({
@@ -62,20 +66,44 @@ function RouteComponent() {
     null,
   );
   const [newPositionName, setNewPositionName] = useState("");
+  const [newPositionTouched, setNewPositionTouched] = useState(false);
   const [editPositionName, setEditPositionName] = useState("");
+  const [editPositionTouched, setEditPositionTouched] = useState(false);
   const [newPositionCanDesire, setNewPositionCanDesire] = useState(false);
   const [editPositionCanDesire, setEditPositionCanDesire] = useState(false);
   const [newPositionHasHalls, setNewPositionHasHalls] = useState(false);
   const [editPositionHasHalls, setEditPositionHasHalls] = useState(false);
   const [newPositionIsManager, setNewPositionIsManager] = useState(false);
   const [editPositionIsManager, setEditPositionIsManager] = useState(false);
+  const [newPositionSaveForNextYear, setNewPositionSaveForNextYear] =
+    useState(false);
+  const [editPositionSaveForNextYear, setEditPositionSaveForNextYear] =
+    useState(false);
+  const [newPositionScore, setNewPositionScore] = useState("1.0");
+  const [newPositionScoreTouched, setNewPositionScoreTouched] = useState(false);
+  const [editPositionScore, setEditPositionScore] = useState("1.0");
+  const [editPositionScoreTouched, setEditPositionScoreTouched] =
+    useState(false);
+  const [newPositionDescription, setNewPositionDescription] = useState("");
+  const [editPositionDescription, setEditPositionDescription] = useState("");
+  const [newPositionScoreError, setNewPositionScoreError] = useState("");
+  const [editPositionScoreError, setEditPositionScoreError] = useState("");
+  const [exportError, setExportError] = useState<string | null>(null);
+
+  // Position error state
+  const [addPositionError, setAddPositionError] = useState<string | null>(null);
+  const [editPositionError, setEditPositionError] = useState<string | null>(
+    null,
+  );
 
   // Hall management state
   const [isAddHallDialogOpen, setIsAddHallDialogOpen] = useState(false);
   const [isEditHallDialogOpen, setIsEditHallDialogOpen] = useState(false);
   const [editingHall, setEditingHall] = useState<HallOut | null>(null);
   const [newHallName, setNewHallName] = useState("");
+  const [newHallTouched, setNewHallTouched] = useState(false);
   const [editHallName, setEditHallName] = useState("");
+  const [editHallTouched, setEditHallTouched] = useState(false);
   const [newHallDescription, setNewHallDescription] = useState("");
   const [editHallDescription, setEditHallDescription] = useState("");
 
@@ -84,11 +112,15 @@ function RouteComponent() {
   const [isEditDayDialogOpen, setIsEditDayDialogOpen] = useState(false);
   const [editingDay, setEditingDay] = useState<DayOutAdmin | null>(null);
   const [newDayName, setNewDayName] = useState("");
+  const [newDayTouched, setNewDayTouched] = useState(false);
   const [editDayName, setEditDayName] = useState("");
+  const [editDayTouched, setEditDayTouched] = useState(false);
   const [newDayInformation, setNewDayInformation] = useState("");
   const [editDayInformation, setEditDayInformation] = useState("");
-  const [newDayScore, setNewDayScore] = useState(0);
-  const [editDayScore, setEditDayScore] = useState(0);
+  const [newDayScore, setNewDayScore] = useState("0");
+  const [newDayScoreTouched, setNewDayScoreTouched] = useState(false);
+  const [editDayScore, setEditDayScore] = useState("0");
+  const [editDayScoreTouched, setEditDayScoreTouched] = useState(false);
   const [newDayMandatory, setNewDayMandatory] = useState(false);
   const [editDayMandatory, setEditDayMandatory] = useState(false);
   const [newDayAssignmentPublished, setNewDayAssignmentPublished] =
@@ -98,6 +130,7 @@ function RouteComponent() {
 
   // Year settings state
   const [yearName, setYearName] = useState("");
+  const [yearNameTouched, setYearNameTouched] = useState(false);
   const [openForRegistration, setOpenForRegistration] = useState(false);
   const [isYearSettingsEditing, setIsYearSettingsEditing] = useState(false);
 
@@ -175,53 +208,114 @@ function RouteComponent() {
 
   const handleAddPosition = (e: React.FormEvent) => {
     e.preventDefault();
-    if (newPositionName.trim()) {
-      addPositionMutation.mutate(
-        {
-          year_id: Number(yearId),
-          name: newPositionName.trim(),
-          can_desire: newPositionCanDesire,
-          has_halls: newPositionHasHalls,
-          is_manager: newPositionIsManager,
-        },
-        {
-          onSuccess: () => {
-            setIsAddDialogOpen(false);
-            setNewPositionName("");
-            setNewPositionCanDesire(false);
-            setNewPositionHasHalls(false);
-            setNewPositionIsManager(false);
-          },
-        },
-      );
+    setNewPositionScoreError("");
+    setAddPositionError(null);
+
+    const trimmedName = newPositionName.trim();
+    if (!trimmedName) {
+      setAddPositionError(t("Position name is required"));
+      return;
     }
+
+    // Проверка на дубликат имени (регистронезависимо)
+    const nameExists = positions?.some(
+      (pos) => pos.name.toLowerCase() === trimmedName.toLowerCase(),
+    );
+
+    if (nameExists) {
+      setAddPositionError(
+        t("Position with this name already exists for the year"),
+      );
+      return;
+    }
+
+    if (!newPositionScore.trim()) {
+      setNewPositionScoreError(t("Score is required"));
+      return;
+    }
+
+    const scoreValue = Number(newPositionScore);
+    if (Number.isNaN(scoreValue)) {
+      setNewPositionScoreError(t("Score must be a valid number"));
+      return;
+    }
+
+    // Теперь отправляем — гарантированно без дубликата
+    addPositionMutation.mutate(
+      {
+        year_id: Number(yearId),
+        name: trimmedName,
+        can_desire: newPositionCanDesire,
+        has_halls: newPositionHasHalls,
+        is_manager: newPositionIsManager,
+        save_for_next_year: newPositionSaveForNextYear,
+        score: scoreValue,
+        description: newPositionDescription.trim() || null,
+      },
+      {
+        onSuccess: () => {
+          closeAddDialogAndReset();
+        },
+      },
+    );
   };
 
   const handleEditPosition = (e: React.FormEvent) => {
     e.preventDefault();
-    if (editingPosition && editPositionName.trim()) {
-      editPositionMutation.mutate(
-        {
-          positionId: editingPosition.position_id,
-          data: {
-            name: editPositionName.trim(),
-            can_desire: editPositionCanDesire,
-            has_halls: editPositionHasHalls,
-            is_manager: editPositionIsManager,
-          },
-        },
-        {
-          onSuccess: () => {
-            setIsEditDialogOpen(false);
-            setEditingPosition(null);
-            setEditPositionName("");
-            setEditPositionCanDesire(false);
-            setEditPositionHasHalls(false);
-            setEditPositionIsManager(false);
-          },
-        },
-      );
+    if (!editingPosition) return;
+    setEditPositionScoreError("");
+    setEditPositionError(null);
+
+    const trimmedName = editPositionName.trim();
+    if (!trimmedName) {
+      setEditPositionError(t("Position name is required"));
+      return;
     }
+
+    // Проверяем дубликат, исключая текущую позицию
+    const nameExists = positions?.some(
+      (pos) =>
+        pos.position_id !== editingPosition?.position_id &&
+        pos.name.toLowerCase() === trimmedName.toLowerCase(),
+    );
+
+    if (nameExists) {
+      setEditPositionError(
+        t("Position with this name already exists for the year"),
+      );
+      return;
+    }
+
+    if (!editPositionScore.trim()) {
+      setEditPositionScoreError(t("Score is required"));
+      return;
+    }
+
+    const scoreValue = Number(editPositionScore);
+    if (Number.isNaN(scoreValue)) {
+      setEditPositionScoreError(t("Score must be a valid number"));
+      return;
+    }
+
+    editPositionMutation.mutate(
+      {
+        positionId: editingPosition.position_id,
+        data: {
+          name: trimmedName,
+          can_desire: editPositionCanDesire,
+          has_halls: editPositionHasHalls,
+          is_manager: editPositionIsManager,
+          save_for_next_year: editPositionSaveForNextYear,
+          score: scoreValue,
+          description: editPositionDescription.trim() || null,
+        },
+      },
+      {
+        onSuccess: () => {
+          closeEditDialogAndReset();
+        },
+      },
+    );
   };
 
   const openEditDialog = (position: PositionOut) => {
@@ -230,6 +324,9 @@ function RouteComponent() {
     setEditPositionCanDesire(position.can_desire);
     setEditPositionHasHalls(position.has_halls);
     setEditPositionIsManager(position.is_manager);
+    setEditPositionSaveForNextYear(!!position.save_for_next_year);
+    setEditPositionScore(String(position.score ?? "1.0"));
+    setEditPositionDescription(position.description || "");
     setIsEditDialogOpen(true);
   };
 
@@ -245,9 +342,7 @@ function RouteComponent() {
         },
         {
           onSuccess: () => {
-            setIsAddHallDialogOpen(false);
-            setNewHallName("");
-            setNewHallDescription("");
+            closeAddHallDialogAndReset();
           },
         },
       );
@@ -267,10 +362,7 @@ function RouteComponent() {
         },
         {
           onSuccess: () => {
-            setIsEditHallDialogOpen(false);
-            setEditingHall(null);
-            setEditHallName("");
-            setEditHallDescription("");
+            closeEditHallDialogAndReset();
           },
         },
       );
@@ -287,24 +379,19 @@ function RouteComponent() {
   // Day management functions
   const handleAddDay = (e: React.FormEvent) => {
     e.preventDefault();
-    if (newDayName.trim()) {
+    if (newDayName.trim() && newDayScore.trim()) {
       addDayMutation.mutate(
         {
           year_id: Number(yearId),
           name: newDayName.trim(),
           information: newDayInformation.trim(),
-          score: newDayScore,
+          score: Number(newDayScore),
           mandatory: newDayMandatory,
           assignment_published: newDayAssignmentPublished,
         },
         {
           onSuccess: () => {
-            setIsAddDayDialogOpen(false);
-            setNewDayName("");
-            setNewDayInformation("");
-            setNewDayScore(0);
-            setNewDayMandatory(false);
-            setNewDayAssignmentPublished(false);
+            closeAddDayDialogAndReset();
           },
         },
       );
@@ -313,8 +400,7 @@ function RouteComponent() {
 
   const handleEditDay = (e: React.FormEvent) => {
     e.preventDefault();
-    if (editingDay && editDayName.trim()) {
-      console.log("editingDay", editingDay);
+    if (editingDay && editDayName.trim() && editDayScore.trim()) {
       editDayMutation.mutate(
         {
           dayId: editingDay.day_id,
@@ -322,20 +408,14 @@ function RouteComponent() {
           data: {
             name: editDayName.trim(),
             information: editDayInformation.trim(),
-            score: editDayScore,
+            score: Number(editDayScore),
             mandatory: editDayMandatory,
             assignment_published: editDayAssignmentPublished,
           },
         },
         {
           onSuccess: () => {
-            setIsEditDayDialogOpen(false);
-            setEditingDay(null);
-            setEditDayName("");
-            setEditDayInformation("");
-            setEditDayScore(0);
-            setEditDayMandatory(false);
-            setEditDayAssignmentPublished(false);
+            closeEditDayDialogAndReset();
           },
         },
       );
@@ -346,28 +426,84 @@ function RouteComponent() {
     setEditingDay(day);
     setEditDayName(day.name);
     setEditDayInformation(day.information);
-    setEditDayScore(day.score ?? 0);
+    setEditDayScore(String(day.score ?? "0"));
     setEditDayMandatory(day.mandatory);
     setEditDayAssignmentPublished(day.assignment_published);
     setIsEditDayDialogOpen(true);
   };
 
-  const closeAddDialog = () => {
+  // === Close/Reset helpers ===
+  const closeAddDialogAndReset = () => {
     setIsAddDialogOpen(false);
     setNewPositionName("");
+    setNewPositionTouched(false);
     setNewPositionCanDesire(false);
     setNewPositionHasHalls(false);
     setNewPositionIsManager(false);
+    setNewPositionSaveForNextYear(false);
+    setNewPositionScore("1.0");
+    setNewPositionScoreTouched(false);
+    setNewPositionDescription("");
+    setAddPositionError(null);
   };
 
-  const closeEditDialog = () => {
+  const closeEditDialogAndReset = () => {
     setIsEditDialogOpen(false);
     setEditingPosition(null);
     setEditPositionName("");
+    setEditPositionTouched(false);
     setEditPositionCanDesire(false);
     setEditPositionHasHalls(false);
     setEditPositionIsManager(false);
+    setEditPositionSaveForNextYear(false);
+    setEditPositionScore("1.0");
+    setEditPositionScoreTouched(false);
+    setEditPositionDescription("");
+    setEditPositionError(null);
   };
+
+  const closeAddHallDialogAndReset = () => {
+    setIsAddHallDialogOpen(false);
+    setNewHallName("");
+    setNewHallTouched(false);
+    setNewHallDescription("");
+  };
+  const closeEditHallDialogAndReset = () => {
+    setIsEditHallDialogOpen(false);
+    setEditingHall(null);
+    setEditHallName("");
+    setEditHallTouched(false);
+    setEditHallDescription("");
+  };
+
+  const closeAddDayDialogAndReset = () => {
+    setIsAddDayDialogOpen(false);
+    setNewDayName("");
+    setNewDayInformation("");
+    setNewDayScore("0");
+    setNewDayTouched(false);
+    setNewDayScoreTouched(false);
+    setNewDayMandatory(false);
+    setNewDayAssignmentPublished(false);
+  };
+  const closeEditDayDialogAndReset = () => {
+    setIsEditDayDialogOpen(false);
+    setEditingDay(null);
+    setEditDayName("");
+    setEditDayInformation("");
+    setEditDayScore("0");
+    setEditDayTouched(false);
+    setEditDayScoreTouched(false);
+    setEditDayMandatory(false);
+    setEditDayAssignmentPublished(false);
+  };
+
+  const closeAddDialogSimple = () => setIsAddDialogOpen(false);
+  const closeEditDialogSimple = () => setIsEditDialogOpen(false);
+  const closeAddHallDialogSimple = () => setIsAddHallDialogOpen(false);
+  const closeEditHallDialogSimple = () => setIsEditHallDialogOpen(false);
+  const closeAddDayDialogSimple = () => setIsAddDayDialogOpen(false);
+  const closeEditDayDialogSimple = () => setIsEditDayDialogOpen(false);
 
   if (isLoading) {
     return (
@@ -384,9 +520,33 @@ function RouteComponent() {
 
   return (
     <Box sx={{ p: 3 }}>
-      <Typography variant="h4" component="h1" gutterBottom>
-        {t("Year Settings")}
-      </Typography>
+      <Box
+        sx={{
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          mb: 3,
+        }}
+      >
+        <Typography variant="h4" component="h1">
+          {t("Year Settings")}
+        </Typography>
+        <Button
+          variant="outlined"
+          startIcon={<DownloadIcon />}
+          onClick={async () => {
+            try {
+              await downloadFile(`/api/v1/admin/year/${yearId}/export-csv`);
+            } catch (error) {
+              setExportError(
+                error instanceof Error ? error.message : "Export failed",
+              );
+            }
+          }}
+        >
+          {t("Export to ZIP")}
+        </Button>
+      </Box>
 
       {/* Year Settings Form */}
       <Paper sx={{ p: 3, mb: 3 }}>
@@ -419,8 +579,13 @@ function RouteComponent() {
               label={t("Year Name")}
               value={yearName}
               onChange={(e) => setYearName(e.target.value)}
-              error={editYearMutation.isError}
-              helperText={editYearMutation.error?.message}
+              onBlur={() => setYearNameTouched(true)}
+              error={yearNameTouched && !yearName.trim()}
+              helperText={
+                yearNameTouched && !yearName.trim()
+                  ? t("Year name is required")
+                  : editYearMutation.error?.message
+              }
               disabled={editYearMutation.isPending}
               sx={{ mb: 2 }}
             />
@@ -508,11 +673,13 @@ function RouteComponent() {
             {positions.map((position) => (
               <ListItem
                 key={position.position_id}
+                onClick={() => openEditDialog(position)}
                 sx={{
                   border: 1,
                   borderColor: "divider",
                   borderRadius: 1,
                   mb: 1,
+                  cursor: "pointer",
                   "&:hover": {
                     backgroundColor: "action.hover",
                   },
@@ -544,11 +711,18 @@ function RouteComponent() {
                           <BadgeIcon color="secondary" fontSize="small" />
                         </Tooltip>
                       )}
+                      <Typography variant="caption" color="text.secondary">
+                        {t("Score")}: {position.score}
+                      </Typography>
                     </Box>
                   }
+                  secondary={position.description || undefined}
                 />
                 <IconButton
-                  onClick={() => openEditDialog(position)}
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    openEditDialog(position);
+                  }}
                   color="primary"
                   size="small"
                 >
@@ -591,11 +765,13 @@ function RouteComponent() {
             {halls.map((hall: HallOut) => (
               <ListItem
                 key={hall.hall_id}
+                onClick={() => openEditHallDialog(hall)}
                 sx={{
                   border: "1px solid",
                   borderColor: "divider",
                   borderRadius: 1,
                   mb: 1,
+                  cursor: "pointer",
                   "&:hover": {
                     backgroundColor: "action.hover",
                   },
@@ -606,7 +782,10 @@ function RouteComponent() {
                   secondary={hall.description || t("No description")}
                 />
                 <IconButton
-                  onClick={() => openEditHallDialog(hall)}
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    openEditHallDialog(hall);
+                  }}
                   color="primary"
                   size="small"
                 >
@@ -649,11 +828,13 @@ function RouteComponent() {
             {days.map((day) => (
               <ListItem
                 key={day.day_id}
+                onClick={() => openEditDayDialog(day)}
                 sx={{
                   border: "1px solid",
                   borderColor: "divider",
                   borderRadius: 1,
                   mb: 1,
+                  cursor: "pointer",
                   "&:hover": {
                     backgroundColor: "action.hover",
                   },
@@ -688,7 +869,10 @@ function RouteComponent() {
                   secondary={day.information}
                 />
                 <IconButton
-                  onClick={() => openEditDayDialog(day)}
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    openEditDayDialog(day);
+                  }}
                   color="primary"
                   size="small"
                 >
@@ -707,7 +891,14 @@ function RouteComponent() {
       {/* Add Position Dialog */}
       <Dialog
         open={isAddDialogOpen}
-        onClose={closeAddDialog}
+        onClose={(...args: unknown[]) => {
+          const reason = args[1] as string | undefined;
+          if (reason === "escapeKeyDown") {
+            closeAddDialogSimple();
+          } else {
+            closeAddDialogAndReset();
+          }
+        }}
         maxWidth="sm"
         fullWidth
       >
@@ -722,9 +913,55 @@ function RouteComponent() {
               variant="outlined"
               value={newPositionName}
               onChange={(e) => setNewPositionName(e.target.value)}
-              error={addPositionMutation.isError}
-              helperText={addPositionMutation.error?.message}
+              onBlur={() => setNewPositionTouched(true)}
+              error={
+                (newPositionTouched && !newPositionName.trim()) ||
+                !!addPositionError
+              }
+              helperText={
+                (newPositionTouched && !newPositionName.trim()
+                  ? t("Position name is required")
+                  : addPositionError) || ""
+              }
               disabled={addPositionMutation.isPending}
+            />
+            <TextField
+              margin="dense"
+              label={t("Description")}
+              fullWidth
+              variant="outlined"
+              value={newPositionDescription}
+              onChange={(e) => setNewPositionDescription(e.target.value)}
+              onKeyDown={(event) =>
+                submitOnCtrlEnter(event, {
+                  canSubmit:
+                    !!newPositionName.trim() && !addPositionMutation.isPending,
+                })
+              }
+              multiline
+              rows={3}
+              disabled={addPositionMutation.isPending}
+            />
+            <TextField
+              margin="dense"
+              label={`${t("Score")} *`}
+              fullWidth
+              variant="outlined"
+              type="number"
+              value={newPositionScore}
+              onChange={(e) => setNewPositionScore(e.target.value)}
+              onBlur={() => setNewPositionScoreTouched(true)}
+              error={
+                newPositionScoreTouched &&
+                (!newPositionScore.trim() || !!newPositionScoreError)
+              }
+              helperText={
+                newPositionScoreTouched && !newPositionScore.trim()
+                  ? t("Score is required")
+                  : newPositionScoreError
+              }
+              disabled={addPositionMutation.isPending}
+              inputProps={{ step: "0.1" }}
             />
             <FormControlLabel
               control={
@@ -759,10 +996,23 @@ function RouteComponent() {
               label={t("Is manager")}
               sx={{ mt: 1 }}
             />
+            <FormControlLabel
+              control={
+                <Checkbox
+                  checked={newPositionSaveForNextYear}
+                  onChange={(e) => {
+                    setNewPositionSaveForNextYear(e.target.checked);
+                  }}
+                  disabled={addPositionMutation.isPending}
+                />
+              }
+              label={t("Save for next year")}
+              sx={{ mt: 1 }}
+            />
           </DialogContent>
           <DialogActions>
             <Button
-              onClick={closeAddDialog}
+              onClick={closeAddDialogAndReset}
               disabled={addPositionMutation.isPending}
             >
               {t("Cancel")}
@@ -771,7 +1021,9 @@ function RouteComponent() {
               type="submit"
               variant="contained"
               disabled={
-                !newPositionName.trim() || addPositionMutation.isPending
+                !newPositionName.trim() ||
+                !newPositionScore.trim() ||
+                addPositionMutation.isPending
               }
             >
               {addPositionMutation.isPending
@@ -785,7 +1037,14 @@ function RouteComponent() {
       {/* Edit Position Dialog */}
       <Dialog
         open={isEditDialogOpen}
-        onClose={closeEditDialog}
+        onClose={(...args: unknown[]) => {
+          const reason = args[1] as string | undefined;
+          if (reason === "escapeKeyDown") {
+            closeEditDialogSimple();
+          } else {
+            closeEditDialogAndReset();
+          }
+        }}
         maxWidth="sm"
         fullWidth
       >
@@ -800,9 +1059,56 @@ function RouteComponent() {
               variant="outlined"
               value={editPositionName}
               onChange={(e) => setEditPositionName(e.target.value)}
-              error={editPositionMutation.isError}
-              helperText={editPositionMutation.error?.message}
+              onBlur={() => setEditPositionTouched(true)}
+              error={
+                (editPositionTouched && !editPositionName.trim()) ||
+                !!editPositionError
+              }
+              helperText={
+                (editPositionTouched && !editPositionName.trim()
+                  ? t("Position name is required")
+                  : editPositionError) || ""
+              }
               disabled={editPositionMutation.isPending}
+            />
+            <TextField
+              margin="dense"
+              label={t("Description")}
+              fullWidth
+              variant="outlined"
+              value={editPositionDescription}
+              onChange={(e) => setEditPositionDescription(e.target.value)}
+              onKeyDown={(event) =>
+                submitOnCtrlEnter(event, {
+                  canSubmit:
+                    !!editPositionName.trim() &&
+                    !editPositionMutation.isPending,
+                })
+              }
+              multiline
+              rows={3}
+              disabled={editPositionMutation.isPending}
+            />
+            <TextField
+              margin="dense"
+              label={`${t("Score")} *`}
+              fullWidth
+              variant="outlined"
+              type="number"
+              value={editPositionScore}
+              onChange={(e) => setEditPositionScore(e.target.value)}
+              onBlur={() => setEditPositionScoreTouched(true)}
+              error={
+                editPositionScoreTouched &&
+                (!editPositionScore.trim() || !!editPositionScoreError)
+              }
+              helperText={
+                editPositionScoreTouched && !editPositionScore.trim()
+                  ? t("Score is required")
+                  : editPositionScoreError
+              }
+              disabled={editPositionMutation.isPending}
+              inputProps={{ step: "0.1" }}
             />
             <FormControlLabel
               control={
@@ -837,10 +1143,23 @@ function RouteComponent() {
               label={t("Is manager")}
               sx={{ mt: 1 }}
             />
+            <FormControlLabel
+              control={
+                <Checkbox
+                  checked={editPositionSaveForNextYear}
+                  onChange={(e) => {
+                    setEditPositionSaveForNextYear(e.target.checked);
+                  }}
+                  disabled={editPositionMutation.isPending}
+                />
+              }
+              label={t("Save for next year")}
+              sx={{ mt: 1 }}
+            />
           </DialogContent>
           <DialogActions>
             <Button
-              onClick={closeEditDialog}
+              onClick={closeEditDialogAndReset}
               disabled={editPositionMutation.isPending}
             >
               {t("Cancel")}
@@ -849,7 +1168,9 @@ function RouteComponent() {
               type="submit"
               variant="contained"
               disabled={
-                !editPositionName.trim() || editPositionMutation.isPending
+                !editPositionName.trim() ||
+                !editPositionScore.trim() ||
+                editPositionMutation.isPending
               }
             >
               {editPositionMutation.isPending
@@ -863,7 +1184,14 @@ function RouteComponent() {
       {/* Add Hall Dialog */}
       <Dialog
         open={isAddHallDialogOpen}
-        onClose={() => setIsAddHallDialogOpen(false)}
+        onClose={(...args: unknown[]) => {
+          const reason = args[1] as string | undefined;
+          if (reason === "escapeKeyDown") {
+            closeAddHallDialogSimple();
+          } else {
+            closeAddHallDialogAndReset();
+          }
+        }}
         maxWidth="sm"
         fullWidth
       >
@@ -878,8 +1206,13 @@ function RouteComponent() {
               variant="outlined"
               value={newHallName}
               onChange={(e) => setNewHallName(e.target.value)}
-              error={addHallMutation.isError}
-              helperText={addHallMutation.error?.message}
+              onBlur={() => setNewHallTouched(true)}
+              error={newHallTouched && !newHallName.trim()}
+              helperText={
+                newHallTouched && !newHallName.trim()
+                  ? t("Hall name is required")
+                  : addHallMutation.error?.message
+              }
               disabled={addHallMutation.isPending}
               required
             />
@@ -890,6 +1223,11 @@ function RouteComponent() {
               variant="outlined"
               value={newHallDescription}
               onChange={(e) => setNewHallDescription(e.target.value)}
+              onKeyDown={(event) =>
+                submitOnCtrlEnter(event, {
+                  canSubmit: !!newHallName.trim() && !addHallMutation.isPending,
+                })
+              }
               multiline
               rows={3}
               disabled={addHallMutation.isPending}
@@ -897,7 +1235,7 @@ function RouteComponent() {
           </DialogContent>
           <DialogActions>
             <Button
-              onClick={() => setIsAddHallDialogOpen(false)}
+              onClick={closeAddHallDialogAndReset}
               disabled={addHallMutation.isPending}
             >
               {t("Cancel")}
@@ -916,7 +1254,14 @@ function RouteComponent() {
       {/* Edit Hall Dialog */}
       <Dialog
         open={isEditHallDialogOpen}
-        onClose={() => setIsEditHallDialogOpen(false)}
+        onClose={(...args: unknown[]) => {
+          const reason = args[1] as string | undefined;
+          if (reason === "escapeKeyDown") {
+            closeEditHallDialogSimple();
+          } else {
+            closeEditHallDialogAndReset();
+          }
+        }}
         maxWidth="sm"
         fullWidth
       >
@@ -931,8 +1276,13 @@ function RouteComponent() {
               variant="outlined"
               value={editHallName}
               onChange={(e) => setEditHallName(e.target.value)}
-              error={editHallMutation.isError}
-              helperText={editHallMutation.error?.message}
+              onBlur={() => setEditHallTouched(true)}
+              error={editHallTouched && !editHallName.trim()}
+              helperText={
+                editHallTouched && !editHallName.trim()
+                  ? t("Hall name is required")
+                  : editHallMutation.error?.message
+              }
               disabled={editHallMutation.isPending}
               required
             />
@@ -943,6 +1293,12 @@ function RouteComponent() {
               variant="outlined"
               value={editHallDescription}
               onChange={(e) => setEditHallDescription(e.target.value)}
+              onKeyDown={(event) =>
+                submitOnCtrlEnter(event, {
+                  canSubmit:
+                    !!editHallName.trim() && !editHallMutation.isPending,
+                })
+              }
               multiline
               rows={3}
               disabled={editHallMutation.isPending}
@@ -950,7 +1306,7 @@ function RouteComponent() {
           </DialogContent>
           <DialogActions>
             <Button
-              onClick={() => setIsEditHallDialogOpen(false)}
+              onClick={closeEditHallDialogAndReset}
               disabled={editHallMutation.isPending}
             >
               {t("Cancel")}
@@ -969,7 +1325,14 @@ function RouteComponent() {
       {/* Add Day Dialog */}
       <Dialog
         open={isAddDayDialogOpen}
-        onClose={() => setIsAddDayDialogOpen(false)}
+        onClose={(...args: unknown[]) => {
+          const reason = args[1] as string | undefined;
+          if (reason === "escapeKeyDown") {
+            closeAddDayDialogSimple();
+          } else {
+            closeAddDayDialogAndReset();
+          }
+        }}
         maxWidth="sm"
         fullWidth
       >
@@ -984,8 +1347,13 @@ function RouteComponent() {
               variant="outlined"
               value={newDayName}
               onChange={(e) => setNewDayName(e.target.value)}
-              error={addDayMutation.isError}
-              helperText={addDayMutation.error?.message}
+              onBlur={() => setNewDayTouched(true)}
+              error={newDayTouched && !newDayName.trim()}
+              helperText={
+                newDayTouched && !newDayName.trim()
+                  ? t("Day name is required")
+                  : addDayMutation.error?.message
+              }
               disabled={addDayMutation.isPending}
               required
             />
@@ -996,18 +1364,30 @@ function RouteComponent() {
               variant="outlined"
               value={newDayInformation}
               onChange={(e) => setNewDayInformation(e.target.value)}
+              onKeyDown={(event) =>
+                submitOnCtrlEnter(event, {
+                  canSubmit: !!newDayName.trim() && !addDayMutation.isPending,
+                })
+              }
               multiline
               rows={3}
               disabled={addDayMutation.isPending}
             />
             <TextField
               margin="dense"
-              label={t("Score")}
+              label={`${t("Score")} *`}
               fullWidth
               variant="outlined"
               type="number"
               value={newDayScore}
-              onChange={(e) => setNewDayScore(Number(e.target.value))}
+              onChange={(e) => setNewDayScore(e.target.value)}
+              onBlur={() => setNewDayScoreTouched(true)}
+              error={newDayScoreTouched && !newDayScore.trim()}
+              helperText={
+                newDayScoreTouched && !newDayScore.trim()
+                  ? t("Score is required")
+                  : ""
+              }
               disabled={addDayMutation.isPending}
               inputProps={{ step: "0.1" }}
             />
@@ -1038,7 +1418,7 @@ function RouteComponent() {
           </DialogContent>
           <DialogActions>
             <Button
-              onClick={() => setIsAddDayDialogOpen(false)}
+              onClick={closeAddDayDialogAndReset}
               disabled={addDayMutation.isPending}
             >
               {t("Cancel")}
@@ -1046,7 +1426,11 @@ function RouteComponent() {
             <Button
               type="submit"
               variant="contained"
-              disabled={!newDayName.trim() || addDayMutation.isPending}
+              disabled={
+                !newDayName.trim() ||
+                !newDayScore.trim() ||
+                addDayMutation.isPending
+              }
             >
               {addDayMutation.isPending ? t("Adding...") : t("Add Day")}
             </Button>
@@ -1057,7 +1441,14 @@ function RouteComponent() {
       {/* Edit Day Dialog */}
       <Dialog
         open={isEditDayDialogOpen}
-        onClose={() => setIsEditDayDialogOpen(false)}
+        onClose={(...args: unknown[]) => {
+          const reason = args[1] as string | undefined;
+          if (reason === "escapeKeyDown") {
+            closeEditDayDialogSimple();
+          } else {
+            closeEditDayDialogAndReset();
+          }
+        }}
         maxWidth="sm"
         fullWidth
       >
@@ -1072,8 +1463,13 @@ function RouteComponent() {
               variant="outlined"
               value={editDayName}
               onChange={(e) => setEditDayName(e.target.value)}
-              error={editDayMutation.isError}
-              helperText={editDayMutation.error?.message}
+              onBlur={() => setEditDayTouched(true)}
+              error={editDayTouched && !editDayName.trim()}
+              helperText={
+                editDayTouched && !editDayName.trim()
+                  ? t("Day name is required")
+                  : editDayMutation.error?.message
+              }
               disabled={editDayMutation.isPending}
               required
             />
@@ -1084,18 +1480,30 @@ function RouteComponent() {
               variant="outlined"
               value={editDayInformation}
               onChange={(e) => setEditDayInformation(e.target.value)}
+              onKeyDown={(event) =>
+                submitOnCtrlEnter(event, {
+                  canSubmit: !!editDayName.trim() && !editDayMutation.isPending,
+                })
+              }
               multiline
               rows={3}
               disabled={editDayMutation.isPending}
             />
             <TextField
               margin="dense"
-              label={t("Score")}
+              label={`${t("Score")} *`}
               fullWidth
               variant="outlined"
               type="number"
               value={editDayScore}
-              onChange={(e) => setEditDayScore(Number(e.target.value))}
+              onChange={(e) => setEditDayScore(e.target.value)}
+              onBlur={() => setEditDayScoreTouched(true)}
+              error={editDayScoreTouched && !editDayScore.trim()}
+              helperText={
+                editDayScoreTouched && !editDayScore.trim()
+                  ? t("Score is required")
+                  : ""
+              }
               disabled={editDayMutation.isPending}
               inputProps={{ step: "0.1" }}
             />
@@ -1126,7 +1534,7 @@ function RouteComponent() {
           </DialogContent>
           <DialogActions>
             <Button
-              onClick={() => setIsEditDayDialogOpen(false)}
+              onClick={closeEditDayDialogAndReset}
               disabled={editDayMutation.isPending}
             >
               {t("Cancel")}
@@ -1134,13 +1542,25 @@ function RouteComponent() {
             <Button
               type="submit"
               variant="contained"
-              disabled={!editDayName.trim() || editDayMutation.isPending}
+              disabled={
+                !editDayName.trim() ||
+                !editDayScore.trim() ||
+                editDayMutation.isPending
+              }
             >
               {editDayMutation.isPending ? t("Saving...") : t("Save Changes")}
             </Button>
           </DialogActions>
         </form>
       </Dialog>
+
+      {/* Export error notification */}
+      <Snackbar
+        open={!!exportError}
+        autoHideDuration={6000}
+        onClose={() => setExportError(null)}
+        message={exportError}
+      />
     </Box>
   );
 }

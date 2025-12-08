@@ -120,6 +120,13 @@ export const queryKeys = {
         ] as const,
     },
 
+    // Admin - Results
+    results: {
+      all: () => [...queryKeys.admin.all, "results"] as const,
+      year: (yearId: string | number) =>
+        [...queryKeys.admin.results.all(), "year", String(yearId)] as const,
+    },
+
     // Admin - Assignments
     assignments: {
       all: () => [...queryKeys.admin.all, "assignments"] as const,

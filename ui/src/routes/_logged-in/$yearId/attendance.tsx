@@ -18,13 +18,23 @@ import {
 } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
-import type { Attendance, AttendanceItem } from "@/client/types.gen";
+import type {
+  Attendance,
+  VolunteersApiV1AttendanceSchemasAttendanceItem as AttendanceItem,
+} from "@/client/types.gen";
+import { AssessmentInput } from "@/components/AssessmentInput";
 import {
   AttendanceSelector,
   getAttendanceIcon,
   getAttendanceLabel,
 } from "@/components/AttendanceSelector";
-import { useAttendance, useSaveAttendance } from "@/data/use-year";
+import {
+  useAddAssessment,
+  useAttendance,
+  useDeleteAssessment,
+  useEditAssessment,
+  useSaveAttendance,
+} from "@/data/use-year";
 import { shouldBeManager } from "@/utils/should-be-logged-in";
 
 export const Route = createFileRoute("/_logged-in/$yearId/attendance")({
@@ -66,6 +76,9 @@ function RouteComponent() {
   const { data: attendanceData, isLoading: attendanceLoading } =
     useAttendance(yearId);
   const saveAttendanceMutation = useSaveAttendance();
+  const addAssessmentMutation = useAddAssessment();
+  const editAssessmentMutation = useEditAssessment();
+  const deleteAssessmentMutation = useDeleteAssessment();
 
   const canEditAttendance = !!user;
 
@@ -176,6 +189,34 @@ function RouteComponent() {
     });
   };
 
+  const handleAddAssessment = async (
+    userDayId: number,
+    value: number,
+    comment: string,
+  ) => {
+    await addAssessmentMutation.mutateAsync({
+      user_day_id: userDayId,
+      value,
+      comment,
+    });
+  };
+
+  const handleEditAssessment = async (
+    assessmentId: number,
+    value: number | null,
+    comment: string | null,
+  ) => {
+    await editAssessmentMutation.mutateAsync({
+      assessment_id: assessmentId,
+      value,
+      comment,
+    });
+  };
+
+  const handleDeleteAssessment = async (assessmentId: number) => {
+    await deleteAssessmentMutation.mutateAsync(assessmentId);
+  };
+
   if (attendanceLoading) {
     return (
       <Box sx={{ p: 3 }}>
@@ -246,6 +287,9 @@ function RouteComponent() {
                     days={displayedDays}
                     canEditAttendance={canEditAttendance}
                     onAttendanceChange={handleAttendanceChange}
+                    onAddAssessment={handleAddAssessment}
+                    onEditAssessment={handleEditAssessment}
+                    onDeleteAssessment={handleDeleteAssessment}
                     isFirstInPosition={idx === 0}
                     selectedAttendance={selectedAttendance}
                   />
@@ -268,6 +312,17 @@ interface VolunteerRowProps {
     userDayId: number,
     attendance: Attendance,
   ) => Promise<void>;
+  onAddAssessment: (
+    userDayId: number,
+    value: number,
+    comment: string,
+  ) => Promise<void>;
+  onEditAssessment: (
+    assessmentId: number,
+    value: number | null,
+    comment: string | null,
+  ) => Promise<void>;
+  onDeleteAssessment: (assessmentId: number) => Promise<void>;
   isFirstInPosition: boolean;
   selectedAttendance: Attendance;
 }
@@ -278,6 +333,9 @@ function VolunteerRow({
   days,
   canEditAttendance,
   onAttendanceChange,
+  onAddAssessment,
+  onEditAssessment,
+  onDeleteAssessment,
   isFirstInPosition,
   selectedAttendance,
 }: VolunteerRowProps) {
@@ -324,31 +382,48 @@ function VolunteerRow({
             align="center"
             sx={{
               py: 0.5,
-              cursor: canEditAttendance && item ? "pointer" : "default",
-              "&:hover":
-                canEditAttendance && item
-                  ? { backgroundColor: "action.hover" }
-                  : {},
-            }}
-            onClick={() => {
-              if (canEditAttendance && item) {
-                handleAttendanceChange(day.day_id, selectedAttendance);
-              }
             }}
           >
             {item ? (
               <Box
                 sx={{
                   display: "flex",
+                  flexDirection: "column",
                   alignItems: "center",
                   gap: 0.5,
-                  justifyContent: "center",
                 }}
               >
-                {getAttendanceIcon(item.attendance)}
-                <Typography variant="body2">
-                  {getAttendanceLabel(item.attendance, t)}
-                </Typography>
+                <Box
+                  sx={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 0.5,
+                    cursor: canEditAttendance ? "pointer" : "default",
+                    "&:hover": canEditAttendance
+                      ? { backgroundColor: "action.hover" }
+                      : {},
+                    px: 0.5,
+                    borderRadius: 1,
+                  }}
+                  onClick={() => {
+                    if (canEditAttendance) {
+                      handleAttendanceChange(day.day_id, selectedAttendance);
+                    }
+                  }}
+                >
+                  {getAttendanceIcon(item.attendance)}
+                  <Typography variant="body2">
+                    {getAttendanceLabel(item.attendance, t)}
+                  </Typography>
+                </Box>
+                <AssessmentInput
+                  userDayId={item.user_day_id}
+                  assessments={item.assessments}
+                  canEdit={canEditAttendance}
+                  onAdd={onAddAssessment}
+                  onEdit={onEditAssessment}
+                  onDelete={onDeleteAssessment}
+                />
               </Box>
             ) : (
               <Typography variant="body2" color="text.secondary">

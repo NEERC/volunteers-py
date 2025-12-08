@@ -8,6 +8,12 @@ class SaveDayAttendanceRequest(BaseModel):
     attendance: Attendance
 
 
+class AssessmentInAttendance(BaseModel):
+    assessment_id: int
+    comment: str
+    value: float
+
+
 class AttendanceItem(BaseModel):
     user_day_id: int
     day_id: int
@@ -20,6 +26,7 @@ class AttendanceItem(BaseModel):
     hall_id: int | None
     hall_name: str | None
     attendance: Attendance
+    assessments: list[AssessmentInAttendance]
 
 
 class AllAttendanceResponse(BaseModel):

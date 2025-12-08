@@ -43,11 +43,13 @@ import {
   Radio,
   RadioGroup,
   Select,
+  Snackbar,
   Switch,
   Typography,
   useMediaQuery,
   useTheme,
 } from "@mui/material";
+import { useMutation } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 import React, { useCallback, useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -66,6 +68,7 @@ import {
   useYearHalls,
   useYearPositions,
 } from "@/data/use-admin";
+import { useAssignmentUpdates } from "@/hooks/useAssignmentUpdates";
 import { useDayAssignmentManager } from "@/hooks/useDayAssignmentManager";
 
 // Custom collision detection that prioritizes the drawer
@@ -888,8 +891,13 @@ function RouteComponent() {
   const [copyMethod, setCopyMethod] = useState<
     "normal" | "overwrite" | "replace"
   >("normal");
+  const [copySnackbarOpen, setCopySnackbarOpen] = useState(false);
+  const [copySnackbarMessage, setCopySnackbarMessage] = useState("");
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down("md"));
+
+  // Subscribe to real-time assignment updates
+  useAssignmentUpdates(Number.parseInt(dayId, 10), Number.parseInt(yearId, 10));
 
   const {
     data: registrationFormsData,
@@ -1230,6 +1238,51 @@ function RouteComponent() {
       return (!isAssignedInData && !hasOptimisticAdd) || hasOptimisticRemove;
     }) || [];
 
+  // Mutation for copying to clipboard (defined after positions to have access to it)
+  const copyToClipboardMutation = useMutation({
+    mutationFn: async () => {
+      const userToText = (
+        user: RegistrationFormItem,
+        position: PositionOut,
+        hall?: HallOut,
+      ) => {
+        return [
+          user.first_name_ru,
+          user.last_name_ru,
+          user.first_name_en,
+          user.last_name_en,
+          user.isu_id,
+          "☆".repeat(user.rank_stars_count),
+          position.name,
+          hall?.name,
+        ].join("\t");
+      };
+      const data = positions.flatMap((position) => [
+        ...position.assigned_users.map((user) => userToText(user, position)),
+        ...(position.halls?.flatMap((hall) => {
+          return hall.assigned_users.map((user) =>
+            userToText(user, position, hall),
+          );
+        }) || []),
+      ]);
+      const text = `${data.join("\n")}\n`;
+      await navigator.clipboard.writeText(text);
+      return text;
+    },
+    onSuccess: () => {
+      setCopySnackbarMessage(t("Data copied to clipboard"));
+      setCopySnackbarOpen(true);
+    },
+    onError: (error) => {
+      setCopySnackbarMessage(
+        error instanceof Error
+          ? error.message
+          : t("Failed to copy to clipboard. Please try again."),
+      );
+      setCopySnackbarOpen(true);
+    },
+  });
+
   const handleDragStart = (event: DragStartEvent) => {
     setActiveId(event.active.id as string);
   };
@@ -1293,31 +1346,8 @@ function RouteComponent() {
   );
 
   const handleCopyToClipboard = useCallback(() => {
-    const userToText = (
-      user: RegistrationFormItem,
-      position: PositionOut,
-      hall?: HallOut,
-    ) => {
-      return [
-        user.first_name_ru,
-        user.last_name_ru,
-        user.first_name_en,
-        user.last_name_en,
-        user.isu_id,
-        position.name,
-        hall?.name,
-      ].join("\t");
-    };
-    const data = positions.flatMap((position) => [
-      ...position.assigned_users.map((user) => userToText(user, position)),
-      ...(position.halls?.flatMap((hall) => {
-        return hall.assigned_users.map((user) =>
-          userToText(user, position, hall),
-        );
-      }) || []),
-    ]);
-    navigator.clipboard.writeText(`${data.join("\n")}\n`);
-  }, [positions]);
+    copyToClipboardMutation.mutate();
+  }, [copyToClipboardMutation]);
 
   const handleCopyAssignments = useCallback(() => {
     if (!selectedSourceDayId) return;
@@ -1397,11 +1427,22 @@ function RouteComponent() {
         <Button
           variant="outlined"
           size="small"
-          startIcon={<ContentCopyIcon />}
+          startIcon={
+            copyToClipboardMutation.isPending ? (
+              <CircularProgress size={16} />
+            ) : (
+              <ContentCopyIcon />
+            )
+          }
           onClick={handleCopyToClipboard}
-          disabled={assignmentsData?.assignments.length === 0}
+          disabled={
+            assignmentsData?.assignments.length === 0 ||
+            copyToClipboardMutation.isPending
+          }
         >
-          {t("Copy badges data")}
+          {copyToClipboardMutation.isPending
+            ? t("Copying...")
+            : t("Copy badges data")}
         </Button>
         <Button
           variant="outlined"
@@ -1416,7 +1457,7 @@ function RouteComponent() {
       {/* Existing Assignments Summary */}
       {assignmentsData && assignmentsData.assignments.length > 0 && (
         <Alert severity="success" sx={{ mb: 2 }}>
-          {t("Current assignments:")} {assignmentsData.assignments.length}{" "}
+          {t("Current assignments")}: {assignmentsData.assignments.length}{" "}
           {t("volunteers assigned to positions")}
         </Alert>
       )}
@@ -1673,6 +1714,15 @@ function RouteComponent() {
           </Button>
         </DialogActions>
       </Dialog>
+
+      {/* Copy to clipboard notification */}
+      <Snackbar
+        open={copySnackbarOpen}
+        autoHideDuration={3000}
+        onClose={() => setCopySnackbarOpen(false)}
+        message={copySnackbarMessage}
+        anchorOrigin={{ vertical: "bottom", horizontal: "center" }}
+      />
     </Box>
   );
 }

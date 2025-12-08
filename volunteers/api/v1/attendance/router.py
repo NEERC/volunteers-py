@@ -5,6 +5,7 @@ from fastapi import APIRouter, Depends, HTTPException, Path
 
 from volunteers.api.v1.attendance.schemas import (
     AllAttendanceResponse,
+    AssessmentInAttendance,
     AttendanceItem,
     SaveDayAttendanceRequest,
 )
@@ -23,7 +24,10 @@ async def save_day_attendance(
     user: Annotated[User, Depends(with_user)],
     year_service: Annotated[YearService, Depends(Provide[Container.year_service])],
 ) -> None:
-    """Save attendance for a user day. Only admins or managers for the hall/year can set attendance."""
+    """Save attendance for a user day.
+
+    Only admins or managers for the hall/year can set attendance.
+    """
     # Get the user day with all relationships
     user_day = await year_service.get_user_day_by_id(request.user_day_id)
     if not user_day:
@@ -77,13 +81,24 @@ async def get_all_attendance(
             day_id=assignment.day_id,
             day_name=assignment.day.name,
             user_id=assignment.application_form.user.id,
-            user_name=f"{assignment.application_form.user.first_name_en} {assignment.application_form.user.last_name_en}",
+            user_name=(
+                f"{assignment.application_form.user.first_name_en} "
+                f"{assignment.application_form.user.last_name_en}"
+            ),
             user_telegram=assignment.application_form.user.telegram_username,
             position_id=assignment.position_id,
             position_name=assignment.position.name,
             hall_id=assignment.hall_id,
             hall_name=assignment.hall.name if assignment.hall else None,
             attendance=assignment.attendance,
+            assessments=[
+                AssessmentInAttendance(
+                    assessment_id=assessment.id,
+                    comment=assessment.comment,
+                    value=assessment.value,
+                )
+                for assessment in assignment.assessments
+            ],
         )
         for assignment in assignments
         if user.is_admin

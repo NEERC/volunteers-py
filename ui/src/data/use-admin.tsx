@@ -21,6 +21,7 @@ import {
   getYearDaysApiV1AdminDayYearYearIdGet,
   getYearHallsApiV1AdminHallYearYearIdGet,
   getYearPositionsApiV1AdminYearYearIdPositionsGet,
+  getYearResultsApiV1AdminYearYearIdResultsGet,
 } from "@/client";
 import type {
   AddDayRequest,
@@ -33,6 +34,7 @@ import type {
   EditHallRequest,
   EditPositionRequest,
   EditUserDayRequest,
+  EditUserRequest,
   EditYearRequest,
 } from "@/client/types.gen";
 import { queryKeys } from "./query-keys";
@@ -142,11 +144,24 @@ export const useAddPosition = () => {
       });
       return response.data;
     },
-    onSuccess: (_, variables) => {
+    onSuccess: async (_, variables) => {
       queryClient.invalidateQueries({
         queryKey: queryKeys.admin.positions.all(),
       });
       if (variables.year_id) {
+        // Force refetch to ensure fresh data
+        await queryClient.fetchQuery({
+          queryKey: queryKeys.admin.positions.year(variables.year_id),
+          queryFn: async () => {
+            const resp = await getYearPositionsApiV1AdminYearYearIdPositionsGet(
+              {
+                path: { year_id: Number(variables.year_id) },
+                throwOnError: true,
+              },
+            );
+            return resp.data;
+          },
+        });
         queryClient.invalidateQueries({
           queryKey: queryKeys.year.all(variables.year_id),
         });
@@ -176,20 +191,27 @@ export const useEditPosition = (yearId: string | number) => {
       });
       return response.data;
     },
-    onSuccess: (_) => {
+    onSuccess: async (_) => {
+      // Invalidate wide caches
       queryClient.invalidateQueries({
         queryKey: queryKeys.admin.positions.all(),
       });
-      // Invalidate year positions queries for all years since we don't know which year this position belongs to
-      queryClient.invalidateQueries({
-        queryKey: queryKeys.admin.positions.all(),
-        predicate: (query) => {
-          return query.queryKey.includes("year");
+      // Force refetch positions for the year to ensure fresh data
+      await queryClient.fetchQuery({
+        queryKey: queryKeys.admin.positions.year(yearId),
+        queryFn: async () => {
+          const resp = await getYearPositionsApiV1AdminYearYearIdPositionsGet({
+            path: { year_id: Number(yearId) },
+            throwOnError: true,
+          });
+          return resp.data;
         },
       });
       queryClient.invalidateQueries({
-        queryKey: queryKeys.year.form(yearId),
+        queryKey: queryKeys.admin.positions.year(yearId),
       });
+      // Invalidate year form since position might be used there
+      queryClient.invalidateQueries({ queryKey: queryKeys.year.form(yearId) });
     },
   });
 };
@@ -319,19 +341,7 @@ export const useEditUser = () => {
       data,
     }: {
       userId: string | number;
-      data: {
-        first_name_ru?: string | null;
-        last_name_ru?: string | null;
-        first_name_en?: string | null;
-        last_name_en?: string | null;
-        isu_id?: number | null;
-        patronymic_ru?: string | null;
-        phone?: string | null;
-        email?: string | null;
-        telegram_username?: string | null;
-        is_admin?: boolean | null;
-        telegram_id?: number | null;
-      };
+      data: EditUserRequest;
     }) => {
       const response = await editUserApiV1AdminUserUserIdEditPost({
         path: { user_id: Number(userId) },
@@ -445,6 +455,20 @@ export const useRegistrationForms = (yearId: string | number) => {
   });
 };
 
+export const useYearResults = (yearId: string | number) => {
+  return useQuery({
+    queryKey: queryKeys.admin.results.year(yearId),
+    queryFn: async () => {
+      const response = await getYearResultsApiV1AdminYearYearIdResultsGet({
+        path: { year_id: Number(yearId) },
+        throwOnError: true,
+      });
+      return response.data;
+    },
+    enabled: !!yearId,
+  });
+};
+
 export const useDayAssignments = (dayId: string | number) => {
   return useQuery({
     queryKey: queryKeys.admin.assignments.day(dayId),
@@ -457,6 +481,9 @@ export const useDayAssignments = (dayId: string | number) => {
       return response.data;
     },
     enabled: !!dayId,
+    refetchOnWindowFocus: true, // Refetch when window gains focus
+    refetchOnMount: true, // Refetch on component mount
+    staleTime: 0, // Always consider data stale for immediate updates
   });
 };
 

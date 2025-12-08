@@ -44,6 +44,8 @@ function RouteComponent() {
     }
   };
 
+  const [yearTouched, setYearTouched] = useState(false);
+
   return (
     <Box
       sx={{
@@ -66,8 +68,15 @@ function RouteComponent() {
               fullWidth
               value={yearName}
               onChange={(e) => setYearName(e.target.value)}
-              error={createYearMutation.isError}
-              helperText={createYearMutation.error?.message}
+              onBlur={() => setYearTouched(true)}
+              error={
+                (yearTouched && !yearName.trim()) || createYearMutation.isError
+              }
+              helperText={
+                yearTouched && !yearName.trim()
+                  ? t("Year name is required")
+                  : createYearMutation.error?.message
+              }
               disabled={createYearMutation.isPending}
             />
           </CardContent>

@@ -76,6 +76,7 @@ async def get_form_year(
                 can_desire=p.can_desire,
                 has_halls=p.has_halls,
                 is_manager=p.is_manager,
+                save_for_next_year=p.save_for_next_year,
             )
             for p in positions
             if p.can_desire
@@ -89,6 +90,7 @@ async def get_form_year(
                 can_desire=p.can_desire,
                 has_halls=p.has_halls,
                 is_manager=p.is_manager,
+                save_for_next_year=p.save_for_next_year,
             )
             for p in sorted(form.desired_positions, key=lambda x: x.id)
         ]

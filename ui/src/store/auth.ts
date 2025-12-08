@@ -56,6 +56,10 @@ class AuthStore {
     return this._user;
   }
 
+  getAccessToken(): string | null {
+    return this.accessToken;
+  }
+
   waitForHydration(): Promise<void> {
     if (this.hydrationPromise === null) {
       throw new Error("Hydration promise not found. This should never happen.");

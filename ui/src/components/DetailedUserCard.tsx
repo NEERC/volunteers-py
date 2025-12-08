@@ -38,6 +38,7 @@ export function DetailedUserCard({
     user.telegram_username ||
     user.desired_positions.length > 0 ||
     user.comments ||
+    user.gender ||
     user.needs_invitation ||
     (user.experience && user.experience.length > 0);
 
@@ -89,18 +90,24 @@ export function DetailedUserCard({
 
         {user.itmo_group && (
           <Typography variant="body2" sx={{ mb: 0.25, fontSize: "0.75rem" }}>
-            <strong>{t("Group:")}</strong> {user.itmo_group}
+            <strong>{t("Group")}:</strong> {user.itmo_group}
           </Typography>
         )}
         {user.telegram_username && (
           <Typography variant="body2" sx={{ mb: 0.25, fontSize: "0.75rem" }}>
-            <strong>{t("Telegram:")}</strong> 📱{" "}
+            <strong>{t("Telegram")}:</strong> 📱{" "}
             <Link
               href={`https://t.me/${user.telegram_username}`}
               target="_blank"
             >
               @{user.telegram_username}
             </Link>
+          </Typography>
+        )}
+        {user.gender && (
+          <Typography variant="body2" sx={{ mb: 0.25, fontSize: "0.75rem" }}>
+            <strong>{t("Gender")}:</strong>{" "}
+            {user.gender === "male" ? t("Male") : t("Female")}
           </Typography>
         )}
 
@@ -110,7 +117,7 @@ export function DetailedUserCard({
               variant="body2"
               sx={{ mb: 0.25, fontWeight: 600, fontSize: "0.75rem" }}
             >
-              {t("Desired Positions:")}
+              {t("Desired Positions")}:
             </Typography>
             <Box sx={{ display: "flex", flexWrap: "wrap", gap: 0.25 }}>
               {user.desired_positions.map((position) => (
@@ -133,7 +140,7 @@ export function DetailedUserCard({
               variant="body2"
               sx={{ fontWeight: 600, mb: 0.25, fontSize: "0.75rem" }}
             >
-              {t("Comments:")}
+              {t("Comments")}:
             </Typography>
             <Typography
               variant="body2"
@@ -165,7 +172,7 @@ export function DetailedUserCard({
               variant="body2"
               sx={{ fontWeight: 600, mb: 0.25, fontSize: "0.75rem" }}
             >
-              {t("Experience:")}
+              {t("Experience")}:
             </Typography>
             <Table size="small" sx={{ fontSize: "0.7rem" }}>
               <TableHead>
@@ -177,10 +184,10 @@ export function DetailedUserCard({
                     {t("Positions")}
                   </TableCell>
                   <TableCell sx={{ fontSize: "0.65rem", py: 0.25, px: 0.5 }}>
-                    {t("Attendance:")}
+                    {t("Attendance")}:
                   </TableCell>
                   <TableCell sx={{ fontSize: "0.65rem", py: 0.25, px: 0.5 }}>
-                    {t("Assessments:")}
+                    {t("Assessments")}:
                   </TableCell>
                 </TableRow>
               </TableHead>

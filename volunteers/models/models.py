@@ -14,6 +14,7 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from .attendance import Attendance
 from .base import Base, TimestampMixin
+from .gender import Gender
 
 
 class Year(Base, TimestampMixin):
@@ -45,6 +46,10 @@ class User(Base, TimestampMixin):
     phone: Mapped[str | None] = mapped_column(String, nullable=True)
     email: Mapped[str | None] = mapped_column(String, nullable=True)
     telegram_username: Mapped[str | None] = mapped_column(String, nullable=True)
+    gender: Mapped[Gender | None] = mapped_column(
+        Enum(Gender, name="gender_enum", values_callable=lambda x: [e.value for e in x]),
+        nullable=True,
+    )
 
     is_admin: Mapped[bool] = mapped_column(Boolean, default=False)
 
@@ -76,19 +81,34 @@ class ApplicationForm(Base, TimestampMixin):
         back_populates="application_form", cascade="all, delete-orphan"
     )
 
+    extra_experience: Mapped[ExtraExperience | None] = relationship(
+        back_populates="application_form", cascade="all, delete-orphan"
+    )
+
     __table_args__ = (
         UniqueConstraint("year_id", "user_id", name="application_forms_unique_year_id_user_id"),
     )
+
+
+class ExtraExperience(Base, TimestampMixin):
+    __tablename__ = "extra_experiences"
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    application_form_id: Mapped[int] = mapped_column(ForeignKey("application_forms.id"))
+    application_form: Mapped[ApplicationForm] = relationship(back_populates="extra_experience")
+    value: Mapped[float] = mapped_column(Double)
 
 
 class Position(Base, TimestampMixin):
     __tablename__ = "positions"
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     year_id: Mapped[int] = mapped_column(ForeignKey("years.id"))
-    name: Mapped[str] = mapped_column(String, unique=True)
+    name: Mapped[str] = mapped_column(String)
     can_desire: Mapped[bool] = mapped_column(Boolean, default=False)
     has_halls: Mapped[bool] = mapped_column(Boolean, default=False)
     is_manager: Mapped[bool] = mapped_column(Boolean, default=False)
+    score: Mapped[float] = mapped_column(Double, nullable=False, default=1.0, server_default="1.0")
+    save_for_next_year: Mapped[bool] = mapped_column(Boolean, default=False, server_default="false")
+    description: Mapped[str | None] = mapped_column(String, nullable=True)
 
     user_days: Mapped[set[UserDay]] = relationship(
         back_populates="position", cascade="all, delete-orphan"
@@ -112,7 +132,7 @@ class Day(Base, TimestampMixin):
     name: Mapped[str] = mapped_column(String)
     information: Mapped[str] = mapped_column(String)
 
-    score: Mapped[float] = mapped_column(
+    score: Mapped[float | None] = mapped_column(
         Double, nullable=True
     )  # Day score. Should be not null for scores to compute.
     mandatory: Mapped[bool] = mapped_column(

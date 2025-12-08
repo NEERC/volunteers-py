@@ -96,11 +96,12 @@ def refresh_token_request() -> dict[str, Any]:
 
 
 @pytest.fixture
-def app(config: MagicMock) -> FastAPIWithContainer:
+def app(config: MagicMock, test_user: User) -> FastAPIWithContainer:
     container: Container = Container()
     user_service: MagicMock = MagicMock()
     user_service.get_user_by_telegram_id = AsyncMock(return_value=None)
-    user_service.create_user = AsyncMock(return_value=None)
+    user_service.create_user = AsyncMock(return_value=test_user)
+    user_service.update_user = AsyncMock(return_value=None)
     container.user_service.override(user_service)
     container.config.override(config)
     container.wire(modules=[auth_router])
@@ -162,7 +163,9 @@ async def test_login_success(
 ) -> None:
     app.container.user_service().get_user_by_telegram_id = AsyncMock(
         return_value=type(
-            "User", (), {"telegram_username": telegram_login_request["telegram_username"]}
+            "User",
+            (),
+            {"id": 123, "telegram_username": telegram_login_request["telegram_username"]},
         )()
     )
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as ac:

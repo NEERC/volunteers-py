@@ -78,6 +78,7 @@ async def register(
         phone=request.phone,
         email=request.email,
         telegram_username=request.telegram_username,
+        gender=request.gender,
         is_admin=False,
     )
     user = await user_service.create_user(user_in)
@@ -230,6 +231,7 @@ async def me(user: Annotated[User, Depends(with_user)]) -> UserResponse:
         phone=user.phone,
         email=user.email,
         telegram_username=user.telegram_username,
+        gender=user.gender,
     )
 
 
@@ -259,4 +261,5 @@ async def update_user(
         phone=updated_user.phone,
         email=updated_user.email,
         telegram_username=updated_user.telegram_username,
+        gender=updated_user.gender,
     )

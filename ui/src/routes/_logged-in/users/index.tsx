@@ -1,12 +1,15 @@
+import DownloadIcon from "@mui/icons-material/Download";
 import SearchIcon from "@mui/icons-material/Search";
 import {
   Alert,
   Box,
+  Button,
   Chip,
   CircularProgress,
   InputAdornment,
   Link,
   Paper,
+  Snackbar,
   Table,
   TableBody,
   TableCell,
@@ -30,6 +33,8 @@ import {
 import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useAllUsers } from "@/data/use-admin";
+import { downloadFile } from "@/utils/download";
+import { getGenderLabel } from "@/utils/gender";
 import { shouldBeAdmin } from "@/utils/should-be-logged-in";
 
 export const Route = createFileRoute("/_logged-in/users/")({
@@ -48,6 +53,7 @@ function RouteComponent() {
   const [sorting, setSorting] = useState<SortingState>([]);
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
   const [globalFilter, setGlobalFilter] = useState("");
+  const [exportError, setExportError] = useState<string | null>(null);
 
   const columns: ColumnDef<NonNullable<typeof data>["users"][number]>[] =
     useMemo(
@@ -182,6 +188,20 @@ function RouteComponent() {
           },
         },
         {
+          id: "gender",
+          header: t("Gender"),
+          accessorKey: "gender",
+          size: 100,
+          cell: (info) => {
+            const gender = info.getValue() as string | null;
+            return (
+              <Typography variant="body2" fontSize="0.875rem">
+                {getGenderLabel(gender, t)}
+              </Typography>
+            );
+          },
+        },
+        {
           id: "is_admin",
           header: t("Admin"),
           accessorKey: "is_admin",
@@ -243,12 +263,38 @@ function RouteComponent() {
 
   return (
     <Box p={3}>
-      <Typography variant="h4" component="h1" gutterBottom>
-        {t("Users")}
-      </Typography>
-      <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
-        {t("List of all users")}
-      </Typography>
+      <Box
+        sx={{
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          mb: 2,
+        }}
+      >
+        <Box>
+          <Typography variant="h4" component="h1">
+            {t("Users")}
+          </Typography>
+          <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
+            {t("List of all users")}
+          </Typography>
+        </Box>
+        <Button
+          variant="outlined"
+          startIcon={<DownloadIcon />}
+          onClick={async () => {
+            try {
+              await downloadFile("/api/v1/admin/user/export-csv");
+            } catch (error) {
+              setExportError(
+                error instanceof Error ? error.message : "Export failed",
+              );
+            }
+          }}
+        >
+          {t("Export to CSV")}
+        </Button>
+      </Box>
 
       <Box sx={{ mb: 2 }}>
         <TextField
@@ -319,6 +365,14 @@ function RouteComponent() {
           </Table>
         </TableContainer>
       )}
+
+      {/* Export error notification */}
+      <Snackbar
+        open={!!exportError}
+        autoHideDuration={6000}
+        onClose={() => setExportError(null)}
+        message={exportError}
+      />
     </Box>
   );
 }

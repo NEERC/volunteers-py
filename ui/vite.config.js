@@ -45,5 +45,16 @@ export default defineConfig({
   },
   server: {
     allowedHosts: ["nerc-volunteers.itmo.ru"],
+    proxy: {
+      "/api": {
+        target: "http://localhost:8000",
+        changeOrigin: true,
+      },
+      "/socket.io": {
+        target: "http://localhost:8000",
+        changeOrigin: true,
+        ws: true, // Enable WebSocket proxying
+      },
+    },
   },
 });

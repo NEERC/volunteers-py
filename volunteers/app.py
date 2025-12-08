@@ -4,17 +4,31 @@ from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, Request, Response
 from fastapi.responses import FileResponse
+from fastapi.staticfiles import StaticFiles
 from loguru import logger
 from prometheus_client import Counter, make_asgi_app
 
 from volunteers.api.router import router as api_router
-from volunteers.core.di import Container
+from volunteers.core.di import container
+from volunteers.core.socketio import sio, socket_app
+from volunteers.sockets.assignments import register_assignment_handlers
 
 logger.remove()
 logger.add(sys.stdout, level="DEBUG")
 
-container = Container()
-container.wire()
+# Wire the container with the necessary packages
+container.wire(
+    modules=[__name__, "volunteers.api.v1.admin.assessment.router"],
+    packages=[
+        "volunteers.services",
+        "volunteers.models",
+        "volunteers.schemas",
+        "volunteers.core",
+        "volunteers.auth",
+        "volunteers.api",
+        "volunteers.bot",
+    ],
+)
 
 
 @asynccontextmanager
@@ -26,6 +40,11 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None]:
     # parse config
     c = container.config()
     logger.debug(f"Config: {c}")
+
+    # Register WebSocket handlers
+    await register_assignment_handlers(sio)
+    logger.info("WebSocket handlers registered")
+
     yield
     # Shutdown
     shutdown_resources = container.shutdown_resources()
@@ -36,6 +55,12 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None]:
 app = FastAPI(lifespan=lifespan, openapi_url="/api/v1/openapi.json", docs_url="/api/v1/docs")
 
 app.include_router(api_router)
+
+# Mount Socket.IO app at /socket.io
+app.mount("/socket.io", socket_app)
+
+# Serve static files for certificates
+app.mount("/static", StaticFiles(directory="volunteers/static"), name="static")
 
 metrics_app = make_asgi_app()
 app.mount("/metrics", metrics_app)

@@ -8,6 +8,7 @@ import {
   Container,
   Divider,
   FormControl,
+  FormHelperText,
   InputLabel,
   MenuItem,
   Paper,
@@ -21,12 +22,36 @@ import { observer } from "mobx-react-lite";
 import { useId } from "react";
 import { useTranslation } from "react-i18next";
 import * as Yup from "yup";
+import type { Gender } from "@/client/types.gen";
 import { useSaveRegistration } from "@/data/use-year";
 import { authStore } from "@/store/auth";
+import { submitOnCtrlEnter } from "@/utils/formShortcuts";
+import { GENDER_OPTIONS, getGenderLabel } from "@/utils/gender";
 
 export const Route = createFileRoute("/_logged-in/$yearId/registration")({
   component: observer(RouteComponent),
 });
+
+export const requiredLabel = (label: string) => `${label} *`;
+
+export const shouldDisplayFieldError = (error: unknown, touched?: boolean) =>
+  Boolean(error && touched);
+
+type RegistrationFormValues = {
+  desired_positions: number[];
+  itmo_group: string;
+  comments: string;
+  needs_invitation: boolean;
+  first_name_ru: string;
+  last_name_ru: string;
+  first_name_en: string;
+  last_name_en: string;
+  isu_id: number | null;
+  patronymic_ru: string;
+  phone: string;
+  email: string;
+  gender: string;
+};
 
 function RouteComponent() {
   const { t } = useTranslation();
@@ -37,7 +62,7 @@ function RouteComponent() {
 
   const saveMutation = useSaveRegistration();
 
-  const formik = useFormik({
+  const formik = useFormik<RegistrationFormValues>({
     initialValues: {
       desired_positions:
         year?.desired_positions?.map((p) => p.position_id) ?? [],
@@ -52,6 +77,7 @@ function RouteComponent() {
       patronymic_ru: user?.patronymic_ru ?? "",
       phone: user?.phone ?? "",
       email: user?.email ?? "",
+      gender: user?.gender ?? "",
     },
     enableReinitialize: true,
     validationSchema: Yup.object({
@@ -71,6 +97,7 @@ function RouteComponent() {
       email: Yup.string()
         .email(t("Invalid email format"))
         .required(t("Email is required")),
+      gender: Yup.string().required(t("Gender is required")),
     }),
     onSubmit: async (values) => {
       try {
@@ -91,6 +118,7 @@ function RouteComponent() {
             patronymic_ru: values.patronymic_ru,
             phone: values.phone,
             email: values.email,
+            gender: values.gender as Gender | null,
           },
         });
         // User data will be updated via the mutation's cache invalidation
@@ -103,6 +131,23 @@ function RouteComponent() {
   });
 
   const positionId = useId();
+
+  const hasFieldError = (field: keyof RegistrationFormValues) =>
+    shouldDisplayFieldError(formik.errors[field], formik.touched[field]);
+
+  const getFieldError = (field: keyof RegistrationFormValues) => {
+    if (!hasFieldError(field)) {
+      return undefined;
+    }
+
+    const error = formik.errors[field];
+    return typeof error === "string" ? error : undefined;
+  };
+
+  const getFieldErrorProps = (field: keyof RegistrationFormValues) => ({
+    error: hasFieldError(field),
+    helperText: getFieldError(field),
+  });
 
   if (!year) {
     return (
@@ -131,34 +176,25 @@ function RouteComponent() {
 
           <TextField
             fullWidth
-            label={t("First Name (RU)")}
+            label={requiredLabel(t("First Name (RU)"))}
             name="first_name_ru"
             value={formik.values.first_name_ru}
             onChange={formik.handleChange}
+            onBlur={formik.handleBlur}
             disabled={!year.open_for_registration}
-            error={
-              formik.touched.first_name_ru &&
-              Boolean(formik.errors.first_name_ru)
-            }
-            helperText={
-              formik.touched.first_name_ru && formik.errors.first_name_ru
-            }
+            {...getFieldErrorProps("first_name_ru")}
             sx={{ mb: 2 }}
           />
 
           <TextField
             fullWidth
-            label={t("Last Name (RU)")}
+            label={requiredLabel(t("Last Name (RU)"))}
             name="last_name_ru"
             value={formik.values.last_name_ru}
             onChange={formik.handleChange}
+            onBlur={formik.handleBlur}
             disabled={!year.open_for_registration}
-            error={
-              formik.touched.last_name_ru && Boolean(formik.errors.last_name_ru)
-            }
-            helperText={
-              formik.touched.last_name_ru && formik.errors.last_name_ru
-            }
+            {...getFieldErrorProps("last_name_ru")}
             sx={{ mb: 2 }}
           />
 
@@ -168,47 +204,33 @@ function RouteComponent() {
             name="patronymic_ru"
             value={formik.values.patronymic_ru}
             onChange={formik.handleChange}
+            onBlur={formik.handleBlur}
             disabled={!year.open_for_registration}
-            error={
-              formik.touched.patronymic_ru &&
-              Boolean(formik.errors.patronymic_ru)
-            }
-            helperText={
-              formik.touched.patronymic_ru && formik.errors.patronymic_ru
-            }
+            {...getFieldErrorProps("patronymic_ru")}
             sx={{ mb: 2 }}
           />
 
           <TextField
             fullWidth
-            label={t("First Name (EN)")}
+            label={requiredLabel(t("First Name (EN)"))}
             name="first_name_en"
             value={formik.values.first_name_en}
             onChange={formik.handleChange}
+            onBlur={formik.handleBlur}
             disabled={!year.open_for_registration}
-            error={
-              formik.touched.first_name_en &&
-              Boolean(formik.errors.first_name_en)
-            }
-            helperText={
-              formik.touched.first_name_en && formik.errors.first_name_en
-            }
+            {...getFieldErrorProps("first_name_en")}
             sx={{ mb: 2 }}
           />
 
           <TextField
             fullWidth
-            label={t("Last Name (EN)")}
+            label={requiredLabel(t("Last Name (EN)"))}
             name="last_name_en"
             value={formik.values.last_name_en}
             onChange={formik.handleChange}
+            onBlur={formik.handleBlur}
             disabled={!year.open_for_registration}
-            error={
-              formik.touched.last_name_en && Boolean(formik.errors.last_name_en)
-            }
-            helperText={
-              formik.touched.last_name_en && formik.errors.last_name_en
-            }
+            {...getFieldErrorProps("last_name_en")}
             sx={{ mb: 2 }}
           />
 
@@ -219,37 +241,68 @@ function RouteComponent() {
             type="number"
             value={formik.values.isu_id || ""}
             onChange={formik.handleChange}
+            onBlur={formik.handleBlur}
             disabled={!year.open_for_registration}
-            error={formik.touched.isu_id && Boolean(formik.errors.isu_id)}
-            helperText={formik.touched.isu_id && formik.errors.isu_id}
+            {...getFieldErrorProps("isu_id")}
             sx={{ mb: 2 }}
           />
 
           <TextField
             fullWidth
-            label={t("Phone")}
+            label={requiredLabel(t("Phone"))}
             name="phone"
             type="tel"
             value={formik.values.phone}
             onChange={formik.handleChange}
+            onBlur={formik.handleBlur}
             disabled={!year.open_for_registration}
-            error={formik.touched.phone && Boolean(formik.errors.phone)}
-            helperText={formik.touched.phone && formik.errors.phone}
+            {...getFieldErrorProps("phone")}
             sx={{ mb: 2 }}
           />
 
           <TextField
             fullWidth
-            label={t("Email")}
+            label={requiredLabel(t("Email"))}
             name="email"
             type="email"
             value={formik.values.email}
             onChange={formik.handleChange}
+            onBlur={formik.handleBlur}
             disabled={!year.open_for_registration}
-            error={formik.touched.email && Boolean(formik.errors.email)}
-            helperText={formik.touched.email && formik.errors.email}
-            sx={{ mb: 3 }}
+            {...getFieldErrorProps("email")}
+            sx={{ mb: 2 }}
           />
+
+          <FormControl
+            fullWidth
+            sx={{ mb: 3 }}
+            error={hasFieldError("gender")}
+            disabled={!year.open_for_registration}
+          >
+            <InputLabel>{requiredLabel(t("Gender"))}</InputLabel>
+            <Select
+              name="gender"
+              value={formik.values.gender}
+              onChange={formik.handleChange}
+              onBlur={() => formik.setFieldTouched("gender", true)}
+              label={t("Gender")}
+            >
+              {GENDER_OPTIONS.map((option) => (
+                <MenuItem key={option} value={option}>
+                  {getGenderLabel(option, t)}
+                </MenuItem>
+              ))}
+            </Select>
+            {hasFieldError("gender") && (
+              <Typography
+                variant="caption"
+                color="error"
+                sx={{ mt: 0.5, ml: 2 }}
+              >
+                {getFieldError("gender")}
+              </Typography>
+            )}
+          </FormControl>
 
           <Divider sx={{ my: 3 }} />
 
@@ -257,8 +310,14 @@ function RouteComponent() {
             {t("Registration Details")}
           </Typography>
 
-          <FormControl fullWidth sx={{ mb: 3 }}>
-            <InputLabel id={positionId}>{t("Desired Positions")}</InputLabel>
+          <FormControl
+            fullWidth
+            sx={{ mb: 3 }}
+            error={hasFieldError("desired_positions")}
+          >
+            <InputLabel id={positionId}>
+              {requiredLabel(t("Desired Positions"))}
+            </InputLabel>
             <Select
               labelId={positionId}
               label={t("Desired Positions")}
@@ -268,10 +327,7 @@ function RouteComponent() {
               onChange={(e) =>
                 formik.setFieldValue("desired_positions", e.target.value)
               }
-              error={
-                formik.touched.desired_positions &&
-                Boolean(formik.errors.desired_positions)
-              }
+              onBlur={() => formik.setFieldTouched("desired_positions", true)}
               renderValue={(selected) => {
                 const selectedPositions = year.positions
                   .filter((p) => selected.includes(p.position_id))
@@ -299,6 +355,9 @@ function RouteComponent() {
                 </MenuItem>
               ))}
             </Select>
+            <FormHelperText>
+              {getFieldError("desired_positions")}
+            </FormHelperText>
           </FormControl>
 
           <TextField
@@ -307,11 +366,9 @@ function RouteComponent() {
             name="itmo_group"
             value={formik.values.itmo_group}
             onChange={formik.handleChange}
+            onBlur={formik.handleBlur}
             disabled={!year.open_for_registration}
-            error={
-              formik.touched.itmo_group && Boolean(formik.errors.itmo_group)
-            }
-            helperText={formik.touched.itmo_group && formik.errors.itmo_group}
+            {...getFieldErrorProps("itmo_group")}
             sx={{ mb: 3 }}
           />
 
@@ -323,9 +380,19 @@ function RouteComponent() {
             rows={4}
             value={formik.values.comments}
             onChange={formik.handleChange}
+            onBlur={formik.handleBlur}
+            onKeyDown={(event) =>
+              submitOnCtrlEnter(event, {
+                canSubmit:
+                  year.open_for_registration &&
+                  formik.isValid &&
+                  !formik.isSubmitting &&
+                  !saveMutation.isPending,
+                submit: formik.submitForm,
+              })
+            }
             disabled={!year.open_for_registration}
-            error={formik.touched.comments && Boolean(formik.errors.comments)}
-            helperText={formik.touched.comments && formik.errors.comments}
+            {...getFieldErrorProps("comments")}
             sx={{ mb: 3 }}
           />
 

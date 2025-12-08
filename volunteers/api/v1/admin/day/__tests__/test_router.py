@@ -51,6 +51,9 @@ def add_day_request() -> dict[str, Any]:
         "year_id": 42,
         "name": "Test Day",
         "information": "Day info",
+        "score": 10.0,
+        "mandatory": True,
+        "assignment_published": False,
     }
 
 

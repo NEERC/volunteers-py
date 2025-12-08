@@ -1,18 +1,46 @@
+from datetime import UTC, datetime
 from typing import Annotated
 
 from dependency_injector.wiring import Provide, inject
 from fastapi import APIRouter, Depends, HTTPException, Path
+from fastapi.responses import StreamingResponse
 from loguru import logger
 
 from volunteers.auth.deps import with_admin
 from volunteers.core.di import Container
 from volunteers.models import User
 from volunteers.schemas.user import UserUpdate
+from volunteers.services.export import ExportService
 from volunteers.services.user import UserService
 
 from .schemas import AllUsersResponse, EditUserRequest, UserResponse
 
 router = APIRouter(tags=["user"])
+
+
+@router.get(
+    "/export-csv",
+    description="Export all users to CSV format",
+)
+@inject
+async def export_users_csv(
+    _: Annotated[User, Depends(with_admin)],
+    export_service: Annotated[ExportService, Depends(Provide[Container.export_service])],
+) -> StreamingResponse:
+    """Export all users data to CSV format including participation in years."""
+    csv_content = await export_service.export_all_users()
+
+    # Create filename with timestamp
+    timestamp = datetime.now(tz=UTC).strftime("%Y%m%d_%H%M%S")
+    filename = f"all_users_{timestamp}.csv"
+
+    logger.info("Exporting all users data to CSV")
+
+    return StreamingResponse(
+        iter([csv_content]),
+        media_type="text/csv",
+        headers={"Content-Disposition": f"attachment; filename={filename}"},
+    )
 
 
 @router.get(
@@ -39,6 +67,7 @@ async def get_all_users(
             phone=user.phone,
             email=user.email,
             telegram_username=user.telegram_username,
+            gender=user.gender,
             is_admin=user.is_admin,
         )
         for user in users
@@ -74,6 +103,7 @@ async def get_user_by_id(
         email=user.email,
         telegram_username=user.telegram_username,
         is_admin=user.is_admin,
+        gender=user.gender,
     )
 
 
@@ -104,4 +134,5 @@ async def edit_user(
         email=updated_user.email,
         telegram_username=updated_user.telegram_username,
         is_admin=updated_user.is_admin,
+        gender=updated_user.gender,
     )

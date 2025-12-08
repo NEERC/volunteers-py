@@ -1,5 +1,7 @@
 from pydantic import BaseModel
 
+from volunteers.models.gender import Gender
+
 
 class UserResponse(BaseModel):
     user_id: int
@@ -14,6 +16,7 @@ class UserResponse(BaseModel):
     email: str | None
     telegram_username: str | None
     is_admin: bool
+    gender: Gender | None
 
 
 class AllUsersResponse(BaseModel):
@@ -32,3 +35,4 @@ class EditUserRequest(BaseModel):
     telegram_username: str | None = None
     is_admin: bool | None = None
     telegram_id: int | None = None
+    gender: Gender | None

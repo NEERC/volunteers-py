@@ -1,12 +1,12 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 from volunteers.schemas.base import BaseSuccessResponse
 
 
 class AddAssessmentRequest(BaseModel):
     user_day_id: int
-    comment: str
-    value: float
+    comment: str = Field(min_length=1, description="Assessment comment")
+    value: float = Field(description="Assessment value (any real number)")
 
 
 class AddAssessmentResponse(BaseSuccessResponse):
@@ -14,8 +14,15 @@ class AddAssessmentResponse(BaseSuccessResponse):
 
 
 class EditAssessmentRequest(BaseModel):
-    comment: str | None = None
-    value: float | None = None
+    comment: str | None = Field(
+        default=None,
+        min_length=1,
+        description="Assessment comment",
+    )
+    value: float | None = Field(
+        None,
+        description="Assessment value (any real number)",
+    )
 
 
 class AssessmentItem(BaseModel):

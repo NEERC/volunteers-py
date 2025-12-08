@@ -27,6 +27,9 @@ bcrypt = "^4.3.0"
 babel = "^2.17.0"
 gunicorn = "^23.0.0"
 aiogram = "^3.22.0"
+python-socketio = "^5.15.0"
+jinja2 = "^3.1.4"
+alembic-postgresql-enum = "^1.8.0"
 
 [tool.poetry.group.dev.dependencies]
 ruff = "^0.11.7"
@@ -103,8 +106,10 @@ inline-quotes = "double"
 [tool.pytest.ini_options]
 addopts = "-ra -q --strict-markers --cov=volunteers --cov-report=term-missing"
 asyncio_mode = "auto"
+asyncio_default_fixture_loop_scope = "function"
 filterwarnings = ["error"]
 markers = [
   "slow: marks tests as slow (deselect with '-m \"not slow\"')",
+  "xdist_group: marks tests for pytest-xdist grouping",
 ]
 testpaths = ["."]

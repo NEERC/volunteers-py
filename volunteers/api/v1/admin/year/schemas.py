@@ -1,6 +1,8 @@
 from pydantic import BaseModel
 
 from volunteers.models.attendance import Attendance
+from volunteers.models.gender import Gender
+from volunteers.schemas.assessment import AssessmentOut
 from volunteers.schemas.base import BaseSuccessResponse
 from volunteers.schemas.position import PositionOut
 
@@ -20,8 +22,8 @@ class EditYearRequest(BaseModel):
 
 class UserListItem(BaseModel):
     id: int
-    first_name_ru: str
-    last_name_ru: str
+    first_name_ru: str | None
+    last_name_ru: str | None
     patronymic_ru: str | None
     first_name_en: str
     last_name_en: str
@@ -29,6 +31,7 @@ class UserListItem(BaseModel):
     email: str | None
     phone: str | None
     telegram_username: str | None
+    gender: Gender | None
     is_registered: bool
 
 
@@ -55,14 +58,47 @@ class RegistrationFormItem(BaseModel):
     phone: str | None
     email: str | None
     telegram_username: str | None
+    gender: Gender | None
     itmo_group: str | None
     comments: str
     needs_invitation: bool
     desired_positions: list[PositionOut]  # TODO: change to list[str]
     experience: list[ExperienceItem]
+    previous_year_xp: float
+    current_year_xp: float
+    xp: float
+    rank: str
+    rank_stars_count: int
     created_at: str
     updated_at: str
 
 
 class RegistrationFormsResponse(BaseModel):
     forms: list[RegistrationFormItem]
+
+
+class AttendanceItem(BaseModel):
+    day_id: int
+    attendance: Attendance | None
+
+
+class ResultItem(BaseModel):
+    user_id: int
+    first_name_ru: str
+    last_name_ru: str
+    patronymic_ru: str | None
+    first_name_en: str
+    last_name_en: str
+    experience: float
+    experience_this_year: float
+    rank: str
+    rank_stars_count: int
+    positions: list[PositionOut]
+    assessments: list[AssessmentOut]
+    total_assessment: float
+    attendance: list[AttendanceItem]
+    experience_explanation: list[tuple[str, list[str]]]
+
+
+class ResultsResponse(BaseModel):
+    results: list[ResultItem]

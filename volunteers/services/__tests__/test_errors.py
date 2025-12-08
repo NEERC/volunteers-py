@@ -18,4 +18,4 @@ def test_domain_error_message() -> None:
 def test_domain_error_can_be_raised_and_caught() -> None:
     with pytest.raises(DomainError) as excinfo:
         raise DomainError()
-    assert str(excinfo.value) == "something went wrong"
+    assert str(excinfo.value) == "Something went wrong"

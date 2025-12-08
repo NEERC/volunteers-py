@@ -8,7 +8,8 @@ from volunteers.services.base import BaseService
 @pytest.mark.asyncio
 async def test_base_service_init_sets_logger_and_db() -> None:
     mock_db = MagicMock()
-    service = BaseService(db=mock_db)
+    service = BaseService()
+    service.db = mock_db
     assert hasattr(service, "logger")
     assert service.db == mock_db
 
@@ -22,7 +23,8 @@ async def test_session_scope_yields_session() -> None:
     with patch("volunteers.services.base.async_sessionmaker") as mock_sessionmaker:
         mock_sessionmaker.return_value = lambda: mock_async_session
         mock_async_session.__aenter__.return_value = mock_session
-        service = BaseService(db=mock_db)
+        service = BaseService()
+        service.db = mock_db
         # Actually yield our mock_session when session_scope is used
         with patch.object(service, "session_scope", wraps=service.session_scope):
             async with service.session_scope() as session:

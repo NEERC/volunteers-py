@@ -35,6 +35,7 @@ class UserService(BaseService):
             phone=user_in.phone,
             email=user_in.email,
             telegram_username=user_in.telegram_username,
+            gender=user_in.gender,
             is_admin=user_in.is_admin,
         )
         async with self.session_scope() as session:
@@ -71,6 +72,8 @@ class UserService(BaseService):
                 user.email = user_update.email
             if user_update.telegram_username is not None:
                 user.telegram_username = user_update.telegram_username
+            if user_update.gender is not None:
+                user.gender = user_update.gender
 
             await session.commit()
             return user

@@ -53,6 +53,7 @@ def add_user_day_request() -> dict[str, Any]:
         "day_id": 77,
         "information": "User attended.",
         "attendance": "yes",
+        "position_id": 1,
     }
 
 
@@ -62,6 +63,7 @@ def edit_user_day_request() -> dict[str, Any]:
     return {
         "information": "User did not attend.",
         "attendance": "no",
+        "position_id": 1,
     }
 
 
@@ -97,6 +99,8 @@ async def test_add_user_day_success(
 async def test_add_user_day_calls_service(
     app: AppWithContainer, add_user_day_request: dict[str, Any]
 ) -> None:
+    from volunteers.models.attendance import Attendance
+
     fake_user_day = MagicMock(id=888)
     add_user_day_mock = AsyncMock(return_value=fake_user_day)
     app.test_year_service.add_user_day = add_user_day_mock
@@ -110,7 +114,8 @@ async def test_add_user_day_calls_service(
     assert user_day_in.application_form_id == 42
     assert user_day_in.day_id == 77
     assert user_day_in.information == "User attended."
-    assert user_day_in.attendance == "yes"
+    # Attendance is always set to UNKNOWN in the router, regardless of input
+    assert user_day_in.attendance == Attendance.UNKNOWN
 
 
 @pytest.mark.asyncio
@@ -128,4 +133,5 @@ async def test_edit_user_day_success(
     assert kwargs.get("user_day_id") == 123
     user_day_edit_in = kwargs.get("user_day_edit_in")
     assert user_day_edit_in.information == "User did not attend."
-    assert user_day_edit_in.attendance == "no"
+    # Attendance is always set to None in the router, as it's managed via attendance API
+    assert user_day_edit_in.attendance is None

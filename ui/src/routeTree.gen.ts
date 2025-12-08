@@ -24,7 +24,6 @@ import { Route as LoggedInYearIdSettingsImport } from './routes/_logged-in/$year
 import { Route as LoggedInYearIdResultsImport } from './routes/_logged-in/$yearId/results'
 import { Route as LoggedInYearIdRegistrationFormsImport } from './routes/_logged-in/$yearId/registration-forms'
 import { Route as LoggedInYearIdRegistrationImport } from './routes/_logged-in/$yearId/registration'
-import { Route as LoggedInYearIdMedalsImport } from './routes/_logged-in/$yearId/medals'
 import { Route as LoggedInYearIdContactsImport } from './routes/_logged-in/$yearId/contacts'
 import { Route as LoggedInYearIdAttendanceImport } from './routes/_logged-in/$yearId/attendance'
 import { Route as LoggedInYearIdDaysDayIdIndexImport } from './routes/_logged-in/$yearId/days/$dayId/index'
@@ -112,12 +111,6 @@ const LoggedInYearIdRegistrationRoute = LoggedInYearIdRegistrationImport.update(
   } as any,
 )
 
-const LoggedInYearIdMedalsRoute = LoggedInYearIdMedalsImport.update({
-  id: '/medals',
-  path: '/medals',
-  getParentRoute: () => LoggedInYearIdRoute,
-} as any)
-
 const LoggedInYearIdContactsRoute = LoggedInYearIdContactsImport.update({
   id: '/contacts',
   path: '/contacts',
@@ -204,13 +197,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LoggedInYearIdContactsImport
       parentRoute: typeof LoggedInYearIdImport
     }
-    '/_logged-in/$yearId/medals': {
-      id: '/_logged-in/$yearId/medals'
-      path: '/medals'
-      fullPath: '/$yearId/medals'
-      preLoaderRoute: typeof LoggedInYearIdMedalsImport
-      parentRoute: typeof LoggedInYearIdImport
-    }
     '/_logged-in/$yearId/registration': {
       id: '/_logged-in/$yearId/registration'
       path: '/registration'
@@ -282,7 +268,6 @@ declare module '@tanstack/react-router' {
 interface LoggedInYearIdRouteChildren {
   LoggedInYearIdAttendanceRoute: typeof LoggedInYearIdAttendanceRoute
   LoggedInYearIdContactsRoute: typeof LoggedInYearIdContactsRoute
-  LoggedInYearIdMedalsRoute: typeof LoggedInYearIdMedalsRoute
   LoggedInYearIdRegistrationRoute: typeof LoggedInYearIdRegistrationRoute
   LoggedInYearIdRegistrationFormsRoute: typeof LoggedInYearIdRegistrationFormsRoute
   LoggedInYearIdResultsRoute: typeof LoggedInYearIdResultsRoute
@@ -295,7 +280,6 @@ interface LoggedInYearIdRouteChildren {
 const LoggedInYearIdRouteChildren: LoggedInYearIdRouteChildren = {
   LoggedInYearIdAttendanceRoute: LoggedInYearIdAttendanceRoute,
   LoggedInYearIdContactsRoute: LoggedInYearIdContactsRoute,
-  LoggedInYearIdMedalsRoute: LoggedInYearIdMedalsRoute,
   LoggedInYearIdRegistrationRoute: LoggedInYearIdRegistrationRoute,
   LoggedInYearIdRegistrationFormsRoute: LoggedInYearIdRegistrationFormsRoute,
   LoggedInYearIdResultsRoute: LoggedInYearIdResultsRoute,
@@ -340,7 +324,6 @@ export interface FileRoutesByFullPath {
   '/': typeof LoggedInIndexRoute
   '/$yearId/attendance': typeof LoggedInYearIdAttendanceRoute
   '/$yearId/contacts': typeof LoggedInYearIdContactsRoute
-  '/$yearId/medals': typeof LoggedInYearIdMedalsRoute
   '/$yearId/registration': typeof LoggedInYearIdRegistrationRoute
   '/$yearId/registration-forms': typeof LoggedInYearIdRegistrationFormsRoute
   '/$yearId/results': typeof LoggedInYearIdResultsRoute
@@ -359,7 +342,6 @@ export interface FileRoutesByTo {
   '/': typeof LoggedInIndexRoute
   '/$yearId/attendance': typeof LoggedInYearIdAttendanceRoute
   '/$yearId/contacts': typeof LoggedInYearIdContactsRoute
-  '/$yearId/medals': typeof LoggedInYearIdMedalsRoute
   '/$yearId/registration': typeof LoggedInYearIdRegistrationRoute
   '/$yearId/registration-forms': typeof LoggedInYearIdRegistrationFormsRoute
   '/$yearId/results': typeof LoggedInYearIdResultsRoute
@@ -381,7 +363,6 @@ export interface FileRoutesById {
   '/_logged-in/': typeof LoggedInIndexRoute
   '/_logged-in/$yearId/attendance': typeof LoggedInYearIdAttendanceRoute
   '/_logged-in/$yearId/contacts': typeof LoggedInYearIdContactsRoute
-  '/_logged-in/$yearId/medals': typeof LoggedInYearIdMedalsRoute
   '/_logged-in/$yearId/registration': typeof LoggedInYearIdRegistrationRoute
   '/_logged-in/$yearId/registration-forms': typeof LoggedInYearIdRegistrationFormsRoute
   '/_logged-in/$yearId/results': typeof LoggedInYearIdResultsRoute
@@ -404,7 +385,6 @@ export interface FileRouteTypes {
     | '/'
     | '/$yearId/attendance'
     | '/$yearId/contacts'
-    | '/$yearId/medals'
     | '/$yearId/registration'
     | '/$yearId/registration-forms'
     | '/$yearId/results'
@@ -422,7 +402,6 @@ export interface FileRouteTypes {
     | '/'
     | '/$yearId/attendance'
     | '/$yearId/contacts'
-    | '/$yearId/medals'
     | '/$yearId/registration'
     | '/$yearId/registration-forms'
     | '/$yearId/results'
@@ -442,7 +421,6 @@ export interface FileRouteTypes {
     | '/_logged-in/'
     | '/_logged-in/$yearId/attendance'
     | '/_logged-in/$yearId/contacts'
-    | '/_logged-in/$yearId/medals'
     | '/_logged-in/$yearId/registration'
     | '/_logged-in/$yearId/registration-forms'
     | '/_logged-in/$yearId/results'
@@ -499,7 +477,6 @@ export const routeTree = rootRoute
       "children": [
         "/_logged-in/$yearId/attendance",
         "/_logged-in/$yearId/contacts",
-        "/_logged-in/$yearId/medals",
         "/_logged-in/$yearId/registration",
         "/_logged-in/$yearId/registration-forms",
         "/_logged-in/$yearId/results",
@@ -527,10 +504,6 @@ export const routeTree = rootRoute
     },
     "/_logged-in/$yearId/contacts": {
       "filePath": "_logged-in/$yearId/contacts.tsx",
-      "parent": "/_logged-in/$yearId"
-    },
-    "/_logged-in/$yearId/medals": {
-      "filePath": "_logged-in/$yearId/medals.tsx",
       "parent": "/_logged-in/$yearId"
     },
     "/_logged-in/$yearId/registration": {

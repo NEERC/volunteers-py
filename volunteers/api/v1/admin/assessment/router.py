@@ -3,12 +3,14 @@ from typing import Annotated
 from dependency_injector.wiring import Provide, inject
 from fastapi import APIRouter, Depends, HTTPException, Path, Response, status
 from loguru import logger
-from sqlalchemy import select
 
 from volunteers.auth.deps import with_admin
+
+# Import the global container from di module instead of app
 from volunteers.core.di import Container
-from volunteers.models import Assessment, User
+from volunteers.models import User
 from volunteers.schemas.assessment import AssessmentEditIn, AssessmentIn
+from volunteers.services.assessment import AssessmentService
 from volunteers.services.year import YearService
 
 from .schemas import (
@@ -78,18 +80,13 @@ async def edit_assessment(
 async def delete_assessment(
     assessment_id: Annotated[int, Path(title="The ID of the assessment")],
     _: Annotated[User, Depends(with_admin)],
-    year_service: Annotated[YearService, Depends(Provide[Container.year_service])],
+    assessment_service: Annotated[
+        AssessmentService,
+        Depends(Provide[Container.assessment_service]),
+    ],
 ) -> None:
-    async with year_service.session_scope() as session:
-        existing_assessment = await session.execute(
-            select(Assessment).where(Assessment.id == assessment_id)
-        )
-        assessment = existing_assessment.scalar_one_or_none()
-        if not assessment:
-            raise HTTPException(status_code=404, detail="Assessment not found")
-
-        await session.delete(assessment)
-        await session.commit()
+    if not await assessment_service.delete_assessment(assessment_id):
+        raise HTTPException(status_code=404, detail="Assessment not found")
     logger.info("Assessment has been deleted")
 
 

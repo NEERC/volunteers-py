@@ -4,7 +4,6 @@ import CalendarMonthIcon from "@mui/icons-material/CalendarMonth";
 import CheckCircleIcon from "@mui/icons-material/CheckCircle";
 import ContactsIcon from "@mui/icons-material/Contacts";
 import DescriptionIcon from "@mui/icons-material/Description";
-import EmojiEventsIcon from "@mui/icons-material/EmojiEvents";
 import ExpandLess from "@mui/icons-material/ExpandLess";
 import ExpandMore from "@mui/icons-material/ExpandMore";
 import GroupIcon from "@mui/icons-material/Group";
@@ -134,14 +133,6 @@ const getRoutesConfig = (
           labelKey: "Results",
           icon: AssessmentIcon,
           path: `/${selectedYear}/results`,
-          adminOnly: true,
-        },
-        {
-          id: "medals",
-          type: "simple",
-          labelKey: "User Medals",
-          icon: EmojiEventsIcon,
-          path: `/${selectedYear}/medals`,
           adminOnly: true,
         },
         {
@@ -360,7 +351,7 @@ export default observer(function MainLayout({
           <Select
             labelId={yearSelectorId}
             id={yearSelectorId}
-            value={selectedYear}
+            value={selectedYear ?? ""}
             onChange={handleYearChange}
             label={t("Year")}
           >

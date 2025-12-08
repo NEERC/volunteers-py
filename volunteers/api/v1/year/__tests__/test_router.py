@@ -10,6 +10,7 @@ from volunteers.api.v1.year import router as year_router
 from volunteers.core.di import Container
 from volunteers.models import ApplicationForm, Day, Hall, Position, User, UserDay, Year
 from volunteers.models.attendance import Attendance
+from volunteers.models.gender import Gender
 
 if TYPE_CHECKING:
     from dependency_injector.containers import DeclarativeContainer
@@ -40,6 +41,7 @@ def test_user() -> User:
         is_admin=False,
         isu_id=312656,
         telegram_username="denispotexin",
+        gender=Gender.MALE,
     )
 
 
@@ -50,7 +52,7 @@ def test_year() -> Year:
 
 @pytest.fixture
 def test_day() -> Day:
-    return Day(id=1, year_id=1, name="Day 1", information="Test day")
+    return Day(id=1, year_id=1, name="Day 1", information="Test day", assignment_published=True)
 
 
 @pytest.fixture
@@ -157,7 +159,7 @@ async def test_get_day_assignments_success(
     assert assignment["telegram"] == "denispotexin"
     assert assignment["position"] == "Test Position"
     assert assignment["hall"] == "Test Hall"
-    assert assignment["attendance"] == "yes"
+    # attendance is not included in the response (commented out in schema)
 
 
 @pytest.mark.asyncio

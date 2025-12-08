@@ -10,7 +10,7 @@ from volunteers.schemas.application_form import ApplicationFormIn
 from volunteers.schemas.assessment import AssessmentEditIn, AssessmentIn
 from volunteers.schemas.day import DayEditIn, DayIn
 from volunteers.schemas.position import PositionEditIn, PositionIn
-from volunteers.schemas.user_day import UserDayEditIn, UserDayIn
+from volunteers.schemas.user_day import UserDayEditIn
 from volunteers.schemas.year import YearEditIn, YearIn
 from volunteers.services.year import (
     ApplicationFormNotFound,
@@ -30,7 +30,12 @@ def mock_db() -> MagicMock:
 
 @pytest.fixture
 def year_service(mock_db: MagicMock) -> YearService:
-    return YearService(db=mock_db)
+    mock_notifier = MagicMock()
+    mock_socketio = MagicMock()
+    mock_socketio.emit = AsyncMock()
+    service = YearService(notifier=mock_notifier, socketio_server=mock_socketio)
+    service.db = mock_db
+    return service
 
 
 def make_async_cm(mock_session: Any) -> AbstractAsyncContextManager[Any]:
@@ -203,7 +208,9 @@ async def test_edit_year_by_year_id_not_found(year_service: YearService) -> None
 
 @pytest.mark.asyncio
 async def test_add_position(year_service: YearService) -> None:
-    position_in = PositionIn(year_id=1, name="Engineer", can_desire=True, has_halls=True)
+    position_in = PositionIn(
+        year_id=1, name="Engineer", can_desire=True, has_halls=True, is_manager=False
+    )
     mock_session = MagicMock()
     mock_session.add = MagicMock()
     mock_session.commit = AsyncMock()
@@ -217,8 +224,12 @@ async def test_add_position(year_service: YearService) -> None:
 
 @pytest.mark.asyncio
 async def test_edit_position_by_position_id_success(year_service: YearService) -> None:
-    position_edit = PositionEditIn(name="Manager", can_desire=False, has_halls=True)
-    dummy_position = Position(id=1, name="OldName")
+    position_edit = PositionEditIn(
+        name="Manager", can_desire=False, has_halls=True, is_manager=False
+    )
+    dummy_position = Position(
+        id=1, year_id=1, name="OldName", can_desire=True, has_halls=False, is_manager=False
+    )
     mock_result = MagicMock()
     mock_result.scalar_one_or_none.return_value = dummy_position
     mock_session = MagicMock()
@@ -232,7 +243,9 @@ async def test_edit_position_by_position_id_success(year_service: YearService) -
 
 @pytest.mark.asyncio
 async def test_edit_position_by_position_id_not_found(year_service: YearService) -> None:
-    position_edit = PositionEditIn(name="Manager", can_desire=False, has_halls=True)
+    position_edit = PositionEditIn(
+        name="Manager", can_desire=False, has_halls=True, is_manager=False
+    )
     mock_result = MagicMock()
     mock_result.scalar_one_or_none.return_value = None
     mock_session = MagicMock()
@@ -314,37 +327,170 @@ async def test_edit_day_by_day_id_not_found(year_service: YearService) -> None:
 
 @pytest.mark.asyncio
 async def test_add_user_day(year_service: YearService) -> None:
+    from volunteers.models import UserDay
+    from volunteers.schemas.user_day import UserDayIn
+
+    mock_author = MagicMock()
+    mock_author.telegram_username = "test_user"
+
+    # Create UserDayIn input
     user_day_in = UserDayIn(
-        application_form_id=1, day_id=2, information="info", attendance=Attendance.YES
+        application_form_id=1,
+        day_id=2,
+        information="info",
+        attendance=Attendance.YES,
+        position_id=1,
+        hall_id=1,
     )
+
+    # Create mocks for awaitable attributes
+    mock_day = MagicMock(id=2)
+    mock_day.name = "Test Day"
+    mock_position = MagicMock(id=1)
+    mock_position.name = "Test Position"
+    mock_hall = MagicMock(id=1)
+    mock_hall.name = "Test Hall"
+    mock_application_form = MagicMock(id=1)
+    mock_user = MagicMock(id=100, telegram_username="test_user")
+    mock_user.first_name_ru = "Test"
+    mock_user.last_name_ru = "User"
+
+    # Setup application_form with awaitable user
+    async def get_user():
+        return mock_user
+
+    mock_application_form_awaitable_attrs = MagicMock()
+    mock_application_form_awaitable_attrs.user = get_user()
+    mock_application_form.awaitable_attrs = mock_application_form_awaitable_attrs
+
+    # Setup the user_day to have awaitable attrs
+    created_user_day = MagicMock(spec=UserDay)
+    created_user_day.application_form_id = 1
+    created_user_day.day_id = 2
+    created_user_day.information = "info"
+    created_user_day.attendance = Attendance.YES
+    created_user_day.position_id = 1
+    created_user_day.hall_id = 1
+
+    # Create async mock functions that return the mocked objects
+    async def get_day():
+        return mock_day
+
+    async def get_application_form():
+        return mock_application_form
+
+    async def get_position():
+        return mock_position
+
+    async def get_hall():
+        return mock_hall
+
+    # Make awaitable_attrs properties call these async functions
+    mock_awaitable_attrs = MagicMock()
+    mock_awaitable_attrs.day = get_day()
+    mock_awaitable_attrs.application_form = get_application_form()
+    mock_awaitable_attrs.position = get_position()
+    mock_awaitable_attrs.hall = get_hall()
+    created_user_day.awaitable_attrs = mock_awaitable_attrs
+
     mock_session = MagicMock()
     mock_session.add = MagicMock()
     mock_session.commit = AsyncMock()
-    with patch.object(year_service, "session_scope", return_value=make_async_cm(mock_session)):
-        user_day = await year_service.add_user_day(user_day_in)
+
+    # Mock the notifier
+    year_service.notifier.notify = AsyncMock()
+
+    with (
+        patch.object(year_service, "session_scope", return_value=make_async_cm(mock_session)),
+        patch("volunteers.services.year.UserDay", return_value=created_user_day),
+    ):
+        user_day = await year_service.add_user_day(user_day_in, mock_author)
         assert user_day.application_form_id == user_day_in.application_form_id
         assert user_day.day_id == user_day_in.day_id
         assert user_day.information == user_day_in.information
         assert user_day.attendance == user_day_in.attendance
-        mock_session.add.assert_called_once_with(user_day)
+        mock_session.add.assert_called_once_with(created_user_day)
         mock_session.commit.assert_awaited_once()
+        year_service.notifier.notify.assert_awaited_once()
 
 
 @pytest.mark.asyncio
 async def test_edit_user_day_by_user_day_id_success(year_service: YearService) -> None:
+    from volunteers.models import User
+
+    mock_author = User(
+        id=1,
+        telegram_id=123,
+        first_name_ru="Test",
+        last_name_ru="User",
+        first_name_en="Test",
+        last_name_en="User",
+        telegram_username="test_user",
+        is_admin=True,
+        isu_id=123,
+    )
+
     user_day_edit = UserDayEditIn(
-        information="updated", attendance=Attendance.NO, position_id=1, hall_id=1
+        information="updated", attendance=Attendance.NO, position_id=1, hall_id=None
     )
-    dummy_user_day = UserDay(
-        id=1, information="old", attendance=Attendance.YES, position_id=1, hall_id=1
-    )
+
+    # Create mocks for awaitable attributes
+    mock_day = MagicMock(id=2)
+    mock_day.name = "Test Day"
+    mock_position = MagicMock(id=1)
+    mock_position.name = "Test Position"
+    mock_hall = MagicMock(id=1)
+    mock_hall.name = "Test Hall"
+    mock_application_form = MagicMock(id=1)
+    mock_user = MagicMock(id=100, telegram_username="test_user")
+    mock_user.first_name_ru = "Test"
+    mock_user.last_name_ru = "User"
+
+    # Setup async functions for awaitable attrs
+    async def get_day():
+        return mock_day
+
+    async def get_application_form():
+        return mock_application_form
+
+    async def get_position():
+        return mock_position
+
+    async def get_hall():
+        return mock_hall
+
+    async def get_user():
+        return mock_user
+
+    mock_application_form_awaitable_attrs = MagicMock()
+    mock_application_form_awaitable_attrs.user = get_user()
+    mock_application_form.awaitable_attrs = mock_application_form_awaitable_attrs
+
+    # Use MagicMock for dummy_user_day to allow setting awaitable_attrs
+    dummy_user_day = MagicMock(spec=UserDay)
+    dummy_user_day.id = 1
+    dummy_user_day.information = "old"
+    dummy_user_day.attendance = Attendance.YES
+
+    # Setup awaitable_attrs for dummy_user_day
+    mock_awaitable_attrs = MagicMock()
+    mock_awaitable_attrs.day = get_day()
+    mock_awaitable_attrs.application_form = get_application_form()
+    mock_awaitable_attrs.position = get_position()
+    mock_awaitable_attrs.hall = get_hall()
+    dummy_user_day.awaitable_attrs = mock_awaitable_attrs
     mock_result = MagicMock()
     mock_result.scalar_one_or_none.return_value = dummy_user_day
     mock_session = MagicMock()
     mock_session.execute = AsyncMock(return_value=mock_result)
+    mock_session.get = AsyncMock(return_value=MagicMock())  # Mock session.get for Position/Hall
     mock_session.commit = AsyncMock()
+
+    # Mock the notifier
+    year_service.notifier.notify = AsyncMock()
+
     with patch.object(year_service, "session_scope", return_value=make_async_cm(mock_session)):
-        await year_service.edit_user_day_by_user_day_id(1, user_day_edit)
+        await year_service.edit_user_day_by_user_day_id(1, user_day_edit, mock_author)
         assert dummy_user_day.information == user_day_edit.information
         assert dummy_user_day.attendance == user_day_edit.attendance
         mock_session.commit.assert_awaited_once()
@@ -355,6 +501,8 @@ async def test_edit_user_day_by_user_day_id_not_found(year_service: YearService)
     user_day_edit = UserDayEditIn(
         information="nope", attendance=Attendance.NO, position_id=1, hall_id=1
     )
+    mock_author = MagicMock()
+    mock_author.telegram_username = "test_user"
     mock_result = MagicMock()
     mock_result.scalar_one_or_none.return_value = None
     mock_session = MagicMock()
@@ -363,15 +511,16 @@ async def test_edit_user_day_by_user_day_id_not_found(year_service: YearService)
         patch.object(year_service, "session_scope", return_value=make_async_cm(mock_session)),
         pytest.raises(UserDayNotFound),
     ):
-        await year_service.edit_user_day_by_user_day_id(99, user_day_edit)
+        await year_service.edit_user_day_by_user_day_id(99, user_day_edit, mock_author)
 
 
 @pytest.mark.asyncio
 async def test_add_assessment(year_service: YearService) -> None:
-    assessment_in = AssessmentIn(user_day_id=1, comment="Nice", value=5)
+    assessment_in = AssessmentIn(user_day_id=1, comment="Nice", value=5.5)
     mock_session = MagicMock()
     mock_session.add = MagicMock()
     mock_session.commit = AsyncMock()
+    mock_session.refresh = AsyncMock()
     with patch.object(year_service, "session_scope", return_value=make_async_cm(mock_session)):
         assessment = await year_service.add_assessment(assessment_in)
         assert assessment.user_day_id == assessment_in.user_day_id
@@ -383,8 +532,8 @@ async def test_add_assessment(year_service: YearService) -> None:
 
 @pytest.mark.asyncio
 async def test_edit_assessment_by_assessment_id_success(year_service: YearService) -> None:
-    assessment_edit = AssessmentEditIn(comment="Updated", value=10)
-    dummy_assessment = Assessment(id=1, comment="Old", value=5)
+    assessment_edit = AssessmentEditIn(comment="Updated", value=9.5)
+    dummy_assessment = Assessment(id=1, comment="Old", value=5.25)
     mock_result = MagicMock()
     mock_result.scalar_one_or_none.return_value = dummy_assessment
     mock_session = MagicMock()
@@ -399,7 +548,7 @@ async def test_edit_assessment_by_assessment_id_success(year_service: YearServic
 
 @pytest.mark.asyncio
 async def test_edit_assessment_by_assessment_id_not_found(year_service: YearService) -> None:
-    assessment_edit = AssessmentEditIn(comment="Missing", value=0)
+    assessment_edit = AssessmentEditIn(comment="Missing", value=0.25)
     mock_result = MagicMock()
     mock_result.scalar_one_or_none.return_value = None
     mock_session = MagicMock()
