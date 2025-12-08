@@ -4,6 +4,7 @@ from typing import NamedTuple
 
 import socketio  # type: ignore[import-untyped]
 from sqlalchemy import and_, delete, select
+from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
 from volunteers.api.v1.admin.year.schemas import ExperienceItem
@@ -844,23 +845,15 @@ class YearService(BaseService):
 
             return list(experience_by_year.values())
 
-    async def calculate_year_experience(
-        self, year_id: int, user_id: int
-    ) -> tuple[float, list[str]]:
-        """Calculate experience for a user in a specific year.
-
-        Formula:
-        experience = (
-            sum(day.score * attendance_map[attendance] * position_multiplier[position]
-                for day in mandatory_days) / number of mandatory_days
-        ) + sum(assessment.value for all assessments in year)
+    async def calculate_year_xp(self, year_id: int, user_id: int) -> tuple[float, list[str]]:
+        """Calculate XP for a user in a specific year.
 
         Args:
             year_id: ID of the year to calculate for
             user_id: ID of the user
 
         Returns:
-            Calculated experience value for the year
+            Tuple of (XP, experience_explanation)
         """
         async with self.session_scope() as session:
             user_form = (
@@ -951,9 +944,105 @@ class YearService(BaseService):
 
             return mandatory_experience, experience_explanation
 
+    async def _calculate_cumulative_xp(
+        self,
+        session: AsyncSession,
+        year_id: int,
+        user_id: int,
+        current_year_name: str,
+    ) -> tuple[float, float, list[tuple[str, list[str]]]]:
+        """Calculate cumulative experience for a user including previous years and current year.
+
+        Args:
+            session: Database session
+            year_id: Current year ID
+            user_id: User ID
+            current_year_name: Name of the current year
+
+        Returns:
+            Tuple of (previous_experience, current_year_exp, experience_explanation)
+        """
+        # Calculate experience dynamically:
+        # Sum experience from all previous years (by year_id) + current year
+        previous_experience = 0.0
+        experience_explanation: list[tuple[str, list[str]]] = []
+
+        # Get all application forms for this user in previous years (year_id < current)
+        prev_forms_result = await session.execute(
+            select(ApplicationForm)
+            .where(
+                and_(
+                    ApplicationForm.user_id == user_id,
+                    ApplicationForm.year_id < year_id,
+                )
+            )
+            .options(selectinload(ApplicationForm.year))
+            .order_by(ApplicationForm.year_id)
+        )
+        prev_forms = list(prev_forms_result.scalars().all())
+
+        # Calculate experience for each previous year
+        for prev_form in prev_forms:
+            prev_year_exp, prev_year_exp_explanation = await self.calculate_year_xp(
+                prev_form.year_id, user_id
+            )
+            previous_experience += prev_year_exp
+            experience_explanation.append((prev_form.year.year_name, prev_year_exp_explanation))
+
+        # Calculate current year exp
+        (
+            current_year_exp,
+            current_year_exp_explanation,
+        ) = await self.calculate_year_xp(year_id, user_id)
+        experience_explanation.append(
+            (f"Current year: {current_year_name}", current_year_exp_explanation)
+        )
+
+        return previous_experience, current_year_exp, experience_explanation
+
+    async def get_xp_by_user_id(self, user_id: int) -> tuple[float, float]:
+        """Get previous year XP and current year XP for a user.
+
+        Args:
+            user_id: ID of the user
+
+        Returns:
+            Tuple of (previous_year_xp, current_year_xp)
+        """
+        async with self.session_scope() as session:
+            # Get all application forms for this user
+            forms_result = await session.execute(
+                select(ApplicationForm)
+                .where(ApplicationForm.user_id == user_id)
+                .options(selectinload(ApplicationForm.year))
+                .order_by(ApplicationForm.year_id.desc())
+            )
+            forms = list(forms_result.scalars().all())
+
+            # If user has no forms, return 0.0, 0.0
+            if not forms:
+                return 0.0, 0.0
+
+            # Get the latest year the user participated in
+            latest_form = forms[0]
+            latest_year_id = latest_form.year_id
+            latest_year_name = latest_form.year.year_name
+
+            # Calculate cumulative experience (includes all previous years + current year)
+            (
+                previous_year_xp,
+                current_year_xp,
+                _,
+            ) = await self._calculate_cumulative_xp(
+                session, latest_year_id, user_id, latest_year_name
+            )
+
+            return previous_year_xp, current_year_xp
+
     class YearResultItem(NamedTuple):
         application_form: ApplicationForm
         rank: str
+        rank_stars_count: int
         positions: set[Position]
         assessments: set[Assessment]
         total_assessment: float
@@ -991,47 +1080,17 @@ class YearService(BaseService):
             forms = list(result.scalars().all())
 
             # Calculate total assessments sum and experience for each form
-            results: list[tuple[int, YearService.YearResultItem]] = []
+            results: list[YearService.YearResultItem] = []
             for form in forms:
                 if form.user.is_admin:
                     continue
-                experience_explanation: list[tuple[str, list[str]]] = []
 
-                # Calculate experience dynamically:
-                # Sum experience from all previous years (by year_id) + current year
-                previous_experience = 0.0
-
-                # Get all application forms for this user in previous years (year_id < current)
-                prev_forms_result = await session.execute(
-                    select(ApplicationForm)
-                    .where(
-                        and_(
-                            ApplicationForm.user_id == form.user_id,
-                            ApplicationForm.year_id < year_id,
-                        )
-                    )
-                    .options(selectinload(ApplicationForm.year))
-                    .order_by(ApplicationForm.year_id)
-                )
-                prev_forms = list(prev_forms_result.scalars().all())
-
-                # Calculate experience for each previous year
-                for prev_form in prev_forms:
-                    prev_year_exp, prev_year_exp_explanation = await self.calculate_year_experience(
-                        prev_form.year_id, form.user_id
-                    )
-                    previous_experience += prev_year_exp
-                    experience_explanation.append(
-                        (prev_form.year.year_name, prev_year_exp_explanation)
-                    )
-
-                # Calculate current year exp
                 (
+                    previous_experience,
                     current_year_exp,
-                    current_year_exp_explanation,
-                ) = await self.calculate_year_experience(year_id, form.user_id)
-                experience_explanation.append(
-                    (f"Current year: {form.year.year_name}", current_year_exp_explanation)
+                    experience_explanation,
+                ) = await self._calculate_cumulative_xp(
+                    session, year_id, form.user_id, form.year.year_name
                 )
 
                 # Build positions set from all user_days
@@ -1068,22 +1127,22 @@ class YearService(BaseService):
                 if not was_at_lease_once:
                     continue
                 total_experience = previous_experience + current_year_exp
-                rank, rank_index = get_rank(total_experience)
+                rank, rank_stars_count = get_rank(total_experience)
                 results.append(
-                    (
-                        rank_index,
-                        YearService.YearResultItem(
-                            application_form=form,
-                            rank=rank,
-                            positions=positions,
-                            assessments=assessments,
-                            total_assessment=total_assessment,
-                            attendance=attendance,
-                            experience=total_experience,
-                            experience_this_year=current_year_exp,
-                            experience_explanation=experience_explanation,
-                        ),
-                    )
+                    YearService.YearResultItem(
+                        application_form=form,
+                        rank=rank,
+                        rank_stars_count=rank_stars_count,
+                        positions=positions,
+                        assessments=assessments,
+                        total_assessment=total_assessment,
+                        attendance=attendance,
+                        experience=total_experience,
+                        experience_this_year=current_year_exp,
+                        experience_explanation=experience_explanation,
+                    ),
                 )
-            results.sort(key=lambda x: (x[0], x[1].total_assessment, x[1].experience), reverse=True)
-            return [result[1] for result in results]
+            results.sort(
+                key=lambda x: (x.rank_stars_count, x.total_assessment, x.experience), reverse=True
+            )
+            return results

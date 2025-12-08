@@ -312,6 +312,11 @@ export type RegistrationFormItem = {
     needs_invitation: boolean;
     desired_positions: Array<PositionOut>;
     experience: Array<ExperienceItem>;
+    previous_year_xp: number;
+    current_year_xp: number;
+    xp: number;
+    rank: string;
+    rank_stars_count: number;
     created_at: string;
     updated_at: string;
 };
@@ -349,6 +354,7 @@ export type ResultItem = {
     experience: number;
     experience_this_year: number;
     rank: string;
+    rank_stars_count: number;
     positions: Array<PositionOut>;
     assessments: Array<AssessmentOut>;
     total_assessment: number;

@@ -237,6 +237,7 @@
   "Show filters": "Показать фильтры",
   "Copy filtered data to clipboard": "Скопировать отфильтрованные данные в буфер",
   "Data copied to clipboard": "Данные скопированы в буфер",
+  "Failed to copy to clipboard. Please try again.": "Не удалось скопировать в буфер обмена. Попробуйте еще раз.",
   "Medals": "Медали",
   "Registration Status": "Статус регистрации",
   "ID": "ID",

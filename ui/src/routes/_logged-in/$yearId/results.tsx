@@ -259,7 +259,8 @@ function RouteComponent() {
                     </TableCell>
                     <TableCell>
                       <Typography variant="body2">
-                        {t(result.rank || "unknown")}
+                        {t(result.rank || "unknown")}{" "}
+                        {"⭐".repeat(result.rank_stars_count)}
                       </Typography>
                     </TableCell>
                     <TableCell>

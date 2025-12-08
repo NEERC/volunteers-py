@@ -64,6 +64,11 @@ class RegistrationFormItem(BaseModel):
     needs_invitation: bool
     desired_positions: list[PositionOut]  # TODO: change to list[str]
     experience: list[ExperienceItem]
+    previous_year_xp: float
+    current_year_xp: float
+    xp: float
+    rank: str
+    rank_stars_count: int
     created_at: str
     updated_at: str
 
@@ -87,6 +92,7 @@ class ResultItem(BaseModel):
     experience: float
     experience_this_year: float
     rank: str
+    rank_stars_count: int
     positions: list[PositionOut]
     assessments: list[AssessmentOut]
     total_assessment: float

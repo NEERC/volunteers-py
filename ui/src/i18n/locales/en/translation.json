@@ -228,6 +228,7 @@
   "Show filters": "Show filters",
   "Copy filtered data to clipboard": "Copy filtered data to clipboard",
   "Data copied to clipboard": "Data copied to clipboard",
+  "Failed to copy to clipboard. Please try again.": "Failed to copy to clipboard. Please try again.",
   "Medals": "Medals",
   "Registration Status": "Registration Status",
   "ID": "ID",

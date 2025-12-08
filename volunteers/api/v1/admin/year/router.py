@@ -155,6 +155,9 @@ async def get_registration_forms(
     for form in forms:
         # Get user experience data
         experience_data = await year_service.get_user_experience(form.user.id)
+        previous_year_xp, current_year_xp = await year_service.get_xp_by_user_id(form.user.id)
+        xp = previous_year_xp + current_year_xp
+        rank, stars_count = get_rank(xp)
 
         form_items.append(
             RegistrationFormItem(
@@ -186,6 +189,11 @@ async def get_registration_forms(
                     for p in form.desired_positions
                 ],
                 experience=experience_data,
+                previous_year_xp=previous_year_xp,
+                current_year_xp=current_year_xp,
+                xp=xp,
+                rank=rank,
+                rank_stars_count=stars_count,
                 created_at=form.created_at.isoformat(),
                 updated_at=form.updated_at.isoformat(),
             )
@@ -258,6 +266,7 @@ async def get_year_results(
                 experience=result_item.experience,
                 experience_this_year=result_item.experience_this_year,
                 rank=result_item.rank,
+                rank_stars_count=result_item.rank_stars_count,
                 positions=positions,
                 assessments=assessments,
                 total_assessment=result_item.total_assessment,
