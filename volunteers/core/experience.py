@@ -6,7 +6,7 @@ from volunteers.models.attendance import Attendance
 ATTENDANCE_MAP = {
     Attendance.YES: 1.0,
     Attendance.LATE: 0.5,
-    Attendance.NO: 0.0,
+    Attendance.NO: -1,
     Attendance.SICK: 0.0,
     Attendance.UNKNOWN: 0.0,
 }

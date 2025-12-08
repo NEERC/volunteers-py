@@ -376,7 +376,7 @@ async def generate_certificates(
 
     # Load SVG background from volunteers/static/temp.svg and convert to base64 data URI
     # Path: router.py -> year/ -> admin/ -> v1/ -> api/ -> volunteers/ -> static/
-    svg_path = Path(__file__).parent.parent.parent.parent.parent / "static" / "temp.svg"
+    svg_path = Path(__file__).parent.parent.parent.parent.parent / "static" / "Certificates.svg"
     svg_data_uri = ""
     logger.debug(f"Looking for SVG at: {svg_path}")
     logger.debug(f"SVG exists: {svg_path.exists()}")
