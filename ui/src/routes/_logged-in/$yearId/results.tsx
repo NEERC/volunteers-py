@@ -124,9 +124,8 @@ function RouteComponent() {
           color="primary"
           onClick={async () => {
             try {
-              await openAuthenticatedPage(
-                `/api/v1/admin/year/${yearId}/certificates`,
-              );
+              const url = `${import.meta.env.BASE_URL}api/v1/admin/year/${yearId}/certificates`;
+              await openAuthenticatedPage(url);
             } catch (error) {
               console.error("Failed to open certificates:", error);
               alert("Failed to open certificates. Please try again.");

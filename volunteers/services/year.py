@@ -30,6 +30,7 @@ from volunteers.schemas.position import PositionEditIn, PositionIn
 from volunteers.schemas.user_day import UserDayEditIn, UserDayIn
 from volunteers.schemas.year import YearEditIn, YearIn
 from volunteers.sockets.assignments import broadcast_assignment_update
+from volunteers.utils.cache import Cache
 
 from .base import BaseService
 from .errors import DomainError, PositionAlreadyExists
@@ -75,6 +76,12 @@ class ManagerForYear:
     day_id: int
 
 
+@dataclass(frozen=True)
+class XPCacheKey:
+    user_id: int
+    year_id: int
+
+
 class YearService(BaseService):
     def __init__(
         self,
@@ -83,6 +90,7 @@ class YearService(BaseService):
     ) -> None:
         self.notifier = notifier
         self.socketio_server = socketio_server
+        self.xp_cache = Cache[XPCacheKey, tuple[float, list[str]]](max_size=1000)
         super().__init__()
 
     async def get_years(self) -> list[Year]:
@@ -370,6 +378,7 @@ class YearService(BaseService):
                 updated_position.description = position_edit_in.description
 
             await session.commit()
+            self.xp_cache.purge()
             self.logger.info(f"Position {position_id} updated successfully")
 
     async def add_day(self, day_in: DayIn) -> Day:
@@ -384,6 +393,7 @@ class YearService(BaseService):
         async with self.session_scope() as session:
             session.add(created_day)
             await session.commit()
+            self.xp_cache.purge()
         return created_day
 
     async def edit_day_by_day_id(self, day_id: int, day_edit_in: DayEditIn) -> None:
@@ -408,7 +418,7 @@ class YearService(BaseService):
                 updated_day.assignment_published = assignment_published
 
             await session.commit()
-
+            self.xp_cache.purge()
             # Broadcast if assignment_published status changed
             if (
                 day_edit_in.assignment_published is not None
@@ -441,7 +451,7 @@ class YearService(BaseService):
             await self.notifier.notify(
                 f"[{day.name}] {user.first_name_ru} {user.last_name_ru} (@{user.telegram_username}) \n(unassigned) -> {position.name} {hall.name if hall else ''}\n(by @{author.telegram_username})"
             )
-
+            self.xp_cache.purge()
             # Broadcast assignment update via WebSocket
             await broadcast_assignment_update(
                 self.socketio_server,
@@ -486,7 +496,7 @@ class YearService(BaseService):
             updated_user_day.position = new_position
             updated_user_day.hall = new_hall
             await session.commit()
-
+            self.xp_cache.purge()
             day = await updated_user_day.awaitable_attrs.day
             application_form = await updated_user_day.awaitable_attrs.application_form
             user = await application_form.awaitable_attrs.user
@@ -534,6 +544,7 @@ class YearService(BaseService):
                 "deleted",
                 {"user_day_id": user_day_id},
             )
+            self.xp_cache.purge()
 
     async def copy_assignments_from_day(
         self,
@@ -632,6 +643,7 @@ class YearService(BaseService):
                 copied_count += 1
 
             await session.commit()
+            self.xp_cache.purge()
 
             # Broadcast bulk assignment update via WebSocket
             if copied_count > 0:
@@ -654,6 +666,7 @@ class YearService(BaseService):
             session.add(created_assessment)
             await session.commit()
             await session.refresh(created_assessment)
+            self.xp_cache.purge()
         return created_assessment
 
     async def edit_assessment_by_assessment_id(
@@ -674,6 +687,7 @@ class YearService(BaseService):
                 updated_assessment.value = value
 
             await session.commit()
+            self.xp_cache.purge()
 
     async def update_user_day_attendance(self, user_day_id: int, attendance: Attendance) -> None:
         """Update attendance for a user day."""
@@ -685,6 +699,7 @@ class YearService(BaseService):
 
             user_day_obj.attendance = attendance
             await session.commit()
+            self.xp_cache.purge()
 
     async def create_form(self, form: ApplicationFormIn) -> None:
         async with self.session_scope() as session:
@@ -706,6 +721,7 @@ class YearService(BaseService):
                 )
                 session.add(association)
             await session.commit()
+            self.xp_cache.purge()
 
     async def update_form(self, form: ApplicationFormIn) -> None:
         async with self.session_scope() as session:
@@ -855,6 +871,10 @@ class YearService(BaseService):
         Returns:
             Tuple of (XP, experience_explanation)
         """
+        key = XPCacheKey(user_id=user_id, year_id=year_id)
+        if xp := self.xp_cache.get(key):
+            return xp
+
         async with self.session_scope() as session:
             user_form = (
                 await session.execute(
@@ -941,7 +961,7 @@ class YearService(BaseService):
             if (math.ceil(mandatory_experience) - mandatory_experience) < 0.2:
                 mandatory_experience = math.ceil(mandatory_experience)
                 experience_explanation.append(f"Encouraged rounding up to: {mandatory_experience}")
-
+            self.xp_cache.set(key, (mandatory_experience, experience_explanation))
             return mandatory_experience, experience_explanation
 
     async def _calculate_cumulative_xp(
