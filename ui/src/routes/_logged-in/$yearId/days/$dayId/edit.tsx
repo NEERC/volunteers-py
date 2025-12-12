@@ -1252,6 +1252,7 @@ function RouteComponent() {
           user.first_name_en,
           user.last_name_en,
           user.isu_id,
+          user.itmo_group,
           "☆".repeat(user.rank_stars_count),
           position.name,
           hall?.name,
