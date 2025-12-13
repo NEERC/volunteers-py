@@ -1249,6 +1249,7 @@ function RouteComponent() {
         return [
           user.first_name_ru,
           user.last_name_ru,
+          user.patronymic_ru,
           user.first_name_en,
           user.last_name_en,
           user.isu_id,
