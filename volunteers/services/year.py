@@ -708,6 +708,7 @@ class YearService(BaseService):
                 user_id=form.user_id,
                 itmo_group=form.itmo_group,
                 comments=form.comments,
+                unusual_skills=form.unusual_skills,
                 needs_invitation=form.needs_invitation,
             )
             session.add(created_form)
@@ -740,6 +741,7 @@ class YearService(BaseService):
 
             updated_form.itmo_group = form.itmo_group
             updated_form.comments = form.comments
+            updated_form.unusual_skills = form.unusual_skills
             updated_form.needs_invitation = form.needs_invitation
             await session.flush()
 
