@@ -401,17 +401,17 @@ function RouteComponent() {
           />
 
           <TextField
-              fullWidth
-              label={t("Unusual Skills")}
-              name="unusual_skills"
-              multiline
-              rows={3}
-              value={formik.values.unusual_skills}
-              onChange={formik.handleChange}
-              onBlur={formik.handleBlur}
-              disabled={!year.open_for_registration}
-              {...getFieldErrorProps("unusual_skills")}
-              sx={{ mb: 3 }}
+            fullWidth
+            label={t("Unusual Skills")}
+            name="unusual_skills"
+            multiline
+            rows={3}
+            value={formik.values.unusual_skills}
+            onChange={formik.handleChange}
+            onBlur={formik.handleBlur}
+            disabled={!year.open_for_registration}
+            {...getFieldErrorProps("unusual_skills")}
+            sx={{ mb: 3 }}
            />
 
           <Box sx={{ mb: 3 }}>
