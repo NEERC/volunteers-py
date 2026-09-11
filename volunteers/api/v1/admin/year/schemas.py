@@ -61,6 +61,7 @@ class RegistrationFormItem(BaseModel):
     gender: Gender | None
     itmo_group: str | None
     comments: str
+    unusual_skills: str
     needs_invitation: bool
     desired_positions: list[PositionOut]  # TODO: change to list[str]
     experience: list[ExperienceItem]

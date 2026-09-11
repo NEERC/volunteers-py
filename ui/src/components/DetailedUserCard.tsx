@@ -38,6 +38,7 @@ export function DetailedUserCard({
     user.telegram_username ||
     user.desired_positions.length > 0 ||
     user.comments ||
+    user.unusual_skills ||
     user.gender ||
     user.needs_invitation ||
     (user.experience && user.experience.length > 0);
@@ -154,6 +155,31 @@ export function DetailedUserCard({
               }}
             >
               "{user.comments}"
+            </Typography>
+          </Box>
+        )}
+
+        {user.unusual_skills && (
+          <Box sx={{ mt: 0.5 }}>
+            <Typography
+              variant="body2"
+              sx={{ fontWeight: 600, mb: 0.25, fontSize: "0.75rem" }}
+            >
+              {t("Unusual Skills")}:
+            </Typography>
+
+            <Typography
+              variant="body2"
+              color="text.secondary"
+              sx={{
+                fontStyle: "italic",
+                backgroundColor: "grey.50",
+                p: 0.5,
+                borderRadius: 0.5,
+                fontSize: "0.7rem",
+              }}
+            >
+              "{user.unusual_skills}"
             </Typography>
           </Box>
         )}

@@ -98,6 +98,7 @@ async def get_form_year(
         else [],
         itmo_group=form.itmo_group if form else "",
         comments=form.comments if form else "",
+        unusual_skills=form.unusual_skills if form else "",
         needs_invitation=form.needs_invitation if form else False,
     )
 
@@ -139,6 +140,7 @@ async def save_form_year(
         desired_positions_ids=request.desired_positions_ids,
         itmo_group=request.itmo_group,
         comments=request.comments,
+        unusual_skills=request.unusual_skills,
         needs_invitation=request.needs_invitation,
     )
     if not form:
