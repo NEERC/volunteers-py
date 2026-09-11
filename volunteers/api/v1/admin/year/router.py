@@ -175,6 +175,7 @@ async def get_registration_forms(
                 gender=form.user.gender,
                 itmo_group=form.itmo_group,
                 comments=form.comments,
+                unusual_skills=form.unusual_skills,
                 needs_invitation=form.needs_invitation,
                 desired_positions=[
                     PositionOut(
