@@ -80,7 +80,6 @@ function RouteComponent() {
       email: user?.email ?? "",
       gender: user?.gender ?? "",
       unusual_skills: year?.unusual_skills ?? "",
-//       unusual_skills: "",
     },
     enableReinitialize: true,
     validationSchema: Yup.object({
