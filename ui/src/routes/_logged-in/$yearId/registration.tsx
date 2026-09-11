@@ -412,7 +412,7 @@ function RouteComponent() {
             disabled={!year.open_for_registration}
             {...getFieldErrorProps("unusual_skills")}
             sx={{ mb: 3 }}
-           />
+          />
 
           <Box sx={{ mb: 3 }}>
             <FormControl>
