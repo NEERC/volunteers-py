@@ -15,6 +15,7 @@ import {
   editYearApiV1AdminYearYearIdEditPost,
   getAllUsersApiV1AdminUserGet,
   getDayAssignmentsApiV1AdminUserDayDayDayIdAssignmentsGet,
+  exportDayDataApiV1AdminUserDayDayDayIdExportGet,
   getRegistrationFormsApiV1AdminYearYearIdRegistrationFormsGet,
   getUserByIdApiV1AdminUserUserIdGet,
   getUsersListApiV1AdminYearYearIdUsersGet,
@@ -484,6 +485,19 @@ export const useDayAssignments = (dayId: string | number) => {
     refetchOnWindowFocus: true, // Refetch when window gains focus
     refetchOnMount: true, // Refetch on component mount
     staleTime: 0, // Always consider data stale for immediate updates
+  });
+};
+
+export const useDayExport = () => {
+  return useMutation({
+    mutationFn: async (dayId: string | number) => {
+      const response = await exportDayDataApiV1AdminUserDayDayDayIdExportGet({
+        path: { day_id: Number(dayId) },
+        throwOnError: true,
+      });
+
+      return response.data;
+    },
   });
 };
 
