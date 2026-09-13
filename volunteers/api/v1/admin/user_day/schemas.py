@@ -31,5 +31,6 @@ class AssignmentItem(BaseModel):
 class AssignmentsResponse(BaseModel):
     assignments: list[AssignmentItem]
 
+
 class DayExportResponse(BaseModel):
     data: str
