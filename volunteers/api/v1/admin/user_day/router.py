@@ -6,6 +6,7 @@ from loguru import logger
 
 from volunteers.auth.deps import with_admin
 from volunteers.core.di import Container
+from volunteers.core.experience import get_rank
 from volunteers.models import User
 from volunteers.models.attendance import Attendance
 from volunteers.schemas.user_day import UserDayEditIn, UserDayIn
@@ -16,6 +17,7 @@ from .schemas import (
     AddUserDayResponse,
     AssignmentItem,
     AssignmentsResponse,
+    DayExportResponse,
     EditUserDayRequest,
 )
 
@@ -113,3 +115,51 @@ async def get_day_assignments(
     ]
 
     return AssignmentsResponse(assignments=assignment_items)
+
+
+@router.get(
+    "/day/{day_id}/export",
+    response_model=DayExportResponse,
+    description="Export all assignments for a day as TSV (admin only)",
+)
+@inject
+async def export_day_data(
+    day_id: Annotated[int, Path(title="The ID of the day")],
+    _: Annotated[User, Depends(with_admin)],
+    year_service: Annotated[YearService, Depends(Provide[Container.year_service])],
+) -> DayExportResponse:
+    assignments = await year_service.get_all_assignments_by_day_id(day_id=day_id)
+
+    rows: list[str] = []
+
+    for assignment in assignments:
+        form = assignment.application_form
+        volunteer = form.user
+
+        previous_xp, current_xp = await year_service.get_xp_by_user_id(form.user_id)
+        rank_stars_count = get_rank(previous_xp + current_xp)[1]
+
+        telegram_handle = f"@{volunteer.telegram_username}" if volunteer.telegram_username else ""
+
+        row = [
+            volunteer.first_name_ru,
+            volunteer.last_name_ru,
+            volunteer.patronymic_ru or "",
+            volunteer.first_name_en,
+            volunteer.last_name_en,
+            "" if volunteer.isu_id is None else str(volunteer.isu_id),
+            form.itmo_group or "",
+            telegram_handle,
+            "☆" * rank_stars_count,
+            assignment.position.name,
+            assignment.hall.name if assignment.hall else "",
+        ]
+
+        rows.append("\t".join(row))
+
+    tsv = "\n".join(rows)
+
+    if tsv:
+        tsv += "\n"
+
+    return DayExportResponse(data=tsv)
