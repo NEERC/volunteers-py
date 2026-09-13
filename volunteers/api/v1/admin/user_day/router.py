@@ -6,19 +6,19 @@ from loguru import logger
 
 from volunteers.auth.deps import with_admin
 from volunteers.core.di import Container
+from volunteers.core.experience import get_rank
 from volunteers.models import User
 from volunteers.models.attendance import Attendance
 from volunteers.schemas.user_day import UserDayEditIn, UserDayIn
 from volunteers.services.year import YearService
-from volunteers.core.experience import get_rank
 
 from .schemas import (
     AddUserDayRequest,
     AddUserDayResponse,
     AssignmentItem,
     AssignmentsResponse,
-    EditUserDayRequest,
     DayExportResponse,
+    EditUserDayRequest,
 )
 
 router = APIRouter(tags=["user-day"])
@@ -116,6 +116,7 @@ async def get_day_assignments(
 
     return AssignmentsResponse(assignments=assignment_items)
 
+
 @router.get(
     "/day/{day_id}/export",
     response_model=DayExportResponse,
@@ -138,11 +139,7 @@ async def export_day_data(
         previous_xp, current_xp = await year_service.get_xp_by_user_id(form.user_id)
         _, rank_stars_count = get_rank(previous_xp + current_xp)
 
-        telegram = (
-            f"@{volunteer.telegram_username}"
-            if volunteer.telegram_username
-            else ""
-        )
+        telegram_handle = f"@{volunteer.telegram_username}" if volunteer.telegram_username else ""
 
         row = [
             volunteer.first_name_ru,
@@ -152,7 +149,7 @@ async def export_day_data(
             volunteer.last_name_en,
             "" if volunteer.isu_id is None else str(volunteer.isu_id),
             form.itmo_group or "",
-            telegram,
+            telegram_handle,
             "☆" * rank_stars_count,
             assignment.position.name,
             assignment.hall.name if assignment.hall else "",
