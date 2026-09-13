@@ -137,7 +137,7 @@ async def export_day_data(
         volunteer = form.user
 
         previous_xp, current_xp = await year_service.get_xp_by_user_id(form.user_id)
-        _, rank_stars_count = get_rank(previous_xp + current_xp)
+        rank_stars_count = get_rank(previous_xp + current_xp)[1]
 
         telegram_handle = f"@{volunteer.telegram_username}" if volunteer.telegram_username else ""
 
