@@ -92,6 +92,7 @@ export type ApplicationFormYearSaveRequest = {
     desired_positions_ids: Array<number>;
     itmo_group?: string | null;
     comments?: string;
+    unusual_skills?: string;
     needs_invitation?: boolean;
 };
 
@@ -102,6 +103,7 @@ export type ApplicationFormYearSavedResponse = {
     desired_positions: Array<PositionOut>;
     itmo_group: string | null;
     comments: string;
+    unusual_skills: string;
     needs_invitation: boolean;
     open_for_registration: boolean;
 };
@@ -309,6 +311,7 @@ export type RegistrationFormItem = {
     gender: Gender | null;
     itmo_group: string | null;
     comments: string;
+    unusual_skills: string;
     needs_invitation: boolean;
     desired_positions: Array<PositionOut>;
     experience: Array<ExperienceItem>;

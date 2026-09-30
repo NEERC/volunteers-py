@@ -15,7 +15,7 @@ class I18nService(BaseService):
         locales_path = Path(__file__).parent / "i18n_locales"
         self._translations: dict[str, dict[str, str]] = {}
         for language in locales_path.iterdir():
-            with open(language / "translation.json") as f:
+            with open(language / "translation.json", encoding="utf-8") as f:
                 self._translations[language.stem] = json.load(f)
 
     def translate(self, key: str, **kwargs: Any) -> str:
