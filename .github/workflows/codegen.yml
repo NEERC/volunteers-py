@@ -1,0 +1,139 @@
+name: Codegen
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  ui-codegen:
+    name: Generated UI code is up to date
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v7
+
+    - name: Set PYTHONPATH
+      run: echo "PYTHONPATH=$(pwd)" >> $GITHUB_ENV
+
+    - name: Set up Python 3.13
+      uses: actions/setup-python@v7
+      with:
+        python-version: "3.13"
+
+    - name: Install Poetry
+      uses: snok/install-poetry@v1
+      with:
+        version: latest
+        virtualenvs-create: true
+        virtualenvs-in-project: true
+
+    - name: Load cached venv
+      id: cached-poetry-dependencies
+      uses: actions/cache@v6
+      with:
+        path: .venv
+        key: venv-${{ runner.os }}-${{ hashFiles('**/poetry.lock') }}
+
+    - name: Install dependencies
+      if: steps.cached-poetry-dependencies.outputs.cache-hit != 'true'
+      run: poetry install --no-interaction --no-root
+
+    - name: Setup pnpm
+      uses: pnpm/action-setup@v6
+      with:
+        package_json_file: ui/package.json
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v7
+      with:
+        node-version: 'lts/*'
+        cache: 'pnpm'
+        cache-dependency-path: 'ui/pnpm-lock.yaml'
+
+    - name: Install UI dependencies
+      run: cd ui && pnpm install --frozen-lockfile
+
+    # openapi-ts reads the schema from the running backend, same as in local development
+    - name: Start backend
+      run: |
+        cp .env.example .env
+        nohup poetry run uvicorn volunteers.app:app --port 8000 > "$RUNNER_TEMP/backend.log" 2>&1 &
+        for _ in $(seq 1 60); do
+          curl -sf http://localhost:8000/hc > /dev/null && exit 0
+          sleep 1
+        done
+        cat "$RUNNER_TEMP/backend.log"
+        exit 1
+
+    - name: Regenerate OpenAPI client
+      run: cd ui && pnpm run openapi-ts
+
+    - name: Regenerate route tree
+      run: cd ui && pnpm exec vite build
+
+    - name: Check that generated code is unchanged
+      run: |
+        if [ -n "$(git status --porcelain)" ]; then
+          git status
+          git diff
+          echo "::error::Generated code is out of date. Run 'pnpm run openapi-ts' (with the backend running) and 'pnpm run build' in ui/, then commit the changes."
+          exit 1
+        fi
+
+  migrations:
+    name: Migrations match models
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_PASSWORD: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+    steps:
+    - uses: actions/checkout@v7
+
+    - name: Set PYTHONPATH
+      run: echo "PYTHONPATH=$(pwd)" >> $GITHUB_ENV
+
+    - name: Set up Python 3.13
+      uses: actions/setup-python@v7
+      with:
+        python-version: "3.13"
+
+    - name: Install Poetry
+      uses: snok/install-poetry@v1
+      with:
+        version: latest
+        virtualenvs-create: true
+        virtualenvs-in-project: true
+
+    - name: Load cached venv
+      id: cached-poetry-dependencies
+      uses: actions/cache@v6
+      with:
+        path: .venv
+        key: venv-${{ runner.os }}-${{ hashFiles('**/poetry.lock') }}
+
+    - name: Install dependencies
+      if: steps.cached-poetry-dependencies.outputs.cache-hit != 'true'
+      run: poetry install --no-interaction --no-root
+
+    # .env.example points at postgres:postgres@localhost:5432/postgres
+    - name: Prepare environment
+      run: cp .env.example .env
+
+    - name: Apply migrations
+      run: poetry run alembic upgrade head
+
+    - name: Check that models have no unmigrated changes
+      run: poetry run alembic check
