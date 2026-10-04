@@ -159,6 +159,7 @@ async def test_get_registration_forms_with_experience(app: AppWithContainer) -> 
         user_id=1,
         itmo_group="M1234",
         comments="Test comment",
+        unusual_skills="",
         needs_invitation=False,
         created_at=datetime(2023, 1, 1, tzinfo=UTC),
         updated_at=datetime(2023, 1, 2, tzinfo=UTC),
