@@ -34,3 +34,19 @@ export function createErrorHandler(operation: string) {
     logApiError(operation, error);
   };
 }
+
+/** Server-provided error detail, or the error message as a fallback. */
+export function apiErrorMessage(error: unknown, fallback: string): string {
+  if (error instanceof AxiosError) {
+    const data = error.response?.data as
+      | ResponseWithDescriptionOrDetail
+      | undefined;
+    if (typeof data?.detail === "string") {
+      return data.detail;
+    }
+    if (data?.description) {
+      return data.description;
+    }
+  }
+  return error instanceof Error ? error.message : fallback;
+}

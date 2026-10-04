@@ -4,8 +4,6 @@ from volunteers.models.gender import Gender
 
 
 class UserIn(BaseModel):
-    telegram_id: int
-
     first_name_ru: str
     last_name_ru: str
     first_name_en: str
@@ -32,4 +30,3 @@ class UserUpdate(BaseModel):
     telegram_username: str | None = None
     gender: Gender | None = None
     is_admin: bool | None = None
-    telegram_id: int | None = None

@@ -1,26 +1,23 @@
+import { AxiosError } from "axios";
 import { action, makeAutoObservable } from "mobx";
 import { makePersistable } from "mobx-persist-store";
 import {
-  loginApiV1AuthTelegramLoginPost,
+  keycloakAuthApiV1AuthKeycloakPost,
+  legacyAuthApiV1AuthLegacyPost,
   meApiV1AuthMeGet,
-  migrateApiV1AuthTelegramMigratePost,
   refreshApiV1AuthRefreshPost,
-  registerApiV1AuthTelegramRegisterPost,
+  registerApiV1AuthRegisterPost,
+  telegramAuthApiV1AuthTelegramPost,
 } from "@/client/sdk.gen";
 import type {
+  AuthFlowResponse,
+  KeycloakAuthRequest,
+  LegacyAuthRequest,
   RegistrationRequest,
-  TelegramLoginRequest,
-  TelegramMigrateRequest,
+  TelegramAuthRequest,
   VolunteersApiV1AuthSchemasUserResponse,
 } from "@/client/types.gen";
 import { client } from "../client/client.gen";
-
-export class UserNotFoundError extends Error {
-  constructor(message: string) {
-    super(message);
-    this.name = "UserNotFoundError";
-  }
-}
 
 class AuthStore {
   private _user: VolunteersApiV1AuthSchemasUserResponse | null = null;
@@ -67,55 +64,54 @@ class AuthStore {
     return this.hydrationPromise;
   }
 
+  /**
+   * Authentication steps. Each step verifies one identity and returns the next
+   * required step. Tokens are stored once the flow succeeds.
+   */
   @action
-  async loginTelegram(data: TelegramLoginRequest) {
-    const response = await loginApiV1AuthTelegramLoginPost({
-      body: data,
-      // throwOnError: true,
+  async authTelegram(body: TelegramAuthRequest) {
+    const response = await telegramAuthApiV1AuthTelegramPost({
+      body,
+      throwOnError: true,
     });
-
-    if (response.status === 403) {
-      throw new UserNotFoundError("User not found");
-    }
-
-    if (response.data === undefined) {
-      throw new Error("Failed to login");
-    }
-
-    if (response.data.success !== true) {
-      throw new Error(`Failed to login: ${response.data.description}`);
-    }
-
-    this.accessToken = response.data.token;
-    this.refreshToken = response.data.refresh_token;
-
-    await this.fetchUser();
+    return this.handleAuthFlow(response.data);
   }
 
   @action
-  async registerTelegram(telegramData: RegistrationRequest) {
-    const response = await registerApiV1AuthTelegramRegisterPost({
-      body: telegramData,
+  async authKeycloak(body: KeycloakAuthRequest) {
+    const response = await keycloakAuthApiV1AuthKeycloakPost({
+      body,
       throwOnError: true,
     });
-
-    this.accessToken = response.data.token;
-    this.refreshToken = response.data.refresh_token;
-
-    await this.fetchUser();
+    return this.handleAuthFlow(response.data);
   }
 
   @action
-  async migrateTelegram(telegramData: TelegramMigrateRequest) {
-    const response = await migrateApiV1AuthTelegramMigratePost({
-      body: telegramData,
+  async authLegacy(body: LegacyAuthRequest) {
+    const response = await legacyAuthApiV1AuthLegacyPost({
+      body,
       throwOnError: true,
     });
+    return this.handleAuthFlow(response.data);
+  }
 
-    this.accessToken = response.data.token;
-    this.refreshToken = response.data.refresh_token;
+  @action
+  async register(body: RegistrationRequest) {
+    const response = await registerApiV1AuthRegisterPost({
+      body,
+      throwOnError: true,
+    });
+    return this.handleAuthFlow(response.data);
+  }
 
-    await this.fetchUser();
+  @action
+  private async handleAuthFlow(flow: AuthFlowResponse) {
+    if (flow.status === "success" && flow.tokens) {
+      this.accessToken = flow.tokens.token;
+      this.refreshToken = flow.tokens.refresh_token;
+      await this.fetchUser();
+    }
+    return flow;
   }
 
   installMiddleware() {
@@ -163,10 +159,19 @@ class AuthStore {
       throw new Error("No refresh token");
     }
 
-    const { data } = await refreshApiV1AuthRefreshPost({
-      throwOnError: true,
-      body: { refresh_token: this.refreshToken },
-    });
+    let data: Awaited<ReturnType<typeof refreshApiV1AuthRefreshPost>>["data"];
+    try {
+      ({ data } = await refreshApiV1AuthRefreshPost({
+        throwOnError: true,
+        body: { refresh_token: this.refreshToken },
+      }));
+    } catch (error) {
+      if (error instanceof AxiosError && error.response?.status === 401) {
+        // The session is no longer valid (e.g. the ITMO account is not linked yet)
+        this.logout();
+      }
+      throw error;
+    }
 
     if (data.success === false) {
       throw new Error(data.description);

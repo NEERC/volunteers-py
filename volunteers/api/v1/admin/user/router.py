@@ -11,11 +11,27 @@ from volunteers.core.di import Container
 from volunteers.models import User
 from volunteers.schemas.user import UserUpdate
 from volunteers.services.export import ExportService
+from volunteers.services.identity import IdentityService
 from volunteers.services.user import UserService
 
-from .schemas import AllUsersResponse, EditUserRequest, UserResponse
+from .schemas import AllUsersResponse, EditUserRequest, UserIdentityResponse, UserResponse
 
 router = APIRouter(tags=["user"])
+
+
+async def _user_identities(
+    user_id: int, identity_service: IdentityService
+) -> list[UserIdentityResponse]:
+    return [
+        UserIdentityResponse(
+            id=i.id,
+            provider=i.provider,
+            subject=i.subject,
+            display_name=i.display_name,
+            created_at=i.created_at,
+        )
+        for i in await identity_service.get_user_identities(user_id)
+    ]
 
 
 @router.get(
@@ -57,7 +73,6 @@ async def get_all_users(
     user_list = [
         UserResponse(
             user_id=user.id,
-            telegram_id=user.telegram_id,
             first_name_ru=user.first_name_ru,
             last_name_ru=user.last_name_ru,
             patronymic_ru=user.patronymic_ru,
@@ -85,6 +100,7 @@ async def get_user_by_id(
     user_id: Annotated[int, Path(title="The ID of the user")],
     _: Annotated[User, Depends(with_admin)],
     user_service: Annotated[UserService, Depends(Provide[Container.user_service])],
+    identity_service: Annotated[IdentityService, Depends(Provide[Container.identity_service])],
 ) -> UserResponse:
     user = await user_service.get_user_by_id(user_id)
     if not user:
@@ -92,7 +108,6 @@ async def get_user_by_id(
 
     return UserResponse(
         user_id=user.id,
-        telegram_id=user.telegram_id,
         first_name_ru=user.first_name_ru,
         last_name_ru=user.last_name_ru,
         patronymic_ru=user.patronymic_ru,
@@ -104,6 +119,7 @@ async def get_user_by_id(
         telegram_username=user.telegram_username,
         is_admin=user.is_admin,
         gender=user.gender,
+        identities=await _user_identities(user.id, identity_service),
     )
 
 
@@ -114,6 +130,7 @@ async def edit_user(
     request: EditUserRequest,
     _: Annotated[User, Depends(with_admin)],
     user_service: Annotated[UserService, Depends(Provide[Container.user_service])],
+    identity_service: Annotated[IdentityService, Depends(Provide[Container.identity_service])],
 ) -> UserResponse:
     user_update = UserUpdate(**request.model_dump())
     updated_user = await user_service.update_user(user_id=user_id, user_update=user_update)
@@ -123,7 +140,6 @@ async def edit_user(
     logger.info(f"User {user_id} has been edited")
     return UserResponse(
         user_id=updated_user.id,
-        telegram_id=updated_user.telegram_id,
         first_name_ru=updated_user.first_name_ru,
         last_name_ru=updated_user.last_name_ru,
         patronymic_ru=updated_user.patronymic_ru,
@@ -135,4 +151,21 @@ async def edit_user(
         telegram_username=updated_user.telegram_username,
         is_admin=updated_user.is_admin,
         gender=updated_user.gender,
+        identities=await _user_identities(updated_user.id, identity_service),
     )
+
+
+@router.delete("/{user_id}/identities/{identity_id}")
+@inject
+async def delete_user_identity(
+    user_id: Annotated[int, Path(title="The ID of the user")],
+    identity_id: Annotated[int, Path(title="The ID of the identity")],
+    _: Annotated[User, Depends(with_admin)],
+    identity_service: Annotated[IdentityService, Depends(Provide[Container.identity_service])],
+) -> list[UserIdentityResponse]:
+    identity = await identity_service.get_identity_by_id(identity_id)
+    if identity is None or identity.user_id != user_id:
+        raise HTTPException(status_code=404, detail="Identity not found")
+    await identity_service.delete_identity(identity_id)
+    logger.info(f"Identity {identity_id} ({identity.provider.value}) of user {user_id} deleted")
+    return await _user_identities(user_id, identity_service)

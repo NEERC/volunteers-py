@@ -2,10 +2,12 @@ import {
   Alert,
   Box,
   Button,
+  Chip,
   Container,
-  LinearProgress,
+  Divider,
   Link,
   Paper,
+  Stack,
   Tab,
   Tabs,
   TextField,
@@ -14,12 +16,21 @@ import {
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { Field, Form, Formik } from "formik";
 import { observer } from "mobx-react-lite";
-import { useEffect, useId, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import * as Yup from "yup";
-import type { TelegramLoginRequest } from "@/client";
-import { TELEGRAM_BOT_HANDLE, TELEGRAM_BOT_ORIGIN } from "@/const";
-import { authStore, UserNotFoundError } from "@/store/auth";
+import type {
+  AuthFlowResponse,
+  IdentityProvider,
+  RegistrationPrefill,
+} from "@/client";
+import { AuthMethodsInfo } from "@/components/AuthMethodsInfo";
+import { TelegramLoginButton } from "@/components/TelegramLoginButton";
+import { PROVIDER_NAMES } from "@/const";
+import { useTelegramAvailable } from "@/data/use-auth";
+import { authStore } from "@/store/auth";
+import { apiErrorMessage } from "@/utils/apiErrorHandling";
+import { consumeKeycloakCallback, startKeycloakLogin } from "@/utils/keycloak";
 
 // Custom TextField component for Field
 const TextFieldComponent = ({
@@ -55,373 +66,430 @@ export const Route = createFileRoute("/login")({
   component: observer(RouteComponent),
 });
 
-type TelegramEvent =
-  | {
-      event: "auth_user";
-      auth_data: {
-        id: number;
-        first_name: string;
-        last_name: string;
-        username: string | null;
-        photo_url: string;
-        auth_date: number;
-        hash: string;
-      };
-    }
-  | {
-      event: "ready";
-    }
-  | {
-      event: "resize";
-      width: number;
-      height: number;
-    };
+type RegistrationValues = {
+  first_name_ru: string;
+  last_name_ru: string;
+  patronymic_ru: string | null;
+  first_name_en: string;
+  last_name_en: string;
+  isu_id: number | "" | null;
+  email: string;
+};
+
+const CYRILLIC = /[А-Яа-яЁё]/;
+
+const registrationInitialValues = (
+  prefill: RegistrationPrefill | null | undefined,
+): RegistrationValues => {
+  const firstName = prefill?.first_name ?? "";
+  const lastName = prefill?.last_name ?? "";
+  const isRussian = CYRILLIC.test(firstName + lastName);
+  return {
+    first_name_ru: isRussian ? firstName : "",
+    last_name_ru: isRussian ? lastName : "",
+    patronymic_ru: null,
+    first_name_en: isRussian ? "" : firstName,
+    last_name_en: isRussian ? "" : lastName,
+    isu_id: null,
+    email: prefill?.email ?? "",
+  };
+};
 
 function RouteComponent() {
   const { t } = useTranslation();
-  const registerFormId = useId();
-  const migrateFormId = useId();
-  const telegramRef = useRef<HTMLIFrameElement>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [authFlow, setAuthFlow] = useState<"login" | "register" | "migrate">(
-    "login",
-  );
-  const [storedTelegramData, setStoredTelegramData] =
-    useState<TelegramLoginRequest | null>(null);
-  const [isRegisterSubmitting, setIsRegisterSubmitting] = useState(false);
-  const [isMigrateSubmitting, setIsMigrateSubmitting] = useState(false);
   const navigate = useNavigate();
+  const telegramAvailable = useTelegramAvailable();
+  const [flow, setFlow] = useState<AuthFlowResponse | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showLegacy, setShowLegacy] = useState(false);
+  const [registrationTab, setRegistrationTab] = useState<
+    "register" | "telegram" | "legacy"
+  >("register");
 
-  const handleRegisterSubmit = async (values: {
-    first_name_ru: string;
-    last_name_ru: string;
-    patronymic_ru: string | null;
-    first_name_en: string;
-    last_name_en: string;
-    isu_id: number | "" | null;
-  }) => {
-    setIsRegisterSubmitting(true);
-    setError(null); // Clear any previous errors
-    try {
-      if (!storedTelegramData) {
-        setAuthFlow("login");
-        setError(t("Please, log in again"));
-        throw new Error("No Telegram data stored");
-      }
-      await authStore.registerTelegram({
-        ...storedTelegramData,
-        first_name_ru: values.first_name_ru,
-        last_name_ru: values.last_name_ru,
-        ...(values.isu_id != null && values.isu_id !== ""
-          ? { isu_id: values.isu_id }
-          : {}),
-        first_name_en: values.first_name_en,
-        last_name_en: values.last_name_en,
-        patronymic_ru: values.patronymic_ru,
-      });
-      navigate({ to: "/" });
-    } catch (error) {
-      console.error("Registration error:", error);
-      setError(
-        error instanceof Error
-          ? error.message
-          : t("Registration failed. Please try again."),
-      );
-    } finally {
-      setIsRegisterSubmitting(false);
-    }
-  };
+  const pendingToken = flow?.pending_token ?? null;
+  const hasIdentity = (provider: IdentityProvider) =>
+    flow?.identities?.some((i) => i.provider === provider) ?? false;
 
-  const handleMigrateSubmit = async (values: {
-    email: string;
-    password: string;
-  }) => {
-    setIsMigrateSubmitting(true);
-    setError(null); // Clear any previous errors
-    try {
-      if (!storedTelegramData) {
-        setAuthFlow("login");
-        setError(t("Please, log in again"));
-        throw new Error("No Telegram data stored");
-      }
-      await authStore.migrateTelegram({
-        ...storedTelegramData,
-        email: values.email,
-        password: values.password,
-      });
-      navigate({ to: "/" });
-    } catch (error) {
-      console.error("Migration error:", error);
-      setError(
-        error instanceof Error
-          ? error.message
-          : t("Migration failed. Please try again."),
-      );
-    } finally {
-      setIsMigrateSubmitting(false);
-    }
-  };
-
-  useEffect(() => {
-    const listener = async (event: MessageEvent) => {
-      if (event.source !== telegramRef.current?.contentWindow) {
-        return;
-      }
-
-      if (!telegramRef.current) {
-        return;
-      }
-
-      const data = JSON.parse(event.data) as TelegramEvent;
-      if (data.event === "resize") {
-        telegramRef.current.style.width = `${data.width}px`;
-        telegramRef.current.style.height = `${data.height}px`;
-      }
-      if (data.event === "ready") {
-        setIsLoading(false);
-      }
-      if (data.event === "auth_user") {
-        const loginData = {
-          telegram_id: data.auth_data.id,
-          telegram_auth_date: data.auth_data.auth_date,
-          telegram_first_name: data.auth_data.first_name,
-          telegram_last_name: data.auth_data.last_name,
-          telegram_photo_url: data.auth_data.photo_url,
-          telegram_username: data.auth_data.username,
-          telegram_hash: data.auth_data.hash,
-        };
-        try {
-          await authStore.loginTelegram(loginData);
+  const runStep = useCallback(
+    async (step: () => Promise<AuthFlowResponse>) => {
+      setIsSubmitting(true);
+      setError(null);
+      try {
+        const result = await step();
+        if (result.status === "success") {
           navigate({ to: "/" });
-        } catch (error) {
-          console.error("Login error:", error);
-          if (error instanceof UserNotFoundError) {
-            setStoredTelegramData(loginData);
-            setAuthFlow("migrate");
-          } else {
-            setError(
-              error instanceof Error ? error.message : t("Unknown error"),
-            );
-          }
+          return;
         }
+        setFlow(result);
+        setShowLegacy(false);
+        setRegistrationTab("register");
+      } catch (error) {
+        console.error("Login error:", error);
+        setError(t(apiErrorMessage(error, "Unknown error")));
+      } finally {
+        setIsSubmitting(false);
       }
-    };
-    window.addEventListener("message", listener);
-    return () => {
-      window.removeEventListener("message", listener);
-    };
-  }, [navigate, t]);
+    },
+    [navigate, t],
+  );
+
+  // Handle the redirect back from ITMO Keycloak
+  const callbackHandled = useRef(false);
+  useEffect(() => {
+    if (callbackHandled.current) {
+      return;
+    }
+    callbackHandled.current = true;
+    const callback = consumeKeycloakCallback();
+    if (callback === "error") {
+      setError(t("ITMO login failed. Please try again."));
+    } else if (callback) {
+      runStep(() =>
+        authStore.authKeycloak({
+          code: callback.code,
+          code_verifier: callback.codeVerifier,
+          redirect_uri: callback.redirectUri,
+          pending_token: callback.pendingToken,
+        }),
+      );
+    }
+  }, [runStep, t]);
+
+  const handleKeycloak = async () => {
+    setIsSubmitting(true);
+    setError(null);
+    try {
+      await startKeycloakLogin(pendingToken);
+    } catch (error) {
+      console.error("Keycloak error:", error);
+      setError(t(apiErrorMessage(error, "Unknown error")));
+      setIsSubmitting(false);
+    }
+  };
+
+  const keycloakButton = (
+    <Button
+      fullWidth
+      size="large"
+      variant="contained"
+      onClick={handleKeycloak}
+      disabled={isSubmitting}
+    >
+      {t("Sign in with ITMO ID")}
+    </Button>
+  );
+
+  const telegramButton = (
+    <Box
+      sx={{
+        display: "flex",
+        justifyContent: "center",
+        alignItems: "center",
+        position: "relative",
+        minHeight: 40,
+      }}
+    >
+      <TelegramLoginButton
+        onAuth={(data) =>
+          runStep(() =>
+            authStore.authTelegram({ ...data, pending_token: pendingToken }),
+          )
+        }
+      />
+    </Box>
+  );
+
+  const legacyForm = (
+    <Formik
+      initialValues={{ email: "", password: "" }}
+      validationSchema={Yup.object().shape({
+        email: Yup.string()
+          .email(t("Invalid email"))
+          .required(t("Email is required")),
+        password: Yup.string().required(t("Password is required")),
+      })}
+      onSubmit={(values) =>
+        runStep(() =>
+          authStore.authLegacy({ ...values, pending_token: pendingToken }),
+        )
+      }
+    >
+      <Form>
+        <Typography variant="body2" color="text.secondary">
+          {t("Use the email and password from the old volunteers system")}
+        </Typography>
+        <Field
+          name="email"
+          component={TextFieldComponent}
+          label={t("Email")}
+          fullWidth
+          margin="dense"
+        />
+        <Field
+          name="password"
+          component={TextFieldComponent}
+          label={t("Password")}
+          type="password"
+          fullWidth
+          margin="dense"
+        />
+        <Button
+          fullWidth
+          variant="outlined"
+          type="submit"
+          disabled={isSubmitting}
+          sx={{ mt: 1 }}
+        >
+          {t("Continue")}
+        </Button>
+      </Form>
+    </Formik>
+  );
+
+  const registrationForm = pendingToken && (
+    <Formik
+      initialValues={registrationInitialValues(flow?.prefill)}
+      validationSchema={Yup.object().shape({
+        first_name_ru: Yup.string().required(
+          t("First name on Russian is required"),
+        ),
+        last_name_ru: Yup.string().required(
+          t("Last name on Russian is required"),
+        ),
+        first_name_en: Yup.string().required(
+          t("First name in English is required"),
+        ),
+        last_name_en: Yup.string().required(
+          t("Last name in English is required"),
+        ),
+        isu_id: Yup.number().nullable(),
+        patronymic_ru: Yup.string().nullable(),
+        email: Yup.string().email(t("Invalid email")),
+      })}
+      onSubmit={(values) =>
+        runStep(() =>
+          authStore.register({
+            pending_token: pendingToken,
+            first_name_ru: values.first_name_ru,
+            last_name_ru: values.last_name_ru,
+            patronymic_ru: values.patronymic_ru || null,
+            first_name_en: values.first_name_en,
+            last_name_en: values.last_name_en,
+            ...(values.isu_id != null && values.isu_id !== ""
+              ? { isu_id: values.isu_id }
+              : {}),
+            email: values.email || null,
+          }),
+        )
+      }
+    >
+      <Form>
+        <Field
+          name="first_name_ru"
+          component={TextFieldComponent}
+          label={t("Name on Russian")}
+          fullWidth
+          margin="dense"
+        />
+        <Field
+          name="last_name_ru"
+          component={TextFieldComponent}
+          label={t("Surname on Russian")}
+          fullWidth
+          margin="dense"
+        />
+        <Field
+          name="patronymic_ru"
+          component={TextFieldComponent}
+          label={t("Patronymic on Russian")}
+          fullWidth
+          margin="dense"
+        />
+        <Field
+          name="first_name_en"
+          component={TextFieldComponent}
+          label={t("First name in English")}
+          fullWidth
+          margin="dense"
+        />
+        <Field
+          name="last_name_en"
+          component={TextFieldComponent}
+          label={t("Last name in English")}
+          fullWidth
+          margin="dense"
+        />
+        <Field
+          name="isu_id"
+          component={TextFieldComponent}
+          label={t("ISU Number")}
+          fullWidth
+          margin="dense"
+        />
+        <Field
+          name="email"
+          component={TextFieldComponent}
+          label={t("Email")}
+          fullWidth
+          margin="dense"
+        />
+        <Button
+          fullWidth
+          variant="contained"
+          type="submit"
+          disabled={isSubmitting}
+          sx={{ mt: 1 }}
+        >
+          {isSubmitting ? t("Logging in...") : t("Register")}
+        </Button>
+      </Form>
+    </Formik>
+  );
+
+  const legacyToggle = (
+    <>
+      <Link
+        component="button"
+        type="button"
+        variant="body2"
+        underline="hover"
+        onClick={() => setShowLegacy((v) => !v)}
+      >
+        {t("I have an account in the old volunteers system")}
+      </Link>
+      {showLegacy && legacyForm}
+    </>
+  );
+
+  let description: string;
+  let content: React.ReactNode;
+  if (flow === null) {
+    description = telegramAvailable
+      ? t("Sign in with your ITMO account or Telegram")
+      : t("Sign in with your ITMO account");
+    content = (
+      <>
+        {keycloakButton}
+        {telegramAvailable && (
+          <>
+            <Divider>{t("or")}</Divider>
+            {telegramButton}
+          </>
+        )}
+        {legacyToggle}
+      </>
+    );
+  } else if (flow.status === "keycloak_required") {
+    description = flow.user_found
+      ? t(
+          "Your account is found. To finish signing in, link your ITMO account.",
+        )
+      : t(
+          "We couldn't find your account. Sign in with your ITMO account to continue, or use your account from the old volunteers system.",
+        );
+    content = (
+      <>
+        {keycloakButton}
+        {!flow.user_found && !hasIdentity("legacy") && legacyToggle}
+      </>
+    );
+  } else {
+    description = t(
+      "We couldn't find your account. Register a new one, or link your existing account.",
+    );
+    content = (
+      <>
+        <Tabs
+          value={registrationTab}
+          onChange={(_, value) => {
+            setRegistrationTab(value);
+            setError(null);
+          }}
+          variant="fullWidth"
+        >
+          <Tab label={t("Register")} value="register" />
+          {telegramAvailable && !hasIdentity("telegram") && (
+            <Tab label="Telegram" value="telegram" />
+          )}
+          <Tab label={t("Old account")} value="legacy" />
+        </Tabs>
+        {registrationTab === "register" && registrationForm}
+        {registrationTab === "telegram" && telegramAvailable && (
+          <>
+            <Typography variant="body2" color="text.secondary">
+              {t("Sign in with the Telegram account linked to your profile")}
+            </Typography>
+            {telegramButton}
+          </>
+        )}
+        {registrationTab === "legacy" && legacyForm}
+      </>
+    );
+  }
 
   return (
     <Container
       maxWidth="sm"
       sx={{
-        height: "100vh",
+        minHeight: "100vh",
         display: "flex",
         justifyContent: "center",
         alignItems: "stretch",
         flexDirection: "column",
         gap: 2,
+        py: 2,
       }}
     >
       <Paper elevation={3} sx={{ p: 4, textAlign: "center" }}>
         <Typography variant="h4" component="h1" gutterBottom>
-          {t("Login with Telegram")}
+          {t("Login")}
         </Typography>
-        {authFlow === "login" ? (
-          <>
-            <Typography variant="body1" gutterBottom>
-              {t("Click the button below to authenticate")}
-            </Typography>
-            <Typography variant="body2">
-              {t("Don't have Telegram?")}{" "}
-              <Link
-                href="https://telegram.org/"
-                target="_blank"
-                underline="hover"
-              >
-                {t("Download it here")}
-              </Link>
-            </Typography>
-          </>
-        ) : (
-          <>
-            <Typography variant="body1" gutterBottom>
-              {t(
-                "We couldn't find your account. Either migrate your email and password account, or create a new one.",
-              )}
-            </Typography>
-            <Tabs
-              value={authFlow}
-              onChange={(_, value) => {
-                setAuthFlow(value);
-                setError(null); // Clear errors when switching tabs
-              }}
-            >
-              <Tab label={t("Migrate")} value="migrate" />
-              <Tab label={t("Register")} value="register" />
-              <Tab label={t("Login")} value="login" />
-            </Tabs>
-            {authFlow === "register" && (
-              <Formik
-                initialValues={{
-                  first_name_ru: "",
-                  last_name_ru: "",
-                  patronymic_ru: null,
-                  first_name_en: "",
-                  last_name_en: "",
-                  isu_id: null,
-                }}
-                validationSchema={Yup.object().shape({
-                  first_name_ru: Yup.string().required(
-                    t("First name on Russian is required"),
-                  ),
-                  last_name_ru: Yup.string().required(
-                    t("Last name on Russian is required"),
-                  ),
-                  first_name_en: Yup.string().required(
-                    t("First name in English is required"),
-                  ),
-                  last_name_en: Yup.string().required(
-                    t("Last name in English is required"),
-                  ),
-                  isu_id: Yup.number().nullable(),
-                  patronymic_ru: Yup.string().nullable(),
-                })}
-                onSubmit={handleRegisterSubmit}
-              >
-                {() => (
-                  <Form id={registerFormId}>
-                    <Field
-                      name="first_name_ru"
-                      component={TextFieldComponent}
-                      label={t("Name on Russian")}
-                      fullWidth
-                      margin="dense"
-                    />
-                    <Field
-                      name="last_name_ru"
-                      component={TextFieldComponent}
-                      label={t("Surname on Russian")}
-                      fullWidth
-                      margin="dense"
-                    />
-                    <Field
-                      name="patronymic_ru"
-                      component={TextFieldComponent}
-                      label={t("Patronymic on Russian")}
-                      fullWidth
-                      margin="dense"
-                    />
-                    <Field
-                      name="first_name_en"
-                      component={TextFieldComponent}
-                      label={t("First name in English")}
-                      fullWidth
-                      margin="dense"
-                    />
-                    <Field
-                      name="last_name_en"
-                      component={TextFieldComponent}
-                      label={t("Last name in English")}
-                      fullWidth
-                      margin="dense"
-                    />
-                    <Field
-                      name="isu_id"
-                      component={TextFieldComponent}
-                      label={t("ISU Number")}
-                      fullWidth
-                      margin="dense"
-                    />
-                  </Form>
-                )}
-              </Formik>
-            )}
-            {authFlow === "migrate" && (
-              <Formik
-                initialValues={{
-                  email: "",
-                  password: "",
-                }}
-                validationSchema={Yup.object().shape({
-                  email: Yup.string()
-                    .email(t("Invalid email"))
-                    .required(t("Email is required")),
-                  password: Yup.string().required(t("Password is required")),
-                })}
-                onSubmit={handleMigrateSubmit}
-              >
-                {() => (
-                  <Form id={migrateFormId}>
-                    <Field
-                      name="email"
-                      component={TextFieldComponent}
-                      label={t("Email")}
-                      fullWidth
-                      margin="dense"
-                    />
-                    <Field
-                      name="password"
-                      component={TextFieldComponent}
-                      label={t("Password")}
-                      type="password"
-                      fullWidth
-                      margin="dense"
-                    />
-                  </Form>
-                )}
-              </Formik>
-            )}
-          </>
+        <Typography variant="body1" gutterBottom>
+          {description}
+        </Typography>
+        {flow && (flow.identities?.length ?? 0) > 0 && (
+          <Stack
+            direction="row"
+            spacing={1}
+            useFlexGap
+            sx={{ justifyContent: "center", flexWrap: "wrap", my: 1 }}
+          >
+            {flow.identities?.map((identity) => (
+              <Chip
+                key={identity.provider}
+                color="success"
+                variant="outlined"
+                label={
+                  identity.display_name
+                    ? `${t(PROVIDER_NAMES[identity.provider])}: ${identity.display_name}`
+                    : t(PROVIDER_NAMES[identity.provider])
+                }
+              />
+            ))}
+          </Stack>
         )}
-        <Box
-          sx={{
-            my: 3,
-            display: "flex",
-            justifyContent: "center",
-            alignItems: "center",
-            position: "relative",
-            minHeight: 40,
-          }}
-        >
-          {isLoading && <LinearProgress sx={{ width: "200px" }} />}
-          {storedTelegramData && authFlow !== "login" ? (
-            <Button
-              fullWidth
-              variant="contained"
-              type="submit"
-              form={authFlow === "register" ? registerFormId : migrateFormId}
-              disabled={isRegisterSubmitting || isMigrateSubmitting}
-            >
-              {isRegisterSubmitting || isMigrateSubmitting
-                ? t("Logging in...")
-                : t("Continue")}
-            </Button>
-          ) : (
-            <iframe
-              id={`telegram-login-${TELEGRAM_BOT_HANDLE}`}
-              title="Telegram login"
-              src={`https://oauth.telegram.org/embed/${TELEGRAM_BOT_HANDLE}?origin=${TELEGRAM_BOT_ORIGIN}&return_to=${TELEGRAM_BOT_ORIGIN}&size=medium&request_access=write`}
-              height={40}
-              seamless={true}
-              style={{
-                overflow: "hidden",
-                colorScheme: "light dark",
-                border: "none",
-                opacity: isLoading ? 0 : 1,
-                position: isLoading ? "absolute" : "relative",
-              }}
-              ref={telegramRef}
-            />
-          )}
-        </Box>
+        <Stack spacing={2} sx={{ mt: 3, textAlign: "left" }}>
+          {content}
+        </Stack>
+        {flow && (
+          <Button
+            sx={{ mt: 2 }}
+            size="small"
+            onClick={() => {
+              setFlow(null);
+              setError(null);
+            }}
+          >
+            {t("Start over")}
+          </Button>
+        )}
         {error && (
           <Alert severity="error" sx={{ mt: 2 }}>
             {error}
           </Alert>
         )}
+        <AuthMethodsInfo />
       </Paper>
     </Container>
   );

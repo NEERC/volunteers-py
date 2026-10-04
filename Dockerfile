@@ -55,6 +55,15 @@ COPY alembic.ini /app/
 COPY --from=backend-build $PYSETUP_PATH $PYSETUP_PATH
 COPY volunteers/ /app/volunteers/
 
+# Country database for GeoIP: DB-IP Country Lite (CC BY 4.0), refreshed on each build
+RUN mkdir -p /app/geoip \
+    && for month in $(date +%Y-%m) $(date -d "-1 month" +%Y-%m); do \
+        curl -fsSL -o /tmp/dbip.mmdb.gz "https://download.db-ip.com/free/dbip-country-lite-$month.mmdb.gz" && break; \
+    done \
+    && gunzip -c /tmp/dbip.mmdb.gz > /app/geoip/dbip-country-lite.mmdb \
+    && rm /tmp/dbip.mmdb.gz
+ENV VOLUNTEERS_GEOIP__DATABASE_PATH=/app/geoip/dbip-country-lite.mmdb
+
 ENV FASTAPI_ENV=production
 
 EXPOSE 8000

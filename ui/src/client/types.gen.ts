@@ -146,6 +146,17 @@ export type AssignmentsResponse = {
 
 export type Attendance = 'yes' | 'no' | 'late' | 'sick' | 'unknown';
 
+export type AuthFlowResponse = {
+    status: AuthFlowStatus;
+    tokens?: SuccessfulLoginResponse | null;
+    pending_token?: string | null;
+    identities?: Array<PendingIdentityResponse>;
+    user_found?: boolean;
+    prefill?: RegistrationPrefill | null;
+};
+
+export type AuthFlowStatus = 'success' | 'keycloak_required' | 'registration_required';
+
 export type CopyAssignmentsRequest = {
     source_day_id: number;
     target_day_id: number;
@@ -156,6 +167,11 @@ export type CopyAssignmentsRequest = {
 export type CopyAssignmentsResponse = {
     success: true;
     copied_count: number;
+};
+
+export type CountryResponse = {
+    country_code: string | null;
+    auth_methods: Array<IdentityProvider>;
 };
 
 /**
@@ -242,7 +258,6 @@ export type EditUserRequest = {
     email?: string | null;
     telegram_username?: string | null;
     is_admin?: boolean | null;
-    telegram_id?: number | null;
     gender: Gender | null;
 };
 
@@ -276,6 +291,39 @@ export type HallOut = {
     name: string;
     description?: string | null;
     hall_id: number;
+};
+
+export type IdentityProvider = 'telegram' | 'keycloak' | 'legacy';
+
+export type IdentityResponse = {
+    id: number;
+    provider: IdentityProvider;
+    display_name: string | null;
+    created_at: string;
+};
+
+export type KeycloakAuthRequest = {
+    pending_token?: string | null;
+    code: string;
+    redirect_uri: string;
+    code_verifier: string;
+};
+
+export type KeycloakConfigResponse = {
+    authorization_endpoint: string;
+    client_id: string;
+    scope: string;
+};
+
+export type LegacyAuthRequest = {
+    pending_token?: string | null;
+    email: string;
+    password: string;
+};
+
+export type PendingIdentityResponse = {
+    provider: IdentityProvider;
+    display_name: string | null;
 };
 
 export type PositionOut = {
@@ -325,14 +373,14 @@ export type RegistrationFormsResponse = {
     forms: Array<RegistrationFormItem>;
 };
 
+export type RegistrationPrefill = {
+    first_name: string | null;
+    last_name: string | null;
+    email: string | null;
+};
+
 export type RegistrationRequest = {
-    telegram_id: number;
-    telegram_auth_date: number;
-    telegram_first_name: string;
-    telegram_hash: string;
-    telegram_last_name?: string | null;
-    telegram_username?: string | null;
-    telegram_photo_url?: string | null;
+    pending_token: string;
     first_name_ru: string;
     last_name_ru: string;
     first_name_en: string;
@@ -382,7 +430,8 @@ export type SuccessfulLoginResponse = {
     refresh_expires_in: number;
 };
 
-export type TelegramLoginRequest = {
+export type TelegramAuthRequest = {
+    pending_token?: string | null;
     telegram_id: number;
     telegram_auth_date: number;
     telegram_first_name: string;
@@ -392,7 +441,7 @@ export type TelegramLoginRequest = {
     telegram_photo_url?: string | null;
 };
 
-export type TelegramMigrateRequest = {
+export type TelegramLoginData = {
     telegram_id: number;
     telegram_auth_date: number;
     telegram_first_name: string;
@@ -400,8 +449,14 @@ export type TelegramMigrateRequest = {
     telegram_last_name?: string | null;
     telegram_username?: string | null;
     telegram_photo_url?: string | null;
-    email: string;
-    password: string;
+};
+
+export type UserIdentityResponse = {
+    id: number;
+    provider: IdentityProvider;
+    subject: string;
+    display_name: string | null;
+    created_at: string;
 };
 
 export type UserListItem = {
@@ -455,7 +510,6 @@ export type YearsResponse = {
 
 export type VolunteersApiV1AdminUserSchemasUserResponse = {
     user_id: number;
-    telegram_id: number | null;
     first_name_ru: string;
     last_name_ru: string;
     patronymic_ru: string | null;
@@ -467,6 +521,7 @@ export type VolunteersApiV1AdminUserSchemasUserResponse = {
     telegram_username: string | null;
     is_admin: boolean;
     gender: Gender | null;
+    identities?: Array<UserIdentityResponse> | null;
 };
 
 export type VolunteersApiV1AdminYearSchemasAttendanceItem = {
@@ -945,6 +1000,34 @@ export type EditUserApiV1AdminUserUserIdEditPostResponses = {
 
 export type EditUserApiV1AdminUserUserIdEditPostResponse = EditUserApiV1AdminUserUserIdEditPostResponses[keyof EditUserApiV1AdminUserUserIdEditPostResponses];
 
+export type DeleteUserIdentityApiV1AdminUserUserIdIdentitiesIdentityIdDeleteData = {
+    body?: never;
+    path: {
+        user_id: number;
+        identity_id: number;
+    };
+    query?: never;
+    url: '/api/v1/admin/user/{user_id}/identities/{identity_id}';
+};
+
+export type DeleteUserIdentityApiV1AdminUserUserIdIdentitiesIdentityIdDeleteErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type DeleteUserIdentityApiV1AdminUserUserIdIdentitiesIdentityIdDeleteError = DeleteUserIdentityApiV1AdminUserUserIdIdentitiesIdentityIdDeleteErrors[keyof DeleteUserIdentityApiV1AdminUserUserIdIdentitiesIdentityIdDeleteErrors];
+
+export type DeleteUserIdentityApiV1AdminUserUserIdIdentitiesIdentityIdDeleteResponses = {
+    /**
+     * Successful Response
+     */
+    200: Array<UserIdentityResponse>;
+};
+
+export type DeleteUserIdentityApiV1AdminUserUserIdIdentitiesIdentityIdDeleteResponse = DeleteUserIdentityApiV1AdminUserUserIdIdentitiesIdentityIdDeleteResponses[keyof DeleteUserIdentityApiV1AdminUserUserIdIdentitiesIdentityIdDeleteResponses];
+
 export type AddUserDayApiV1AdminUserDayAddPostData = {
     body: AddUserDayRequest;
     path?: never;
@@ -1317,80 +1400,137 @@ export type GetAllAttendanceApiV1AttendanceYearIdAllGetResponses = {
 
 export type GetAllAttendanceApiV1AttendanceYearIdAllGetResponse = GetAllAttendanceApiV1AttendanceYearIdAllGetResponses[keyof GetAllAttendanceApiV1AttendanceYearIdAllGetResponses];
 
-export type RegisterApiV1AuthTelegramRegisterPostData = {
+export type CountryApiV1AuthCountryGetData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/v1/auth/country';
+};
+
+export type CountryApiV1AuthCountryGetResponses = {
+    /**
+     * Successful Response
+     */
+    200: CountryResponse;
+};
+
+export type CountryApiV1AuthCountryGetResponse = CountryApiV1AuthCountryGetResponses[keyof CountryApiV1AuthCountryGetResponses];
+
+export type KeycloakConfigApiV1AuthKeycloakConfigGetData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/v1/auth/keycloak/config';
+};
+
+export type KeycloakConfigApiV1AuthKeycloakConfigGetResponses = {
+    /**
+     * Successful Response
+     */
+    200: KeycloakConfigResponse;
+};
+
+export type KeycloakConfigApiV1AuthKeycloakConfigGetResponse = KeycloakConfigApiV1AuthKeycloakConfigGetResponses[keyof KeycloakConfigApiV1AuthKeycloakConfigGetResponses];
+
+export type TelegramAuthApiV1AuthTelegramPostData = {
+    body: TelegramAuthRequest;
+    path?: never;
+    query?: never;
+    url: '/api/v1/auth/telegram';
+};
+
+export type TelegramAuthApiV1AuthTelegramPostErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type TelegramAuthApiV1AuthTelegramPostError = TelegramAuthApiV1AuthTelegramPostErrors[keyof TelegramAuthApiV1AuthTelegramPostErrors];
+
+export type TelegramAuthApiV1AuthTelegramPostResponses = {
+    /**
+     * Successful Response
+     */
+    200: AuthFlowResponse;
+};
+
+export type TelegramAuthApiV1AuthTelegramPostResponse = TelegramAuthApiV1AuthTelegramPostResponses[keyof TelegramAuthApiV1AuthTelegramPostResponses];
+
+export type KeycloakAuthApiV1AuthKeycloakPostData = {
+    body: KeycloakAuthRequest;
+    path?: never;
+    query?: never;
+    url: '/api/v1/auth/keycloak';
+};
+
+export type KeycloakAuthApiV1AuthKeycloakPostErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type KeycloakAuthApiV1AuthKeycloakPostError = KeycloakAuthApiV1AuthKeycloakPostErrors[keyof KeycloakAuthApiV1AuthKeycloakPostErrors];
+
+export type KeycloakAuthApiV1AuthKeycloakPostResponses = {
+    /**
+     * Successful Response
+     */
+    200: AuthFlowResponse;
+};
+
+export type KeycloakAuthApiV1AuthKeycloakPostResponse = KeycloakAuthApiV1AuthKeycloakPostResponses[keyof KeycloakAuthApiV1AuthKeycloakPostResponses];
+
+export type LegacyAuthApiV1AuthLegacyPostData = {
+    body: LegacyAuthRequest;
+    path?: never;
+    query?: never;
+    url: '/api/v1/auth/legacy';
+};
+
+export type LegacyAuthApiV1AuthLegacyPostErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type LegacyAuthApiV1AuthLegacyPostError = LegacyAuthApiV1AuthLegacyPostErrors[keyof LegacyAuthApiV1AuthLegacyPostErrors];
+
+export type LegacyAuthApiV1AuthLegacyPostResponses = {
+    /**
+     * Successful Response
+     */
+    200: AuthFlowResponse;
+};
+
+export type LegacyAuthApiV1AuthLegacyPostResponse = LegacyAuthApiV1AuthLegacyPostResponses[keyof LegacyAuthApiV1AuthLegacyPostResponses];
+
+export type RegisterApiV1AuthRegisterPostData = {
     body: RegistrationRequest;
     path?: never;
     query?: never;
-    url: '/api/v1/auth/telegram/register';
+    url: '/api/v1/auth/register';
 };
 
-export type RegisterApiV1AuthTelegramRegisterPostErrors = {
+export type RegisterApiV1AuthRegisterPostErrors = {
     /**
      * Validation Error
      */
     422: HttpValidationError;
 };
 
-export type RegisterApiV1AuthTelegramRegisterPostError = RegisterApiV1AuthTelegramRegisterPostErrors[keyof RegisterApiV1AuthTelegramRegisterPostErrors];
+export type RegisterApiV1AuthRegisterPostError = RegisterApiV1AuthRegisterPostErrors[keyof RegisterApiV1AuthRegisterPostErrors];
 
-export type RegisterApiV1AuthTelegramRegisterPostResponses = {
+export type RegisterApiV1AuthRegisterPostResponses = {
     /**
      * Successful Response
      */
-    200: SuccessfulLoginResponse;
+    200: AuthFlowResponse;
 };
 
-export type RegisterApiV1AuthTelegramRegisterPostResponse = RegisterApiV1AuthTelegramRegisterPostResponses[keyof RegisterApiV1AuthTelegramRegisterPostResponses];
-
-export type MigrateApiV1AuthTelegramMigratePostData = {
-    body: TelegramMigrateRequest;
-    path?: never;
-    query?: never;
-    url: '/api/v1/auth/telegram/migrate';
-};
-
-export type MigrateApiV1AuthTelegramMigratePostErrors = {
-    /**
-     * Validation Error
-     */
-    422: HttpValidationError;
-};
-
-export type MigrateApiV1AuthTelegramMigratePostError = MigrateApiV1AuthTelegramMigratePostErrors[keyof MigrateApiV1AuthTelegramMigratePostErrors];
-
-export type MigrateApiV1AuthTelegramMigratePostResponses = {
-    /**
-     * Successful Response
-     */
-    200: SuccessfulLoginResponse;
-};
-
-export type MigrateApiV1AuthTelegramMigratePostResponse = MigrateApiV1AuthTelegramMigratePostResponses[keyof MigrateApiV1AuthTelegramMigratePostResponses];
-
-export type LoginApiV1AuthTelegramLoginPostData = {
-    body: TelegramLoginRequest;
-    path?: never;
-    query?: never;
-    url: '/api/v1/auth/telegram/login';
-};
-
-export type LoginApiV1AuthTelegramLoginPostErrors = {
-    /**
-     * Validation Error
-     */
-    422: HttpValidationError;
-};
-
-export type LoginApiV1AuthTelegramLoginPostError = LoginApiV1AuthTelegramLoginPostErrors[keyof LoginApiV1AuthTelegramLoginPostErrors];
-
-export type LoginApiV1AuthTelegramLoginPostResponses = {
-    /**
-     * Successful Response
-     */
-    200: SuccessfulLoginResponse | ErrorLoginResponse;
-};
-
-export type LoginApiV1AuthTelegramLoginPostResponse = LoginApiV1AuthTelegramLoginPostResponses[keyof LoginApiV1AuthTelegramLoginPostResponses];
+export type RegisterApiV1AuthRegisterPostResponse = RegisterApiV1AuthRegisterPostResponses[keyof RegisterApiV1AuthRegisterPostResponses];
 
 export type RefreshApiV1AuthRefreshPostData = {
     body: RefreshTokenRequest;
@@ -1416,6 +1556,74 @@ export type RefreshApiV1AuthRefreshPostResponses = {
 };
 
 export type RefreshApiV1AuthRefreshPostResponse = RefreshApiV1AuthRefreshPostResponses[keyof RefreshApiV1AuthRefreshPostResponses];
+
+export type MyIdentitiesApiV1AuthIdentitiesGetData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/v1/auth/identities';
+};
+
+export type MyIdentitiesApiV1AuthIdentitiesGetResponses = {
+    /**
+     * Successful Response
+     */
+    200: Array<IdentityResponse>;
+};
+
+export type MyIdentitiesApiV1AuthIdentitiesGetResponse = MyIdentitiesApiV1AuthIdentitiesGetResponses[keyof MyIdentitiesApiV1AuthIdentitiesGetResponses];
+
+export type LinkTelegramApiV1AuthIdentitiesTelegramPostData = {
+    body: TelegramLoginData;
+    path?: never;
+    query?: never;
+    url: '/api/v1/auth/identities/telegram';
+};
+
+export type LinkTelegramApiV1AuthIdentitiesTelegramPostErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type LinkTelegramApiV1AuthIdentitiesTelegramPostError = LinkTelegramApiV1AuthIdentitiesTelegramPostErrors[keyof LinkTelegramApiV1AuthIdentitiesTelegramPostErrors];
+
+export type LinkTelegramApiV1AuthIdentitiesTelegramPostResponses = {
+    /**
+     * Successful Response
+     */
+    200: Array<IdentityResponse>;
+};
+
+export type LinkTelegramApiV1AuthIdentitiesTelegramPostResponse = LinkTelegramApiV1AuthIdentitiesTelegramPostResponses[keyof LinkTelegramApiV1AuthIdentitiesTelegramPostResponses];
+
+export type UnlinkIdentityApiV1AuthIdentitiesIdentityIdDeleteData = {
+    body?: never;
+    path: {
+        identity_id: number;
+    };
+    query?: never;
+    url: '/api/v1/auth/identities/{identity_id}';
+};
+
+export type UnlinkIdentityApiV1AuthIdentitiesIdentityIdDeleteErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type UnlinkIdentityApiV1AuthIdentitiesIdentityIdDeleteError = UnlinkIdentityApiV1AuthIdentitiesIdentityIdDeleteErrors[keyof UnlinkIdentityApiV1AuthIdentitiesIdentityIdDeleteErrors];
+
+export type UnlinkIdentityApiV1AuthIdentitiesIdentityIdDeleteResponses = {
+    /**
+     * Successful Response
+     */
+    200: Array<IdentityResponse>;
+};
+
+export type UnlinkIdentityApiV1AuthIdentitiesIdentityIdDeleteResponse = UnlinkIdentityApiV1AuthIdentitiesIdentityIdDeleteResponses[keyof UnlinkIdentityApiV1AuthIdentitiesIdentityIdDeleteResponses];
 
 export type MeApiV1AuthMeGetData = {
     body?: never;

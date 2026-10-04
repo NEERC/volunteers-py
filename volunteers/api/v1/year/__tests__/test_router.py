@@ -32,7 +32,6 @@ class WithUserDependencyNotFoundError(RuntimeError):
 def test_user() -> User:
     return User(
         id=123,
-        telegram_id=123456,
         first_name_ru="Денис",
         last_name_ru="Потехин",
         patronymic_ru="Александрович",

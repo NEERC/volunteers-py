@@ -7,15 +7,17 @@ __all__ = [
     "FormPositionAssociation",
     "Gender",
     "Hall",
-    "LegacyUser",
+    "IdentityProvider",
     "Position",
     "User",
     "UserDay",
+    "UserIdentity",
     "Year",
 ]
 
 from .attendance import Attendance
 from .gender import Gender
+from .identity_provider import IdentityProvider
 from .models import (
     ApplicationForm,
     Assessment,
@@ -23,9 +25,9 @@ from .models import (
     ExtraExperience,
     FormPositionAssociation,
     Hall,
-    LegacyUser,
     Position,
     User,
     UserDay,
+    UserIdentity,
     Year,
 )

@@ -34,7 +34,6 @@ def app() -> AppWithContainer:
 def admin_user() -> User:
     return User(
         id=1,
-        telegram_id=111,
         first_name_ru="Админ",
         last_name_ru="Тестов",
         patronymic_ru="Тестович",

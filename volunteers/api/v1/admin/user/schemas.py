@@ -1,11 +1,21 @@
+from datetime import datetime
+
 from pydantic import BaseModel
 
+from volunteers.models import IdentityProvider
 from volunteers.models.gender import Gender
+
+
+class UserIdentityResponse(BaseModel):
+    id: int
+    provider: IdentityProvider
+    subject: str
+    display_name: str | None
+    created_at: datetime
 
 
 class UserResponse(BaseModel):
     user_id: int
-    telegram_id: int | None
     first_name_ru: str
     last_name_ru: str
     patronymic_ru: str | None
@@ -17,6 +27,8 @@ class UserResponse(BaseModel):
     telegram_username: str | None
     is_admin: bool
     gender: Gender | None
+    # Only filled when a single user is requested
+    identities: list[UserIdentityResponse] | None = None
 
 
 class AllUsersResponse(BaseModel):
@@ -34,5 +46,4 @@ class EditUserRequest(BaseModel):
     email: str | None = None
     telegram_username: str | None = None
     is_admin: bool | None = None
-    telegram_id: int | None = None
     gender: Gender | None

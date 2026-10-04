@@ -11,6 +11,7 @@ from volunteers.models import (
     ApplicationForm,
     Day,
     Hall,
+    IdentityProvider,
     Position,
     User,
     UserDay,
@@ -76,7 +77,7 @@ class ExportService(BaseService):
                 select(ApplicationForm)
                 .where(ApplicationForm.year_id == year_id)
                 .options(
-                    selectinload(ApplicationForm.user),
+                    selectinload(ApplicationForm.user).selectinload(User.identities),
                     selectinload(ApplicationForm.desired_positions),
                 )
                 .order_by(ApplicationForm.user_id)
@@ -177,7 +178,7 @@ class ExportService(BaseService):
                     user.email or "",
                     user.phone or "",
                     user.telegram_username or "",
-                    user.telegram_id or "",
+                    user.identity_subject(IdentityProvider.TELEGRAM) or "",
                     user.gender or "",
                     user.isu_id or "",
                     "Yes" if user.is_admin else "No",
@@ -390,7 +391,10 @@ class ExportService(BaseService):
             # Get all users with their application forms
             users_result = await session.execute(
                 select(User)
-                .options(selectinload(User.application_forms).selectinload(ApplicationForm.year))
+                .options(
+                    selectinload(User.application_forms).selectinload(ApplicationForm.year),
+                    selectinload(User.identities),
+                )
                 .order_by(User.id)
             )
             users = list(users_result.scalars().all())
@@ -431,7 +435,7 @@ class ExportService(BaseService):
                 writer.writerow(
                     [
                         user.id,
-                        user.telegram_id or "",
+                        user.identity_subject(IdentityProvider.TELEGRAM) or "",
                         user.last_name_ru,
                         user.first_name_ru,
                         user.patronymic_ru or "",

@@ -1,7 +1,5 @@
 import bcrypt
 
-from volunteers.models import LegacyUser
 
-
-def verify_legacy_user(password: str, legacy_user: LegacyUser) -> bool:
-    return bcrypt.checkpw(password.encode(), legacy_user.password.encode())
+def verify_legacy_password(password: str, password_hash: str) -> bool:
+    return bcrypt.checkpw(password.encode(), password_hash.encode())

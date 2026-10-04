@@ -1,3 +1,4 @@
+import DeleteIcon from "@mui/icons-material/Delete";
 import {
   Alert,
   Box,
@@ -6,16 +7,22 @@ import {
   CircularProgress,
   Container,
   FormControlLabel,
+  IconButton,
+  List,
+  ListItem,
+  ListItemText,
   MenuItem,
   Paper,
   TextField,
+  Tooltip,
   Typography,
 } from "@mui/material";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useFormik } from "formik";
 import { useTranslation } from "react-i18next";
 import * as yup from "yup";
-import { useEditUser, useUser } from "@/data/use-admin";
+import { PROVIDER_NAMES } from "@/const";
+import { useDeleteUserIdentity, useEditUser, useUser } from "@/data/use-admin";
 import { shouldBeAdmin } from "@/utils/should-be-logged-in";
 
 export const Route = createFileRoute("/_logged-in/users/$userId")({
@@ -38,7 +45,6 @@ const validationSchema = yup.object({
   phone: yup.string().nullable(),
   email: yup.string().email("Invalid email format").nullable(),
   telegram_username: yup.string().nullable(),
-  telegram_id: yup.number().nullable(),
   gender: yup.string().oneOf(["male", "female"]).nullable(),
   is_admin: yup.boolean(),
 });
@@ -49,6 +55,7 @@ function RouteComponent() {
   const navigate = useNavigate();
   const { data: user, isLoading, error } = useUser(userId);
   const editUserMutation = useEditUser();
+  const deleteIdentityMutation = useDeleteUserIdentity();
 
   const formik = useFormik({
     initialValues: user || {
@@ -61,7 +68,6 @@ function RouteComponent() {
       phone: "",
       email: "",
       telegram_username: "",
-      telegram_id: null as number | null,
       gender: "" as "male" | "female" | "",
       is_admin: false,
     },
@@ -80,7 +86,6 @@ function RouteComponent() {
             phone: values.phone || null,
             email: values.email || null,
             telegram_username: values.telegram_username || null,
-            telegram_id: values.telegram_id || null,
             gender: values.gender || null,
             is_admin: values.is_admin || null,
           },
@@ -293,26 +298,6 @@ function RouteComponent() {
             sx={{ mb: 2 }}
           />
 
-          <TextField
-            fullWidth
-            label={t("Telegram ID")}
-            name="telegram_id"
-            type="number"
-            value={formik.values.telegram_id || ""}
-            onChange={(e) =>
-              formik.setFieldValue(
-                "telegram_id",
-                e.target.value ? Number(e.target.value) : null,
-              )
-            }
-            onBlur={formik.handleBlur}
-            error={
-              formik.touched.telegram_id && Boolean(formik.errors.telegram_id)
-            }
-            helperText={formik.touched.telegram_id && formik.errors.telegram_id}
-            sx={{ mb: 2 }}
-          />
-
           <FormControlLabel
             control={
               <Checkbox
@@ -341,6 +326,47 @@ function RouteComponent() {
               {editUserMutation.isPending ? t("Saving...") : t("Save Changes")}
             </Button>
           </Box>
+
+          <Typography variant="h6" gutterBottom sx={{ mt: 3 }}>
+            {t("Linked accounts")}
+          </Typography>
+          {user.identities?.length ? (
+            <List dense>
+              {user.identities.map((identity) => (
+                <ListItem
+                  key={identity.id}
+                  secondaryAction={
+                    <Tooltip title={t("Unlink")}>
+                      <IconButton
+                        edge="end"
+                        aria-label={t("Unlink")}
+                        disabled={deleteIdentityMutation.isPending}
+                        onClick={() => {
+                          if (window.confirm(t("Unlink this account?"))) {
+                            deleteIdentityMutation.mutate({
+                              userId,
+                              identityId: identity.id,
+                            });
+                          }
+                        }}
+                      >
+                        <DeleteIcon />
+                      </IconButton>
+                    </Tooltip>
+                  }
+                >
+                  <ListItemText
+                    primary={`${t(PROVIDER_NAMES[identity.provider])}: ${identity.display_name ?? identity.subject}`}
+                    secondary={`${t("ID")}: ${identity.subject}`}
+                  />
+                </ListItem>
+              ))}
+            </List>
+          ) : (
+            <Typography variant="body2" color="text.secondary">
+              {t("No linked accounts")}
+            </Typography>
+          )}
 
           {editUserMutation.isError && (
             <Alert severity="error" sx={{ mt: 2 }}>

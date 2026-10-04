@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 from sqlalchemy import (
-    BigInteger,
     Boolean,
     Double,
     Enum,
@@ -15,6 +14,7 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 from .attendance import Attendance
 from .base import Base, TimestampMixin
 from .gender import Gender
+from .identity_provider import IdentityProvider
 
 
 class Year(Base, TimestampMixin):
@@ -34,7 +34,6 @@ class Year(Base, TimestampMixin):
 class User(Base, TimestampMixin):
     __tablename__ = "users"
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
-    telegram_id: Mapped[int | None] = mapped_column(BigInteger, unique=True, nullable=True)
 
     isu_id: Mapped[int | None] = mapped_column(Integer, nullable=True)
     first_name_ru: Mapped[str] = mapped_column(String)
@@ -55,6 +54,45 @@ class User(Base, TimestampMixin):
 
     application_forms: Mapped[set[ApplicationForm]] = relationship(
         back_populates="user", cascade="all, delete-orphan"
+    )
+
+    identities: Mapped[set[UserIdentity]] = relationship(
+        back_populates="user", cascade="all, delete-orphan"
+    )
+
+    def identity_subject(self, provider: IdentityProvider) -> str | None:
+        """Subject of the user's identity of the given provider. Requires loaded `identities`."""
+        for identity in self.identities:
+            if identity.provider == provider:
+                return identity.subject
+        return None
+
+
+class UserIdentity(Base, TimestampMixin):
+    """A way to authenticate as a user (Telegram account, Keycloak account, legacy password)."""
+
+    __tablename__ = "user_identities"
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), index=True)
+    user: Mapped[User] = relationship(back_populates="identities")
+
+    provider: Mapped[IdentityProvider] = mapped_column(
+        Enum(
+            IdentityProvider,
+            name="identity_provider_enum",
+            values_callable=lambda x: [e.value for e in x],
+        )
+    )
+    # Provider-specific identifier: telegram id, keycloak `sub`, legacy email
+    subject: Mapped[str] = mapped_column(String)
+    # Human-readable name of the identity (telegram username, keycloak username, email)
+    display_name: Mapped[str | None] = mapped_column(String, nullable=True)
+    # Password hash for legacy identities
+    secret: Mapped[str | None] = mapped_column(String, nullable=True)
+
+    __table_args__ = (
+        UniqueConstraint("provider", "subject", name="user_identities_unique_provider_subject"),
     )
 
 
@@ -201,13 +239,3 @@ class Assessment(Base, TimestampMixin):
 
     comment: Mapped[str] = mapped_column(String)
     value: Mapped[float] = mapped_column(Double)
-
-
-class LegacyUser(Base):
-    __tablename__ = "legacy_users"
-    id: Mapped[int] = mapped_column(Integer, primary_key=True)
-    new_user_id: Mapped[int] = mapped_column(ForeignKey("users.id"))
-    new_user: Mapped[User] = relationship()
-
-    email: Mapped[str] = mapped_column(String)
-    password: Mapped[str] = mapped_column(String)

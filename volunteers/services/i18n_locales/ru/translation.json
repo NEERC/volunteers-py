@@ -15,5 +15,14 @@
     "Phone is required": "Телефон обязателен",
     "Please select at least one position": "Выберите хотя бы одну позицию",
     "Required": "Обязательно",
-    "Invalid email format": "Неверный формат email"
+    "Invalid email format": "Неверный формат email",
+    "These accounts are linked to different users": "Эти аккаунты привязаны к разным пользователям",
+    "This account is already linked to another user": "Этот аккаунт уже привязан к другому пользователю",
+    "ITMO account is required to register": "Для регистрации нужен аккаунт ITMO",
+    "ITMO account cannot be unlinked": "Аккаунт ITMO нельзя отвязать",
+    "Invalid Keycloak login": "Неверный вход через ITMO",
+    "Keycloak is unavailable": "Сервер авторизации ITMO недоступен",
+    "User is not found": "Пользователь не найден",
+    "Incorrect password": "Неверный пароль",
+    "This user is already linked to another {provider} account": "Пользователь уже привязан к другому аккаунту {provider}"
 }

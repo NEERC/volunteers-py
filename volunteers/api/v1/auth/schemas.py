@@ -1,10 +1,14 @@
+import enum
+from datetime import datetime
+
 from pydantic import BaseModel
 
+from volunteers.models import IdentityProvider
 from volunteers.models.gender import Gender
 from volunteers.schemas.base import BaseErrorResponse, BaseSuccessResponse
 
 
-class TelegramLoginRequest(BaseModel):
+class TelegramLoginData(BaseModel):
     telegram_id: int
     telegram_auth_date: int
     telegram_first_name: str
@@ -14,13 +18,27 @@ class TelegramLoginRequest(BaseModel):
     telegram_photo_url: str | None = None
 
 
-class TelegramMigrateRequest(TelegramLoginRequest):
-    telegram_id: int
+class PendingAuthRequest(BaseModel):
+    pending_token: str | None = None
+
+
+class TelegramAuthRequest(TelegramLoginData, PendingAuthRequest):
+    pass
+
+
+class KeycloakAuthRequest(PendingAuthRequest):
+    code: str
+    redirect_uri: str
+    code_verifier: str
+
+
+class LegacyAuthRequest(PendingAuthRequest):
     email: str
     password: str
 
 
-class RegistrationRequest(TelegramLoginRequest):
+class RegistrationRequest(BaseModel):
+    pending_token: str
     first_name_ru: str
     last_name_ru: str
     first_name_en: str
@@ -31,6 +49,19 @@ class RegistrationRequest(TelegramLoginRequest):
     phone: str | None = None
     email: str | None = None
     gender: Gender | None = None
+
+
+class CountryResponse(BaseModel):
+    # ISO 3166-1 alpha-2 code, None if the country could not be determined
+    country_code: str | None
+    # Authentication methods available in this country
+    auth_methods: list[IdentityProvider]
+
+
+class KeycloakConfigResponse(BaseModel):
+    authorization_endpoint: str
+    client_id: str
+    scope: str
 
 
 class UserUpdateRequest(BaseModel):
@@ -58,6 +89,45 @@ class SuccessfulLoginResponse(BaseSuccessResponse):
 
 class ErrorLoginResponse(BaseErrorResponse):
     pass
+
+
+class AuthFlowStatus(str, enum.Enum):
+    SUCCESS = "success"
+    # An ITMO Keycloak identity has to be linked before the authentication completes
+    KEYCLOAK_REQUIRED = "keycloak_required"
+    # No user is found for the verified identities, a new user can be registered
+    REGISTRATION_REQUIRED = "registration_required"
+
+
+class PendingIdentityResponse(BaseModel):
+    provider: IdentityProvider
+    display_name: str | None
+
+
+class RegistrationPrefill(BaseModel):
+    first_name: str | None
+    last_name: str | None
+    email: str | None
+
+
+class AuthFlowResponse(BaseModel):
+    status: AuthFlowStatus
+    # Set when status is "success"
+    tokens: SuccessfulLoginResponse | None = None
+    # Set when status is not "success", must be passed to the next authentication step
+    pending_token: str | None = None
+    # Identities verified so far
+    identities: list[PendingIdentityResponse] = []
+    # Whether an existing user is found for the verified identities
+    user_found: bool = False
+    prefill: RegistrationPrefill | None = None
+
+
+class IdentityResponse(BaseModel):
+    id: int
+    provider: IdentityProvider
+    display_name: str | None
+    created_at: datetime
 
 
 class UserResponse(BaseModel):
