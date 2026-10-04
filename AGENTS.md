@@ -9,4 +9,4 @@ When writing frontend code, follow these rules:
 - Use pnpm run openapi-ts to generate types from OpenAPI spec
 - Add translations for all new strings
 
-Generated code (ui/src/client, ui/src/routeTree.gen.ts, alembic migrations) is checked in CI (.github/workflows/codegen.yml): regenerating it must not change any files. Commit the generator output as is, don't edit it by hand.
+Generated code (ui/src/client, ui/src/routeTree.gen.ts, alembic migrations) is checked in CI (.github/workflows/codegen.yml): regenerating it must not change any files. Commit the generator output as is (openapi-ts formats it with biome), don't edit it by hand.

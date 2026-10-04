@@ -13,8 +13,7 @@
       "**/.vscode/**/*",
       "**/index.html",
       "**/vite.config.js",
-      "!**/src/routeTree.gen.ts",
-      "!**/src/client"
+      "!**/src/routeTree.gen.ts"
     ]
   },
   "formatter": {
@@ -44,6 +43,13 @@
       "quoteStyle": "double"
     }
   },
+  "overrides": [
+    {
+      "includes": ["**/src/client/**"],
+      "linter": { "enabled": false },
+      "assist": { "enabled": false }
+    }
+  ],
   "assist": {
     "enabled": true,
     "actions": {
