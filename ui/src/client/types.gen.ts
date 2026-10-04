@@ -176,6 +176,10 @@ export type DayAssignmentsResponse = {
     is_published: boolean;
 };
 
+export type DayExportResponse = {
+    data: string;
+};
+
 export type DayOutAdmin = {
     day_id: number;
     year_id: number;
@@ -1052,6 +1056,33 @@ export type GetDayAssignmentsApiV1AdminUserDayDayDayIdAssignmentsGetResponses = 
 };
 
 export type GetDayAssignmentsApiV1AdminUserDayDayDayIdAssignmentsGetResponse = GetDayAssignmentsApiV1AdminUserDayDayDayIdAssignmentsGetResponses[keyof GetDayAssignmentsApiV1AdminUserDayDayDayIdAssignmentsGetResponses];
+
+export type ExportDayDataApiV1AdminUserDayDayDayIdExportGetData = {
+    body?: never;
+    path: {
+        day_id: number;
+    };
+    query?: never;
+    url: '/api/v1/admin/user-day/day/{day_id}/export';
+};
+
+export type ExportDayDataApiV1AdminUserDayDayDayIdExportGetErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type ExportDayDataApiV1AdminUserDayDayDayIdExportGetError = ExportDayDataApiV1AdminUserDayDayDayIdExportGetErrors[keyof ExportDayDataApiV1AdminUserDayDayDayIdExportGetErrors];
+
+export type ExportDayDataApiV1AdminUserDayDayDayIdExportGetResponses = {
+    /**
+     * Successful Response
+     */
+    200: DayExportResponse;
+};
+
+export type ExportDayDataApiV1AdminUserDayDayDayIdExportGetResponse = ExportDayDataApiV1AdminUserDayDayDayIdExportGetResponses[keyof ExportDayDataApiV1AdminUserDayDayDayIdExportGetResponses];
 
 export type AddYearApiV1AdminYearAddPostData = {
     body: AddYearRequest;

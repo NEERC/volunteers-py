@@ -23,6 +23,7 @@ import {
   PushPinOutlined as PinOutlinedIcon,
 } from "@mui/icons-material";
 import ContentCopyIcon from "@mui/icons-material/ContentCopy";
+import DownloadIcon from "@mui/icons-material/Download";
 import {
   Alert,
   Box,
@@ -49,7 +50,7 @@ import {
   useMediaQuery,
   useTheme,
 } from "@mui/material";
-import { useMutation } from "@tanstack/react-query";
+// import { useMutation } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 import React, { useCallback, useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -62,6 +63,7 @@ import { DetailedUserCard } from "@/components/DetailedUserCard";
 import {
   useCopyAssignments,
   useDayAssignments,
+  useDayExport,
   useEditDay,
   useRegistrationForms,
   useYearDays,
@@ -924,6 +926,7 @@ function RouteComponent() {
   const { data: daysData } = useYearDays(yearId);
 
   const copyAssignmentsMutation = useCopyAssignments();
+  const dayExportMutation = useDayExport();
   const currentDay = daysData?.find((d) => d.day_id === Number(dayId));
   const [assignmentPublished, setAssignmentPublished] = useState(
     currentDay?.assignment_published ?? false,
@@ -1238,52 +1241,52 @@ function RouteComponent() {
       return (!isAssignedInData && !hasOptimisticAdd) || hasOptimisticRemove;
     }) || [];
 
-  // Mutation for copying to clipboard (defined after positions to have access to it)
-  const copyToClipboardMutation = useMutation({
-    mutationFn: async () => {
-      const userToText = (
-        user: RegistrationFormItem,
-        position: PositionOut,
-        hall?: HallOut,
-      ) => {
-        return [
-          user.first_name_ru,
-          user.last_name_ru,
-          user.patronymic_ru,
-          user.first_name_en,
-          user.last_name_en,
-          user.isu_id,
-          user.itmo_group,
-          "☆".repeat(user.rank_stars_count),
-          position.name,
-          hall?.name,
-        ].join("\t");
-      };
-      const data = positions.flatMap((position) => [
-        ...position.assigned_users.map((user) => userToText(user, position)),
-        ...(position.halls?.flatMap((hall) => {
-          return hall.assigned_users.map((user) =>
-            userToText(user, position, hall),
-          );
-        }) || []),
-      ]);
-      const text = `${data.join("\n")}\n`;
-      await navigator.clipboard.writeText(text);
-      return text;
-    },
-    onSuccess: () => {
-      setCopySnackbarMessage(t("Data copied to clipboard"));
-      setCopySnackbarOpen(true);
-    },
-    onError: (error) => {
-      setCopySnackbarMessage(
-        error instanceof Error
-          ? error.message
-          : t("Failed to copy to clipboard. Please try again."),
-      );
-      setCopySnackbarOpen(true);
-    },
-  });
+  //   // Mutation for copying to clipboard (defined after positions to have access to it)
+  //   const copyToClipboardMutation = useMutation({
+  //     mutationFn: async () => {
+  //       const userToText = (
+  //         user: RegistrationFormItem,
+  //         position: PositionOut,
+  //         hall?: HallOut,
+  //       ) => {
+  //         return [
+  //           user.first_name_ru,
+  //           user.last_name_ru,
+  //           user.patronymic_ru,
+  //           user.first_name_en,
+  //           user.last_name_en,
+  //           user.isu_id,
+  //           user.itmo_group,
+  //           "☆".repeat(user.rank_stars_count),
+  //           position.name,
+  //           hall?.name,
+  //         ].join("\t");
+  //       };
+  //       const data = positions.flatMap((position) => [
+  //         ...position.assigned_users.map((user) => userToText(user, position)),
+  //         ...(position.halls?.flatMap((hall) => {
+  //           return hall.assigned_users.map((user) =>
+  //             userToText(user, position, hall),
+  //           );
+  //         }) || []),
+  //       ]);
+  //       const text = `${data.join("\n")}\n`;
+  //       await navigator.clipboard.writeText(text);
+  //       return text;
+  //     },
+  //     onSuccess: () => {
+  //       setCopySnackbarMessage(t("Data copied to clipboard"));
+  //       setCopySnackbarOpen(true);
+  //     },
+  //     onError: (error) => {
+  //       setCopySnackbarMessage(
+  //         error instanceof Error
+  //           ? error.message
+  //           : t("Failed to copy to clipboard. Please try again."),
+  //       );
+  //       setCopySnackbarOpen(true);
+  //     },
+  //   });
 
   const handleDragStart = (event: DragStartEvent) => {
     setActiveId(event.active.id as string);
@@ -1347,9 +1350,62 @@ function RouteComponent() {
     [handleDragRemoval, clearSelection],
   );
 
-  const handleCopyToClipboard = useCallback(() => {
-    copyToClipboardMutation.mutate();
-  }, [copyToClipboardMutation]);
+  //   const handleCopyToClipboard = useCallback(() => {
+  //     copyToClipboardMutation.mutate();
+  //   }, [copyToClipboardMutation]);
+  const handleCopyToClipboard = useCallback(async () => {
+    try {
+      const result = await dayExportMutation.mutateAsync(dayId);
+
+      if (!result) {
+        throw new Error("Failed to get export data");
+      }
+
+      await navigator.clipboard.writeText(result.data);
+
+      setCopySnackbarMessage(t("Data copied to clipboard"));
+      setCopySnackbarOpen(true);
+    } catch (error) {
+      setCopySnackbarMessage(
+        error instanceof Error
+          ? error.message
+          : t("Failed to copy to clipboard. Please try again."),
+      );
+      setCopySnackbarOpen(true);
+    }
+  }, [dayExportMutation, dayId, t]);
+
+  // функция для скаичвания данных из бэка
+  const handleDownloadData = useCallback(async () => {
+    try {
+      const result = await dayExportMutation.mutateAsync(dayId);
+
+      if (!result) {
+        throw new Error("Failed to get export data");
+      }
+
+      const blob = new Blob([result.data], {
+        type: "text/tab-separated-values;charset=utf-8",
+      });
+
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+
+      link.href = url;
+      link.download = `day-${dayId}.tsv`;
+
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+
+      URL.revokeObjectURL(url);
+    } catch (error) {
+      setCopySnackbarMessage(
+        error instanceof Error ? error.message : t("Failed to download data"),
+      );
+      setCopySnackbarOpen(true);
+    }
+  }, [dayExportMutation, dayId, t]);
 
   const handleCopyAssignments = useCallback(() => {
     if (!selectedSourceDayId) return;
@@ -1430,7 +1486,7 @@ function RouteComponent() {
           variant="outlined"
           size="small"
           startIcon={
-            copyToClipboardMutation.isPending ? (
+            dayExportMutation.isPending ? (
               <CircularProgress size={16} />
             ) : (
               <ContentCopyIcon />
@@ -1439,13 +1495,25 @@ function RouteComponent() {
           onClick={handleCopyToClipboard}
           disabled={
             assignmentsData?.assignments.length === 0 ||
-            copyToClipboardMutation.isPending
+            dayExportMutation.isPending
           }
         >
-          {copyToClipboardMutation.isPending
-            ? t("Copying...")
-            : t("Copy badges data")}
+          {dayExportMutation.isPending ? t("Copying...") : t("Copy data")}
         </Button>
+
+        <Button
+          variant="outlined"
+          size="small"
+          startIcon={<DownloadIcon />}
+          onClick={handleDownloadData}
+          disabled={
+            assignmentsData?.assignments.length === 0 ||
+            dayExportMutation.isPending
+          }
+        >
+          {t("Download data")}
+        </Button>
+
         <Button
           variant="outlined"
           size="small"
