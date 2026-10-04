@@ -1,0 +1,3 @@
+# Generated code: collapsed in GitHub diffs, ignored by linters/formatters (see .pre-commit-config.yaml, ui/biome.json)
+ui/src/client/** linguist-generated=true
+ui/src/routeTree.gen.ts linguist-generated=true
