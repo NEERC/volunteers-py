@@ -36,7 +36,6 @@ def app() -> AppWithContainer:
 def admin_user() -> User:
     return User(
         id=1,
-        telegram_id=111,
         first_name_ru="Админ",
         last_name_ru="Тестов",
         patronymic_ru="Тестович",
@@ -131,7 +130,6 @@ async def test_get_registration_forms_with_experience(app: AppWithContainer) -> 
     # Create mock data
     mock_user = User(
         id=1,
-        telegram_id=123,
         first_name_ru="Иван",
         last_name_ru="Иванов",
         patronymic_ru="Иванович",

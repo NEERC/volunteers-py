@@ -1,6 +1,7 @@
 import { Box, Typography } from "@mui/material";
 import { createFileRoute } from "@tanstack/react-router";
 import { useTranslation } from "react-i18next";
+import { LinkedAccounts } from "@/components/LinkedAccounts";
 
 export const Route = createFileRoute("/_logged-in/")({
   component: App,
@@ -23,6 +24,7 @@ function App() {
         minHeight: "60vh",
         textAlign: "center",
         p: 3,
+        gap: 3,
       }}
     >
       <Typography variant="h4" component="h1" gutterBottom>
@@ -30,6 +32,7 @@ function App() {
           "Welcome to the volunteer system. Select a year in the top left corner.",
         )}
       </Typography>
+      <LinkedAccounts />
     </Box>
   );
 }

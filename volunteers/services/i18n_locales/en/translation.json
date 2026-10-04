@@ -17,5 +17,14 @@
   "Required": "Required",
   "Invalid email format": "Invalid email format",
   "Year": "Год",
-  "English": "English"
+  "English": "English",
+  "These accounts are linked to different users": "These accounts are linked to different users",
+  "This account is already linked to another user": "This account is already linked to another user",
+  "ITMO account is required to register": "ITMO account is required to register",
+  "ITMO account cannot be unlinked": "ITMO account cannot be unlinked",
+  "Invalid Keycloak login": "Invalid Keycloak login",
+  "Keycloak is unavailable": "Keycloak is unavailable",
+  "User is not found": "User is not found",
+  "Incorrect password": "Incorrect password",
+  "This user is already linked to another {provider} account": "This user is already linked to another {provider} account"
 }

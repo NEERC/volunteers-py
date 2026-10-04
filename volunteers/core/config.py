@@ -14,6 +14,20 @@ class TelegramConfig(BaseModel):
     expiration_time: int
 
 
+class KeycloakConfig(BaseModel):
+    issuer: str = "https://nerc.itmo.ru/teaching/auth/realms/master"
+    client_id: str
+    client_secret: str | None = None
+    scope: str = "openid profile email"
+
+
+class GeoIPConfig(BaseModel):
+    # Path to a MaxMind-format country database (e.g. DB-IP Country Lite)
+    database_path: str | None = None
+    # Header with the real client IP set by the reverse proxy
+    client_ip_header: str | None = "X-Real-IP"
+
+
 class DatabaseConfig(BaseModel):
     url: str
 
@@ -37,6 +51,8 @@ class Config(BaseSettings):
     )
     jwt: JWTConfig
     telegram: TelegramConfig
+    keycloak: KeycloakConfig
+    geoip: GeoIPConfig = GeoIPConfig()
     database: DatabaseConfig
     server: ServerConfig
     logging: LoggingConfig

@@ -33,7 +33,6 @@ def app() -> AppWithContainer:
 def admin_user() -> User:
     return User(
         id=1,
-        telegram_id=123456789,
         first_name_ru="Admin",
         last_name_ru="User",
         first_name_en="Admin",
@@ -58,7 +57,6 @@ def override_with_admin(app: AppWithContainer, admin_user: User) -> Generator[No
 def sample_users() -> list[User]:
     user1 = User(
         id=1,
-        telegram_id=111111111,
         first_name_ru="Иван",
         last_name_ru="Иванов",
         patronymic_ru="Иванович",
@@ -71,7 +69,6 @@ def sample_users() -> list[User]:
     )
     user2 = User(
         id=2,
-        telegram_id=222222222,
         first_name_ru="Петр",
         last_name_ru="Петров",
         patronymic_ru=None,

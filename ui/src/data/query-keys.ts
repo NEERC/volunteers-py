@@ -17,6 +17,8 @@ export const queryKeys = {
     all: ["auth"] as const,
     me: () => [...queryKeys.auth.all, "me"] as const,
     refresh: () => [...queryKeys.auth.all, "refresh"] as const,
+    identities: () => [...queryKeys.auth.all, "identities"] as const,
+    country: () => [...queryKeys.auth.all, "country"] as const,
   },
 
   // Admin - Years

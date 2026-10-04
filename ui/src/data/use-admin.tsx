@@ -7,6 +7,7 @@ import {
   addYearApiV1AdminYearAddPost,
   copyAssignmentsApiV1AdminDayCopyAssignmentsPost,
   deleteUserDayApiV1AdminUserDayUserDayIdDelete,
+  deleteUserIdentityApiV1AdminUserUserIdIdentitiesIdentityIdDelete,
   editDayApiV1AdminDayDayIdEditPost,
   editHallApiV1AdminHallHallIdEditPost,
   editPositionApiV1AdminPositionPositionIdEditPost,
@@ -355,6 +356,32 @@ export const useEditUser = () => {
       queryClient.invalidateQueries({
         queryKey: queryKeys.admin.users.all(),
       });
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.admin.users.detail(userId),
+      });
+    },
+  });
+};
+
+export const useDeleteUserIdentity = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({
+      userId,
+      identityId,
+    }: {
+      userId: string | number;
+      identityId: number;
+    }) => {
+      const response =
+        await deleteUserIdentityApiV1AdminUserUserIdIdentitiesIdentityIdDelete({
+          path: { user_id: Number(userId), identity_id: identityId },
+          throwOnError: true,
+        });
+      return response.data;
+    },
+    onSuccess: (_, { userId }) => {
       queryClient.invalidateQueries({
         queryKey: queryKeys.admin.users.detail(userId),
       });

@@ -8,8 +8,9 @@ from volunteers.core.db import create_engine
 from volunteers.core.tg import get_bot
 from volunteers.services.assessment import AssessmentService
 from volunteers.services.export import ExportService
+from volunteers.services.geoip import GeoIPService
 from volunteers.services.i18n import I18nService
-from volunteers.services.legacy_user import LegacyUserService
+from volunteers.services.identity import IdentityService
 from volunteers.services.user import UserService
 from volunteers.services.year import YearService
 
@@ -38,7 +39,10 @@ class Container(containers.DeclarativeContainer):
     year_service = providers.Singleton(
         YearService, notifier=notifier, socketio_server=socketio_server
     )
-    legacy_user_service = providers.Singleton(LegacyUserService)
+    identity_service = providers.Singleton(IdentityService)
+    geoip_service = providers.Singleton(
+        GeoIPService, database_path=config.provided.geoip.database_path
+    )
     assessment_service = providers.Singleton(AssessmentService)
     export_service = providers.Singleton(ExportService)
 

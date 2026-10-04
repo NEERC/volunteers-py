@@ -428,7 +428,6 @@ async def test_edit_user_day_by_user_day_id_success(year_service: YearService) -
 
     mock_author = User(
         id=1,
-        telegram_id=123,
         first_name_ru="Test",
         last_name_ru="User",
         first_name_en="Test",
