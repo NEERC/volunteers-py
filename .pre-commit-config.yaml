@@ -1,3 +1,7 @@
+# Generated code is not linted/formatted: it must stay byte-identical to the generator output (checked in CI).
+# Alembic migrations are not excluded on purpose, they are edited by hand.
+exclude: ^ui/src/(client/|routeTree\.gen\.ts$)
+
 repos:
   - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v5.0.0

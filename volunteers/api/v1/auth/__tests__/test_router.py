@@ -246,7 +246,7 @@ async def test_keycloak_config(app: FastAPIWithContainer) -> None:
     [
         ("77.88.8.8", "RU", ["keycloak", "legacy"]),
         ("8.8.8.8", "US", ["keycloak", "telegram", "legacy"]),
-        ("10.0.0.1", None, ["keycloak", "telegram", "legacy"]),
+        ("10.0.0.1", None, ["keycloak", "legacy"]),
     ],
 )
 async def test_country(

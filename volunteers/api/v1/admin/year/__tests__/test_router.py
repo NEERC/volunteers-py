@@ -142,7 +142,13 @@ async def test_get_registration_forms_with_experience(app: AppWithContainer) -> 
         gender=Gender.MALE,
     )
     mock_position = Position(
-        id=1, year_id=1, name="Volunteer", can_desire=True, has_halls=False, is_manager=False
+        id=1,
+        year_id=1,
+        name="Volunteer",
+        can_desire=True,
+        has_halls=False,
+        is_manager=False,
+        save_for_next_year=False,
     )
 
     mock_form = ApplicationForm(
@@ -151,6 +157,7 @@ async def test_get_registration_forms_with_experience(app: AppWithContainer) -> 
         user_id=1,
         itmo_group="M1234",
         comments="Test comment",
+        additional_skills="",
         needs_invitation=False,
         created_at=datetime(2023, 1, 1, tzinfo=UTC),
         updated_at=datetime(2023, 1, 2, tzinfo=UTC),
@@ -160,6 +167,7 @@ async def test_get_registration_forms_with_experience(app: AppWithContainer) -> 
 
     # Mock the service methods
     app.test_year_service.get_all_forms_by_year_id = AsyncMock(return_value=[mock_form])
+    app.test_year_service.get_xp_by_user_id = AsyncMock(return_value=(0.0, 0.0))
     app.test_year_service.get_user_experience = AsyncMock(
         return_value=[
             {

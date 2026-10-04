@@ -92,6 +92,7 @@ export type ApplicationFormYearSaveRequest = {
     desired_positions_ids: Array<number>;
     itmo_group?: string | null;
     comments?: string;
+    additional_skills?: string;
     needs_invitation?: boolean;
 };
 
@@ -102,6 +103,7 @@ export type ApplicationFormYearSavedResponse = {
     desired_positions: Array<PositionOut>;
     itmo_group: string | null;
     comments: string;
+    additional_skills: string;
     needs_invitation: boolean;
     open_for_registration: boolean;
 };
@@ -190,6 +192,10 @@ export type DayAssignmentItem = {
 export type DayAssignmentsResponse = {
     assignments: Array<DayAssignmentItem>;
     is_published: boolean;
+};
+
+export type DayExportResponse = {
+    data: string;
 };
 
 export type DayOutAdmin = {
@@ -357,6 +363,7 @@ export type RegistrationFormItem = {
     gender: Gender | null;
     itmo_group: string | null;
     comments: string;
+    additional_skills: string;
     needs_invitation: boolean;
     desired_positions: Array<PositionOut>;
     experience: Array<ExperienceItem>;
@@ -1135,6 +1142,33 @@ export type GetDayAssignmentsApiV1AdminUserDayDayDayIdAssignmentsGetResponses = 
 };
 
 export type GetDayAssignmentsApiV1AdminUserDayDayDayIdAssignmentsGetResponse = GetDayAssignmentsApiV1AdminUserDayDayDayIdAssignmentsGetResponses[keyof GetDayAssignmentsApiV1AdminUserDayDayDayIdAssignmentsGetResponses];
+
+export type ExportDayDataApiV1AdminUserDayDayDayIdExportGetData = {
+    body?: never;
+    path: {
+        day_id: number;
+    };
+    query?: never;
+    url: '/api/v1/admin/user-day/day/{day_id}/export';
+};
+
+export type ExportDayDataApiV1AdminUserDayDayDayIdExportGetErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type ExportDayDataApiV1AdminUserDayDayDayIdExportGetError = ExportDayDataApiV1AdminUserDayDayDayIdExportGetErrors[keyof ExportDayDataApiV1AdminUserDayDayDayIdExportGetErrors];
+
+export type ExportDayDataApiV1AdminUserDayDayDayIdExportGetResponses = {
+    /**
+     * Successful Response
+     */
+    200: DayExportResponse;
+};
+
+export type ExportDayDataApiV1AdminUserDayDayDayIdExportGetResponse = ExportDayDataApiV1AdminUserDayDayDayIdExportGetResponses[keyof ExportDayDataApiV1AdminUserDayDayDayIdExportGetResponses];
 
 export type AddYearApiV1AdminYearAddPostData = {
     body: AddYearRequest;

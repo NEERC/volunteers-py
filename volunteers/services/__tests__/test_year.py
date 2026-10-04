@@ -165,15 +165,18 @@ async def test_update_form_not_found(year_service: YearService) -> None:
 @pytest.mark.asyncio
 async def test_add_year(year_service: YearService) -> None:
     year_in = YearIn(year_name="2025", open_for_registration=True)
+    mock_result = MagicMock()
+    mock_result.scalar_one_or_none.return_value = None
     mock_session = MagicMock()
-    mock_session.add = MagicMock()
+    mock_session.add = MagicMock(side_effect=lambda obj: setattr(obj, "id", 1))
+    mock_session.execute = AsyncMock(return_value=mock_result)
     mock_session.commit = AsyncMock()
     with patch.object(year_service, "session_scope", return_value=make_async_cm(mock_session)):
         year = await year_service.add_year(year_in)
         assert year.year_name == year_in.year_name
         assert year.open_for_registration == year_in.open_for_registration
         mock_session.add.assert_called_once_with(year)
-        mock_session.commit.assert_awaited_once()
+        assert mock_session.commit.await_count == 2
 
 
 @pytest.mark.asyncio
@@ -211,8 +214,11 @@ async def test_add_position(year_service: YearService) -> None:
     position_in = PositionIn(
         year_id=1, name="Engineer", can_desire=True, has_halls=True, is_manager=False
     )
+    mock_result = MagicMock()
+    mock_result.scalar_one_or_none.return_value = None
     mock_session = MagicMock()
     mock_session.add = MagicMock()
+    mock_session.execute = AsyncMock(return_value=mock_result)
     mock_session.commit = AsyncMock()
     with patch.object(year_service, "session_scope", return_value=make_async_cm(mock_session)):
         position = await year_service.add_position(position_in)
@@ -233,7 +239,9 @@ async def test_edit_position_by_position_id_success(year_service: YearService) -
     mock_result = MagicMock()
     mock_result.scalar_one_or_none.return_value = dummy_position
     mock_session = MagicMock()
-    mock_session.execute = AsyncMock(return_value=mock_result)
+    no_duplicate = MagicMock()
+    no_duplicate.scalar_one_or_none.return_value = None
+    mock_session.execute = AsyncMock(side_effect=[mock_result, no_duplicate])
     mock_session.commit = AsyncMock()
     with patch.object(year_service, "session_scope", return_value=make_async_cm(mock_session)):
         await year_service.edit_position_by_position_id(1, position_edit)
