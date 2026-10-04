@@ -51,7 +51,7 @@ type RegistrationFormValues = {
   phone: string;
   email: string;
   gender: string;
-  unusual_skills: string;
+  additional_skills: string;
 };
 
 function RouteComponent() {
@@ -79,7 +79,7 @@ function RouteComponent() {
       phone: user?.phone ?? "",
       email: user?.email ?? "",
       gender: user?.gender ?? "",
-      unusual_skills: year?.unusual_skills ?? "",
+      additional_skills: year?.additional_skills ?? "",
     },
     enableReinitialize: true,
     validationSchema: Yup.object({
@@ -88,7 +88,7 @@ function RouteComponent() {
         .min(1, t("Please select at least one position")),
       itmo_group: Yup.string().nullable(),
       comments: Yup.string(),
-      unusual_skills: Yup.string(),
+      additional_skills: Yup.string(),
       needs_invitation: Yup.boolean(),
       first_name_ru: Yup.string().required(t("Required")),
       last_name_ru: Yup.string().required(t("Required")),
@@ -110,7 +110,7 @@ function RouteComponent() {
             desired_positions_ids: values.desired_positions,
             itmo_group: values.itmo_group,
             comments: values.comments,
-            unusual_skills: values.unusual_skills,
+            additional_skills: values.additional_skills,
             needs_invitation: values.needs_invitation,
           },
           userData: {
@@ -402,15 +402,18 @@ function RouteComponent() {
 
           <TextField
             fullWidth
-            label={t("Unusual Skills")}
-            name="unusual_skills"
+            label={t("Additional Skills")}
+            name="additional_skills"
             multiline
             rows={3}
-            value={formik.values.unusual_skills}
+            value={formik.values.additional_skills}
             onChange={formik.handleChange}
             onBlur={formik.handleBlur}
             disabled={!year.open_for_registration}
-            {...getFieldErrorProps("unusual_skills")}
+            error={hasFieldError("additional_skills")}
+            helperText={
+              getFieldError("additional_skills") ?? t("Additional Skills hint")
+            }
             sx={{ mb: 3 }}
           />
 

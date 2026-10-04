@@ -254,7 +254,8 @@
   "Assessments": "Assessments",
   "Day": "Day",
   "Experience Breakdown": "Experience Breakdown",
-  "Unusual Skills": "Unusual Skills",
+  "Additional Skills hint": "Tell us about your skills that could be useful at the event. For example: \"I was a sound engineer at school\" or \"I helped my dad on a construction site and know how to use a power drill\". If you are not sure whether your skill is useful at the event, write it anyway. It will increase your chances of being selected.",
+  "Additional Skills": "Additional Skills",
   "Copy data": "Copy data",
   "Download data": "Download data"
 }

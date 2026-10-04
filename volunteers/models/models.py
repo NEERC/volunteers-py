@@ -70,7 +70,7 @@ class ApplicationForm(Base, TimestampMixin):
 
     itmo_group: Mapped[str | None] = mapped_column(String, default="", nullable=True)
     comments: Mapped[str] = mapped_column(String, default="")
-    unusual_skills: Mapped[str] = mapped_column(String, default="")
+    additional_skills: Mapped[str] = mapped_column(String, default="", server_default="")
     needs_invitation: Mapped[bool] = mapped_column(Boolean, default=False)
 
     desired_positions: Mapped[set[Position]] = relationship(

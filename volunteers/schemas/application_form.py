@@ -7,5 +7,5 @@ class ApplicationFormIn(BaseModel):
     desired_positions_ids: set[int]
     itmo_group: str | None
     comments: str = ""
-    unusual_skills: str = ""
+    additional_skills: str = ""
     needs_invitation: bool = False
