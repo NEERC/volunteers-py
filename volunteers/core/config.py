@@ -12,6 +12,8 @@ class JWTConfig(BaseModel):
 class TelegramConfig(BaseModel):
     token: str
     expiration_time: int
+    # Bot API server base URL, the official one is used when not set
+    api_server: str | None = None
 
 
 class KeycloakConfig(BaseModel):

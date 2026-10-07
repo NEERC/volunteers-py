@@ -26,7 +26,9 @@ class Container(containers.DeclarativeContainer):
     config = providers.Factory(Config)
     db = providers.Singleton(create_engine, config.provided.database.url)
     # logger = providers.Singleton(Logger)
-    telegram = providers.Singleton(get_bot, config.provided.telegram.token)
+    telegram = providers.Singleton(
+        get_bot, config.provided.telegram.token, config.provided.telegram.api_server
+    )
 
     socketio_server: providers.Provider[socketio.AsyncServer] = providers.Singleton(
         get_socketio_server
