@@ -43,7 +43,11 @@ export async function startKeycloakLogin(pendingToken: string | null) {
   const stored: StoredKeycloakLogin = {
     state: randomString(),
     codeVerifier: randomString(),
-    redirectUri: `${window.location.origin}/login`,
+    // The app is served under BASE_URL (PUBLIC_URL at build time), same as the API client and router
+    redirectUri: new URL(
+      "login",
+      new URL(import.meta.env.BASE_URL, window.location.origin),
+    ).toString(),
     pendingToken,
   };
   sessionStorage.setItem(STORAGE_KEY, JSON.stringify(stored));
