@@ -1,13 +1,12 @@
 from typing import Annotated
 
 from dependency_injector.wiring import Provide, inject
-from fastapi import APIRouter, Depends, HTTPException, Path, Request
+from fastapi import APIRouter, Depends, HTTPException, Path
 from loguru import logger
 
 from volunteers.api.v1.auth.schemas import (
     AuthFlowResponse,
     AuthFlowStatus,
-    CountryResponse,
     ErrorLoginResponse,
     IdentityResponse,
     KeycloakAuthRequest,
@@ -49,7 +48,6 @@ from volunteers.core.config import Config
 from volunteers.core.di import Container
 from volunteers.models import IdentityProvider, User, UserIdentity
 from volunteers.schemas.user import UserIn, UserUpdate
-from volunteers.services.geoip import GeoIPService
 from volunteers.services.i18n import I18nService
 from volunteers.services.identity import IdentityService
 from volunteers.services.user import UserService
@@ -58,23 +56,6 @@ router = APIRouter(tags=["auth"])
 
 # A user can have at most one identity of these providers
 SINGLE_IDENTITY_PROVIDERS = {IdentityProvider.TELEGRAM, IdentityProvider.KEYCLOAK}
-
-# Telegram can't be used for authentication in these countries
-TELEGRAM_BLOCKED_COUNTRIES = {"RU", None}
-
-
-def _client_ip(request: Request, config: Config) -> str | None:
-    header = config.geoip.client_ip_header
-    if header and (value := request.headers.get(header)):
-        return value.split(",")[0].strip()
-    return request.client.host if request.client else None
-
-
-def available_auth_methods(country_code: str | None) -> list[IdentityProvider]:
-    methods = [IdentityProvider.KEYCLOAK, IdentityProvider.TELEGRAM, IdentityProvider.LEGACY]
-    if country_code in TELEGRAM_BLOCKED_COUNTRIES:
-        methods.remove(IdentityProvider.TELEGRAM)
-    return methods
 
 
 def verify_telegram_login(data: TelegramLoginData, config: Config) -> bool:
@@ -252,20 +233,6 @@ def _keycloak_login_config(config: Config) -> KeycloakLoginConfig:
         issuer=config.keycloak.issuer,
         client_id=config.keycloak.client_id,
         client_secret=config.keycloak.client_secret,
-    )
-
-
-@router.get("/country")
-@inject
-async def country(
-    request: Request,
-    config: Annotated[Config, Depends(Provide[Container.config])],
-    geoip_service: Annotated[GeoIPService, Depends(Provide[Container.geoip_service])],
-) -> CountryResponse:
-    ip = _client_ip(request, config)
-    country_code = geoip_service.country_code(ip) if ip else None
-    return CountryResponse(
-        country_code=country_code, auth_methods=available_auth_methods(country_code)
     )
 
 

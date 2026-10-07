@@ -171,11 +171,6 @@ export type CopyAssignmentsResponse = {
     copied_count: number;
 };
 
-export type CountryResponse = {
-    country_code: string | null;
-    auth_methods: Array<IdentityProvider>;
-};
-
 /**
  * Simplified day assignment item for user-facing API
  */
@@ -1434,22 +1429,6 @@ export type GetAllAttendanceApiV1AttendanceYearIdAllGetResponses = {
 
 export type GetAllAttendanceApiV1AttendanceYearIdAllGetResponse = GetAllAttendanceApiV1AttendanceYearIdAllGetResponses[keyof GetAllAttendanceApiV1AttendanceYearIdAllGetResponses];
 
-export type CountryApiV1AuthCountryGetData = {
-    body?: never;
-    path?: never;
-    query?: never;
-    url: '/api/v1/auth/country';
-};
-
-export type CountryApiV1AuthCountryGetResponses = {
-    /**
-     * Successful Response
-     */
-    200: CountryResponse;
-};
-
-export type CountryApiV1AuthCountryGetResponse = CountryApiV1AuthCountryGetResponses[keyof CountryApiV1AuthCountryGetResponses];
-
 export type KeycloakConfigApiV1AuthKeycloakConfigGetData = {
     body?: never;
     path?: never;
@@ -1848,5 +1827,5 @@ export type ProxyPathGetResponses = {
 };
 
 export type ClientOptions = {
-    baseURL: 'http://localhost:8000' | (string & {});
+    baseURL: 'http://localhost:8765' | (string & {});
 };

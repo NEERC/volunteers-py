@@ -51,13 +51,6 @@ class RegistrationRequest(BaseModel):
     gender: Gender | None = None
 
 
-class CountryResponse(BaseModel):
-    # ISO 3166-1 alpha-2 code, None if the country could not be determined
-    country_code: str | None
-    # Authentication methods available in this country
-    auth_methods: list[IdentityProvider]
-
-
 class KeycloakConfigResponse(BaseModel):
     authorization_endpoint: str
     client_id: str
