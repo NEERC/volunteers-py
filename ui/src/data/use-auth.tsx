@@ -1,6 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
-  countryApiV1AuthCountryGet,
   linkTelegramApiV1AuthIdentitiesTelegramPost,
   myIdentitiesApiV1AuthIdentitiesGet,
   unlinkIdentityApiV1AuthIdentitiesIdentityIdDelete,
@@ -8,6 +7,7 @@ import {
 } from "@/client";
 import type { TelegramLoginData, UserUpdateRequest } from "@/client/types.gen";
 import { authStore } from "@/store/auth";
+import { useTelegramOverride } from "@/utils/telegramOverride";
 import { queryKeys } from "./query-keys";
 
 export const useUpdateUser = () => {
@@ -70,22 +70,41 @@ export const useUnlinkIdentity = () => {
   });
 };
 
+type GeoIPResponse = {
+  // ISO 3166-1 alpha-2 code
+  code?: string;
+};
+
+/** Country of the user detected by IP, fetched once per page load. */
 export const useCountry = () => {
   return useQuery({
     queryKey: queryKeys.auth.country(),
     queryFn: async () => {
-      const { data } = await countryApiV1AuthCountryGet({
-        throwOnError: true,
-      });
-      return data;
+      const response = await fetch("https://api.2ip.io/");
+      if (!response.ok) {
+        throw new Error(`2ip.io responded with ${response.status}`);
+      }
+      const data = (await response.json()) as GeoIPResponse;
+      return { country_code: data.code || null };
     },
     staleTime: Number.POSITIVE_INFINITY,
+    gcTime: Number.POSITIVE_INFINITY,
+    retry: false,
   });
 };
 
+// Telegram can't be used for authentication in these countries
+const TELEGRAM_BLOCKED_COUNTRIES = ["RU"];
+
 /** Whether Telegram can be used for authentication in the user's country. */
 export const useTelegramAvailable = () => {
-  const { data, isError } = useCountry();
-  // Hide the button until the country is known; on errors don't block anything
-  return isError || (data?.auth_methods.includes("telegram") ?? false);
+  const { data } = useCountry();
+  const override = useTelegramOverride();
+  if (override) {
+    return true;
+  }
+  // Show only when the country is known for sure: hide while loading, on errors
+  // and when it could not be determined
+  const countryCode = data?.country_code;
+  return !!countryCode && !TELEGRAM_BLOCKED_COUNTRIES.includes(countryCode);
 };

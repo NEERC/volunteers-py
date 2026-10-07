@@ -60,12 +60,7 @@ def config() -> MagicMock:
         client_secret: str | None = None
         scope: str = "openid profile email"
 
-    class GeoIP:
-        database_path: str | None = None
-        client_ip_header: str | None = "X-Real-IP"
-
     cfg: MagicMock = MagicMock()
-    cfg.geoip = GeoIP()
     cfg.jwt = Jwt()
     cfg.telegram = Telegram()
     cfg.keycloak = Keycloak()
@@ -178,11 +173,6 @@ def app(
     user_service.update_user = AsyncMock(return_value=None)
     container.user_service.override(user_service)
     container.identity_service.override(identity_service)
-    geoip_service = MagicMock()
-    geoip_service.country_code = MagicMock(
-        side_effect=lambda ip: {"77.88.8.8": "RU", "8.8.8.8": "US"}.get(ip)
-    )
-    container.geoip_service.override(geoip_service)
     container.config.override(config)
     container.wire(modules=[auth_router])
     app: FastAPIWithContainer = FastAPIWithContainer()
@@ -238,31 +228,6 @@ async def test_keycloak_config(app: FastAPIWithContainer) -> None:
         "https://keycloak.example.com/realms/master/protocol/openid-connect/auth"
     )
     assert data["client_id"] == "volunteers"
-
-
-@pytest.mark.asyncio
-@pytest.mark.parametrize(
-    ("ip", "country", "methods"),
-    [
-        ("77.88.8.8", "RU", ["keycloak", "legacy"]),
-        ("8.8.8.8", "US", ["keycloak", "telegram", "legacy"]),
-        ("10.0.0.1", None, ["keycloak", "legacy"]),
-    ],
-)
-async def test_country(
-    app: FastAPIWithContainer, ip: str, country: str | None, methods: list[str]
-) -> None:
-    async with client(app) as ac:
-        resp = await ac.get("/api/v1/auth/country", headers={"X-Real-IP": ip})
-    assert resp.status_code == 200
-    assert resp.json() == {"country_code": country, "auth_methods": methods}
-
-
-@pytest.mark.asyncio
-async def test_country_takes_first_forwarded_ip(app: FastAPIWithContainer) -> None:
-    async with client(app) as ac:
-        resp = await ac.get("/api/v1/auth/country", headers={"X-Real-IP": "77.88.8.8, 8.8.8.8"})
-    assert resp.json()["country_code"] == "RU"
 
 
 @pytest.mark.asyncio
