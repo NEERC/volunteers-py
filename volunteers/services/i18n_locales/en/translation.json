@@ -26,5 +26,6 @@
   "Keycloak is unavailable": "Keycloak is unavailable",
   "User is not found": "User is not found",
   "Incorrect password": "Incorrect password",
-  "This user is already linked to another {provider} account": "This user is already linked to another {provider} account"
+  "This user is already linked to another {provider} account": "This user is already linked to another {provider} account",
+  "Telegram account must be linked to register": "Telegram account must be linked to register"
 }

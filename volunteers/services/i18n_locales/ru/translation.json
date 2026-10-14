@@ -24,5 +24,6 @@
     "Keycloak is unavailable": "Сервер авторизации ITMO недоступен",
     "User is not found": "Пользователь не найден",
     "Incorrect password": "Неверный пароль",
-    "This user is already linked to another {provider} account": "Пользователь уже привязан к другому аккаунту {provider}"
+    "This user is already linked to another {provider} account": "Пользователь уже привязан к другому аккаунту {provider}",
+    "Telegram account must be linked to register": "Для регистрации необходимо привязать Telegram"
 }
