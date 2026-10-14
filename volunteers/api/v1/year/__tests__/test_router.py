@@ -8,7 +8,16 @@ from httpx import ASGITransport, AsyncClient
 
 from volunteers.api.v1.year import router as year_router
 from volunteers.core.di import Container
-from volunteers.models import ApplicationForm, Day, Hall, Position, User, UserDay, Year
+from volunteers.models import (
+    ApplicationForm,
+    Day,
+    Hall,
+    IdentityProvider,
+    Position,
+    User,
+    UserDay,
+    Year,
+)
 from volunteers.models.attendance import Attendance
 from volunteers.models.gender import Gender
 
@@ -247,3 +256,179 @@ async def test_get_day_assignments_empty_list(
     data: dict[str, Any] = resp.json()
     assert "assignments" in data
     assert len(data["assignments"]) == 0
+
+
+@pytest.fixture
+def registration_app(
+    app: FastAPIWithContainer,
+    test_user: User,
+    test_year: Year,
+) -> FastAPIWithContainer:
+    async def with_user_dep() -> User:
+        return test_user
+
+    test_user.telegram_username = None
+    app.dependency_overrides[get_with_user_dep()] = with_user_dep
+
+    # Mock the year service methods
+    year_service = app.container.year_service()
+    year_service.get_year_by_year_id = AsyncMock(return_value=test_year)
+    year_service.get_form_by_year_id_and_user_id = AsyncMock(return_value=None)
+    year_service.create_form = AsyncMock()
+    year_service.update_form = AsyncMock()
+
+    # No linked identities by default
+    identity_service = MagicMock()
+    identity_service.get_user_identities = AsyncMock(return_value=[])
+    app.container.identity_service.override(identity_service)
+
+    return app
+
+
+@pytest.fixture
+def telegram_app(
+    registration_app: FastAPIWithContainer,
+) -> FastAPIWithContainer:
+    identity_service = registration_app.container.identity_service()
+    identity_service.get_user_identities.return_value = [
+        MagicMock(provider=IdentityProvider.TELEGRAM),
+    ]
+    return registration_app
+
+
+@pytest.mark.asyncio
+async def test_new_form_without_telegram_rejected(
+    registration_app: FastAPIWithContainer,
+) -> None:
+    async with AsyncClient(
+        transport=ASGITransport(app=registration_app), base_url="http://test"
+    ) as ac:
+        resp = await ac.post("/api/v1/year/1", json={"desired_positions_ids": [1]})
+
+    assert resp.status_code == 403
+    assert resp.json()["detail"] == "Telegram account must be linked to register"
+
+    year_service = registration_app.container.year_service()
+    year_service.create_form.assert_not_awaited()
+    year_service.update_form.assert_not_awaited()
+
+
+@pytest.mark.asyncio
+async def test_existing_form_without_telegram_rejected(
+    registration_app: FastAPIWithContainer,
+    test_application_form: ApplicationForm,
+) -> None:
+    year_service = registration_app.container.year_service()
+    year_service.get_form_by_year_id_and_user_id.return_value = test_application_form
+
+    async with AsyncClient(
+        transport=ASGITransport(app=registration_app), base_url="http://test"
+    ) as ac:
+        resp = await ac.post("/api/v1/year/1", json={"desired_positions_ids": [1]})
+
+    assert resp.status_code == 403
+    assert resp.json()["detail"] == "Telegram account must be linked to register"
+    year_service.create_form.assert_not_awaited()
+    year_service.update_form.assert_not_awaited()
+
+
+@pytest.mark.asyncio
+async def test_new_form_with_telegram_created(
+    telegram_app: FastAPIWithContainer,
+    test_user: User,
+) -> None:
+    async with AsyncClient(transport=ASGITransport(app=telegram_app), base_url="http://test") as ac:
+        resp = await ac.post(
+            "/api/v1/year/1",
+            json={"desired_positions_ids": [1], "comments": "Test comments"},
+        )
+
+    assert resp.status_code == 201
+    identity_service = telegram_app.container.identity_service()
+    identity_service.get_user_identities.assert_awaited_once_with(test_user.id)
+    year_service = telegram_app.container.year_service()
+    year_service.create_form.assert_awaited_once()
+    year_service.update_form.assert_not_awaited()
+    year_service.get_form_by_year_id_and_user_id.assert_awaited_once_with(
+        year_id=1, user_id=test_user.id
+    )
+
+    form = year_service.create_form.await_args.args[0]
+    assert form.year_id == 1
+    assert form.user_id == test_user.id
+    assert form.desired_positions_ids == {1}
+    assert form.comments == "Test comments"
+
+
+@pytest.mark.asyncio
+async def test_existing_form_with_telegram_updated(
+    telegram_app: FastAPIWithContainer,
+    test_application_form: ApplicationForm,
+    test_user: User,
+) -> None:
+    year_service = telegram_app.container.year_service()
+    year_service.get_form_by_year_id_and_user_id.return_value = test_application_form
+
+    async with AsyncClient(transport=ASGITransport(app=telegram_app), base_url="http://test") as ac:
+        resp = await ac.post(
+            "/api/v1/year/1",
+            json={"desired_positions_ids": [1], "comments": "Updated comments"},
+        )
+
+    assert resp.status_code == 204
+    identity_service = telegram_app.container.identity_service()
+    identity_service.get_user_identities.assert_awaited_once_with(test_user.id)
+    year_service.create_form.assert_not_awaited()
+    year_service.update_form.assert_awaited_once()
+    year_service.get_form_by_year_id_and_user_id.assert_awaited_once_with(
+        year_id=1, user_id=test_user.id
+    )
+
+    form = year_service.update_form.await_args.args[0]
+    assert form.year_id == 1
+    assert form.user_id == test_user.id
+    assert form.desired_positions_ids == {1}
+    assert form.comments == "Updated comments"
+
+
+@pytest.mark.asyncio
+async def test_telegram_username_without_identity_rejected(
+    registration_app: FastAPIWithContainer,
+    test_user: User,
+) -> None:
+    # A username does not prove that a Telegram account is linked
+    test_user.telegram_username = "test_telegram_user"
+
+    async with AsyncClient(
+        transport=ASGITransport(app=registration_app), base_url="http://test"
+    ) as ac:
+        resp = await ac.post("/api/v1/year/1", json={"desired_positions_ids": [1]})
+
+    assert resp.status_code == 403
+    assert resp.json()["detail"] == "Telegram account must be linked to register"
+
+    year_service = registration_app.container.year_service()
+    year_service.create_form.assert_not_awaited()
+    year_service.update_form.assert_not_awaited()
+
+
+@pytest.mark.asyncio
+async def test_keycloak_identity_without_telegram_rejected(
+    registration_app: FastAPIWithContainer,
+) -> None:
+    identity_service = registration_app.container.identity_service()
+    identity_service.get_user_identities.return_value = [
+        MagicMock(provider=IdentityProvider.KEYCLOAK),
+    ]
+
+    async with AsyncClient(
+        transport=ASGITransport(app=registration_app), base_url="http://test"
+    ) as ac:
+        resp = await ac.post("/api/v1/year/1", json={"desired_positions_ids": [1]})
+
+    assert resp.status_code == 403
+    assert resp.json()["detail"] == "Telegram account must be linked to register"
+
+    year_service = registration_app.container.year_service()
+    year_service.create_form.assert_not_awaited()
+    year_service.update_form.assert_not_awaited()
