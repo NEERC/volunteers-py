@@ -6,12 +6,13 @@ from loguru import logger
 
 from volunteers.auth.deps import with_user
 from volunteers.core.di import Container
-from volunteers.models import User
+from volunteers.models import IdentityProvider, User
 from volunteers.schemas.application_form import ApplicationFormIn
 from volunteers.schemas.day import DayOutUser
 from volunteers.schemas.day_assignment import DayAssignmentItem
 from volunteers.schemas.position import PositionOut
 from volunteers.services.i18n import I18nService
+from volunteers.services.identity import IdentityService
 from volunteers.services.year import YearService
 
 from .schemas import (
@@ -120,6 +121,7 @@ async def save_form_year(
     response: Response,
     user: Annotated[User, Depends(with_user)],
     year_service: Annotated[YearService, Depends(Provide[Container.year_service])],
+    identity_service: Annotated[IdentityService, Depends(Provide[Container.identity_service])],
     i18n: Annotated[I18nService, Depends(Provide[Container.i18n_service])],
 ) -> None:
     year = await year_service.get_year_by_year_id(year_id=year_id)
@@ -130,6 +132,15 @@ async def save_form_year(
     if not year.open_for_registration:
         raise HTTPException(
             status_code=403, detail=i18n.translate("Year is not open for registration")
+        )
+
+    identities = await identity_service.get_user_identities(user.id)
+    has_telegram = any(identity.provider == IdentityProvider.TELEGRAM for identity in identities)
+
+    if not has_telegram:
+        raise HTTPException(
+            status_code=403,
+            detail=i18n.translate("Telegram account must be linked to register"),
         )
 
     form = await year_service.get_form_by_year_id_and_user_id(year_id=year_id, user_id=user.id)
