@@ -16,13 +16,15 @@ import {
   TextField,
   Typography,
 } from "@mui/material";
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useFormik } from "formik";
 import { observer } from "mobx-react-lite";
 import { useId } from "react";
 import { useTranslation } from "react-i18next";
 import * as Yup from "yup";
 import type { Gender } from "@/client/types.gen";
+import { useMyIdentities } from "@/data/use-auth";
+
 import { useSaveRegistration } from "@/data/use-year";
 import { authStore } from "@/store/auth";
 import { submitOnCtrlEnter } from "@/utils/formShortcuts";
@@ -62,6 +64,15 @@ function RouteComponent() {
   const user = authStore.user;
 
   const saveMutation = useSaveRegistration();
+
+  const { data: identities, isError } = useMyIdentities();
+
+  const hasTelegram =
+    !isError &&
+    identities?.some((identity) => identity.provider === "telegram") === true;
+
+  const showTelegramWarning =
+    !isError && identities !== undefined && !hasTelegram;
 
   const formik = useFormik<RegistrationFormValues>({
     initialValues: {
@@ -103,6 +114,7 @@ function RouteComponent() {
       gender: Yup.string().required(t("Gender is required")),
     }),
     onSubmit: async (values) => {
+      if (!hasTelegram) return;
       try {
         await saveMutation.mutateAsync({
           yearId,
@@ -172,6 +184,19 @@ function RouteComponent() {
         <Typography variant="h4" component="h1" gutterBottom>
           {t("Registration Form")}
         </Typography>
+
+        {showTelegramWarning && (
+          <Alert severity="warning" sx={{ mb: 2 }}>
+            {t("To register for the event, you need to")}{" "}
+            <Link to="/">{t("link your Telegram account")}</Link>
+          </Alert>
+        )}
+
+        {isError && (
+          <Alert severity="error" sx={{ mb: 2 }}>
+            {t("Failed to check Telegram link. Reload the page.")}
+          </Alert>
+        )}
 
         <form onSubmit={formik.handleSubmit}>
           <Typography variant="h6" gutterBottom sx={{ mt: 3 }}>
@@ -444,7 +469,8 @@ function RouteComponent() {
                 !formik.isValid ||
                 formik.isSubmitting ||
                 saveMutation.isPending ||
-                !year.open_for_registration
+                !year.open_for_registration ||
+                !hasTelegram
               }
               startIcon={
                 saveMutation.isPending ? <CircularProgress size={20} /> : null

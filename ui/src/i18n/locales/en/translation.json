@@ -292,5 +292,9 @@
   "Sign in with your ITMO account": "Sign in with your ITMO account",
   "Your country": "Your country",
   "not determined": "not determined",
-  "The following sign-in methods are available to you": "The following sign-in methods are available to you"
+  "The following sign-in methods are available to you": "The following sign-in methods are available to you",
+  "To register for the event, you need to": "To register for the event, you need to",
+  "link your Telegram account": "link your Telegram account",
+  "Failed to check Telegram link. Reload the page.": "Failed to check Telegram link. Reload the page.",
+  "Telegram account must be linked to register": "Telegram account must be linked to register"
 }

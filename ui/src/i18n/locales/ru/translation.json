@@ -296,5 +296,9 @@
   "Sign in with your ITMO account": "Войдите через аккаунт ITMO",
   "Your country": "Ваша страна",
   "not determined": "не определена",
-  "The following sign-in methods are available to you": "Вам доступны следующие способы авторизации"
+  "The following sign-in methods are available to you": "Вам доступны следующие способы авторизации",
+  "To register for the event, you need to": "Для регистрации на мероприятие необходимо",
+  "link your Telegram account": "привязать Telegram",
+  "Failed to check Telegram link. Reload the page.": "Не удалось проверить привязку Telegram. Перезагрузите страницу.",
+  "Telegram account must be linked to register": "Для регистрации необходимо привязать Telegram"
 }
