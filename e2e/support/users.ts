@@ -18,6 +18,8 @@ export type TestUser = {
   lastNameEn: string;
   isuId: number;
   email: string;
+  /** Id of the Telegram account linked by the setup project. */
+  telegramId: number;
 };
 
 const PROFILES: Record<string, [string, string, string, string]> = {
@@ -53,6 +55,10 @@ export function makeUser(key: string): TestUser {
       100000 +
       (createHash("sha256").update(username).digest().readUInt32BE(0) % 900000),
     email: `${username}@e2e.test`,
+    telegramId:
+      1_000_000_000 +
+      (createHash("sha256").update(`tg-${username}`).digest().readUInt32BE(0) %
+        1_000_000_000),
   };
 }
 

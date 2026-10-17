@@ -1,11 +1,12 @@
+import { createHash, createHmac } from "node:crypto";
 import { readFileSync } from "node:fs";
 import {
   type APIRequestContext,
   type APIResponse,
   request,
 } from "@playwright/test";
-import { BACKEND_URL } from "../stack.config.mjs";
-import { authFile } from "./users";
+import { BACKEND_URL, backendEnv } from "../stack.config.mjs";
+import { authFile, type TestUser } from "./users";
 
 /** Reads the refresh token saved by the setup project for the user. */
 function refreshTokenOf(key: string): string {
@@ -67,6 +68,34 @@ export class Api {
 
   me() {
     return this.get<{ user_id: number; is_admin: boolean }>("/auth/me");
+  }
+
+  /**
+   * Links a Telegram account to the current user, as the Telegram login widget
+   * would: the payload is signed with the bot token of the e2e backend.
+   */
+  linkTelegram(user: TestUser) {
+    const fields = {
+      id: user.telegramId,
+      auth_date: Math.floor(Date.now() / 1000),
+      first_name: user.firstNameEn,
+      username: user.username.replaceAll("-", "_"),
+    };
+    const checkString = Object.entries(fields)
+      .sort(([a], [b]) => (a < b ? -1 : 1))
+      .map(([k, v]) => `${k}=${v}`)
+      .join("\n");
+    const secret = createHash("sha256")
+      .update(backendEnv.VOLUNTEERS_TELEGRAM__TOKEN)
+      .digest();
+    const hash = createHmac("sha256", secret).update(checkString).digest("hex");
+    return this.post("/auth/identities/telegram", {
+      telegram_id: fields.id,
+      telegram_auth_date: fields.auth_date,
+      telegram_first_name: fields.first_name,
+      telegram_username: fields.username,
+      telegram_hash: hash,
+    });
   }
 
   // --- admin ---

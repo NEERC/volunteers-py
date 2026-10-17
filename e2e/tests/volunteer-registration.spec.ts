@@ -107,6 +107,14 @@ test("a new user signs up via ITMO ID and signs in again", async ({
   ).toBeVisible();
   await expect(page.getByText(newbie.username)).toBeVisible();
 
+  // Without a linked Telegram account the application form can't be submitted
+  const form = new ApplicationForm(page);
+  await form.open(yearId, newbie);
+  await expect(
+    page.getByText("To register for the event, you need to"),
+  ).toBeVisible();
+  await expect(form.submit).toBeDisabled();
+
   await context.close();
 });
 
