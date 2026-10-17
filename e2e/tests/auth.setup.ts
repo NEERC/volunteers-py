@@ -8,7 +8,8 @@ import { expect, test } from "../support/fixtures";
 import { authFile, type UserKey, users, usersStateFile } from "../support/users";
 
 // Registers the admin and the volunteers of the run through the UI
-// (mock ITMO ID -> registration form) and saves their sessions.
+// (mock ITMO ID -> registration form), saves their sessions and links
+// Telegram accounts (required to apply for a year).
 for (const key of Object.keys(users) as UserKey[]) {
   test(`register ${key}`, async ({ page }) => {
     const user = users[key];
@@ -21,6 +22,13 @@ for (const key of Object.keys(users) as UserKey[]) {
 
     mkdirSync(dirname(authFile(key)), { recursive: true });
     await page.context().storageState({ path: authFile(key) });
+
+    const api = await Api.as(key);
+    try {
+      await api.linkTelegram(user);
+    } finally {
+      await api.dispose();
+    }
   });
 }
 
