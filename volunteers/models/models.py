@@ -55,6 +55,7 @@ class User(Base, TimestampMixin):
     application_forms: Mapped[set[ApplicationForm]] = relationship(
         back_populates="user", cascade="all, delete-orphan"
     )
+    assessments_authored: Mapped[set[Assessment]] = relationship(back_populates="author")
 
     identities: Mapped[set[UserIdentity]] = relationship(
         back_populates="user", cascade="all, delete-orphan"
@@ -237,6 +238,9 @@ class Assessment(Base, TimestampMixin):
 
     user_day_id: Mapped[int] = mapped_column(ForeignKey("user_days.id"))
     user_day: Mapped[UserDay] = relationship(back_populates="assessments")
+
+    author_id: Mapped[int | None] = mapped_column(ForeignKey("users.id"), nullable=True)
+    author: Mapped[User | None] = relationship(back_populates="assessments_authored")
 
     comment: Mapped[str] = mapped_column(String)
     value: Mapped[float] = mapped_column(Double)

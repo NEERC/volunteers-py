@@ -1,6 +1,7 @@
 from pydantic import BaseModel
 
 from volunteers.models.attendance import Attendance
+from volunteers.schemas.assessment import AssessmentAuthorOut
 
 
 class SaveDayAttendanceRequest(BaseModel):
@@ -12,6 +13,7 @@ class AssessmentInAttendance(BaseModel):
     assessment_id: int
     comment: str
     value: float
+    author: AssessmentAuthorOut | None
 
 
 class AttendanceItem(BaseModel):

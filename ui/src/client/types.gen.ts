@@ -108,10 +108,18 @@ export type ApplicationFormYearSavedResponse = {
     open_for_registration: boolean;
 };
 
+export type AssessmentAuthorOut = {
+    id: number;
+    first_name_en: string;
+    last_name_en: string;
+    telegram_username: string | null;
+};
+
 export type AssessmentInAttendance = {
     assessment_id: number;
     comment: string;
     value: number;
+    author: AssessmentAuthorOut | null;
 };
 
 export type AssessmentItem = {
@@ -119,16 +127,15 @@ export type AssessmentItem = {
     user_day_id: number;
     comment: string;
     value: number;
+    author: AssessmentAuthorOut | null;
 };
 
 export type AssessmentOut = {
+    assessment_id: number;
     user_day_id: number;
     comment: string;
-    /**
-     * Assessment value (any real number)
-     */
     value: number;
-    assessment_id: number;
+    author: AssessmentAuthorOut | null;
 };
 
 export type AssessmentsResponse = {

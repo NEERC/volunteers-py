@@ -9,7 +9,11 @@ from volunteers.auth.deps import with_admin
 # Import the global container from di module instead of app
 from volunteers.core.di import Container
 from volunteers.models import User
-from volunteers.schemas.assessment import AssessmentEditIn, AssessmentIn
+from volunteers.schemas.assessment import (
+    AssessmentAuthorOut,
+    AssessmentEditIn,
+    AssessmentIn,
+)
 from volunteers.services.assessment import AssessmentService
 from volunteers.services.year import YearService
 
@@ -38,7 +42,7 @@ router = APIRouter(tags=["assessment"])
 async def add_assessment(
     request: AddAssessmentRequest,
     response: Response,
-    _: Annotated[User, Depends(with_admin)],
+    user: Annotated[User, Depends(with_admin)],
     year_service: Annotated[YearService, Depends(Provide[Container.year_service])],
 ) -> AddAssessmentResponse:
     assessment_in = AssessmentIn(
@@ -46,7 +50,7 @@ async def add_assessment(
         comment=request.comment,
         value=request.value,
     )
-    assessment = await year_service.add_assessment(assessment_in)
+    assessment = await year_service.add_assessment(assessment_in, author_id=user.id)
     logger.info("Added assessment")
 
     response.status_code = status.HTTP_201_CREATED
@@ -111,6 +115,9 @@ async def get_user_day_assessments(
             user_day_id=assessment.user_day_id,
             comment=assessment.comment,
             value=assessment.value,
+            author=(
+                AssessmentAuthorOut.model_validate(assessment.author) if assessment.author else None
+            ),
         )
         for assessment in user_day.assessments
     ]
