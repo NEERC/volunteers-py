@@ -41,6 +41,8 @@ The Telegram login widget does not work there.
 
 ### Staging server
 
+Set up by `ansible/staging.yml` from a clean Ubuntu 24.04 image, see `ansible/README.md`:
+
 - [nginx-proxy](https://github.com/nginx-proxy/nginx-proxy) with
   [acme-companion](https://github.com/nginx-proxy/acme-companion), their docker network
   is `STAND_PROXY_NETWORK` (`proxy` by default);

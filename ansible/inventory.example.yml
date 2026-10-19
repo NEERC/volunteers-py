@@ -1,0 +1,17 @@
+# Copy to inventory.yml (gitignored) and set the address of the server.
+# Ansible connects as the default user of the cloud image, which has sudo.
+all:
+  children:
+    staging:
+      hosts:
+        staging-server:
+          ansible_host: 192.168.80.4
+          ansible_port: 22
+          ansible_user: ubuntu
+      vars:
+        # Address and port the GitHub runners reach the server at, when they differ from the
+        # ones above (port forwarding). Only used to print known_hosts and the GitHub settings.
+        # stand_public_host: 203.0.113.10
+        # stand_public_port: 2222
+        # Let's Encrypt account email of acme-companion, optional
+        # nginx_proxy_acme_email: admin@example.com
