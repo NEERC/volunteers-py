@@ -144,6 +144,11 @@ export function AssessmentInput({
             }
           >
             <Box
+              aria-label={
+                assessments.length > 1
+                  ? `${t("Average of")} ${assessments.length} ${t("assessments")}`
+                  : assessments[0]?.comment || t("Assessment")
+              }
               sx={{
                 display: "flex",
                 alignItems: "center",
