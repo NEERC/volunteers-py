@@ -1,0 +1,49 @@
+name: Staging server SSH
+description: >
+  Configures SSH access to the staging server as the `stand` host, from the repository
+  secret STAND_SSH_KEY and the variables STAND_SSH_HOST, STAND_SSH_USER, STAND_SSH_PORT
+  and STAND_SSH_KNOWN_HOSTS (the output of `ssh-keyscan <host>`).
+
+inputs:
+  key:
+    description: Private key of the deploy user
+    required: true
+  host:
+    description: Host name of the staging server
+    required: true
+  user:
+    description: Deploy user on the staging server
+    required: true
+  port:
+    description: SSH port
+    default: "22"
+  known-hosts:
+    description: known_hosts lines of the staging server
+    required: true
+
+runs:
+  using: composite
+  steps:
+    - shell: bash
+      env:
+        SSH_KEY: ${{ inputs.key }}
+        SSH_HOST: ${{ inputs.host }}
+        SSH_USER: ${{ inputs.user }}
+        SSH_PORT: ${{ inputs.port }}
+        KNOWN_HOSTS: ${{ inputs.known-hosts }}
+      run: |
+        mkdir -p ~/.ssh
+        chmod 700 ~/.ssh
+        printf '%s\n' "$SSH_KEY" > ~/.ssh/stand_key
+        chmod 600 ~/.ssh/stand_key
+        printf '%s\n' "$KNOWN_HOSTS" >> ~/.ssh/known_hosts
+        cat >> ~/.ssh/config <<CONFIG
+        Host stand
+          HostName $SSH_HOST
+          User $SSH_USER
+          Port ${SSH_PORT:-22}
+          IdentityFile ~/.ssh/stand_key
+          IdentitiesOnly yes
+          StrictHostKeyChecking yes
+          ServerAliveInterval 30
+        CONFIG

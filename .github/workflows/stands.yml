@@ -1,0 +1,463 @@
+name: Stands
+
+# Test stands on the staging server, see deploy/README.md:
+#  - pr-<N>: a pull request with the `deploy-stand` label (or a manual run on its branch).
+#    External systems are mocked, the database is recreated on every deploy and filled
+#    by the e2e tests. Removed when the pull request is closed or the label is removed.
+#  - preprod: a manual run on main. Real Keycloak and Telegram (environment `preprod`),
+#    the database is kept between deploys.
+
+on:
+  pull_request:
+    branches: [ main ]
+    types: [ labeled, unlabeled, synchronize, reopened, closed ]
+  workflow_dispatch:
+    inputs:
+      action:
+        description: What to do with the stand of the branch (main is preprod)
+        type: choice
+        options: [ deploy, destroy ]
+        default: deploy
+      reset_db:
+        description: Preprod only, drop the database before deploying
+        type: boolean
+        default: false
+  schedule:
+    # Removes the stands of closed pull requests, in case their events were missed
+    - cron: "0 3 * * *"
+
+permissions:
+  contents: read
+
+env:
+  STAND_LABEL: deploy-stand
+  STANDS_DIR: ${{ vars.STANDS_DIR || 'volunteers-stands' }}
+
+jobs:
+  plan:
+    name: Plan
+    if: github.event_name != 'schedule'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: read
+    outputs:
+      action: ${{ steps.plan.outputs.action }}
+      name: ${{ steps.plan.outputs.name }}
+      pr: ${{ steps.plan.outputs.pr }}
+      mode: ${{ steps.plan.outputs.mode }}
+      environment: ${{ steps.plan.outputs.environment }}
+      host: ${{ steps.plan.outputs.host }}
+      image-tag: ${{ steps.plan.outputs.image-tag }}
+    steps:
+    - name: Decide what to do
+      id: plan
+      env:
+        GH_TOKEN: ${{ github.token }}
+        EVENT: ${{ github.event_name }}
+        PR_ACTION: ${{ github.event.action }}
+        PR_NUMBER: ${{ github.event.pull_request.number }}
+        EVENT_LABEL: ${{ github.event.label.name }}
+        HAS_LABEL: ${{ contains(github.event.pull_request.labels.*.name, env.STAND_LABEL) }}
+        SAME_REPO: ${{ github.event.pull_request.head.repo.full_name == github.repository }}
+        INPUT_ACTION: ${{ inputs.action }}
+        STAND_DOMAIN: ${{ vars.STAND_DOMAIN }}
+      run: |
+        action=none
+        pr=
+        if [ "$EVENT" = pull_request ]; then
+          pr="$PR_NUMBER"
+          case "$PR_ACTION" in
+            labeled) [ "$EVENT_LABEL" = "$STAND_LABEL" ] && action=deploy ;;
+            unlabeled) [ "$EVENT_LABEL" = "$STAND_LABEL" ] && action=destroy ;;
+            synchronize | reopened) [ "$HAS_LABEL" = true ] && action=deploy ;;
+            closed) [ "$HAS_LABEL" = true ] && action=destroy ;;
+          esac
+          # A pull request from a fork has no access to the secrets and can't push images
+          if [ "$action" = deploy ] && [ "$SAME_REPO" != true ]; then
+            echo "::warning::Stands are not deployed for pull requests from forks"
+            action=none
+          fi
+        else
+          action="$INPUT_ACTION"
+          if [ "$GITHUB_REF_NAME" != main ]; then
+            pr=$(gh pr list --repo "$GITHUB_REPOSITORY" --head "$GITHUB_REF_NAME" --state open \
+              --json number --jq '.[0].number // empty')
+            if [ -z "$pr" ]; then
+              echo "::error::No open pull request for the branch $GITHUB_REF_NAME, stands are deployed for pull requests and main"
+              exit 1
+            fi
+          fi
+        fi
+
+        if [ -n "$pr" ]; then
+          name="pr-$pr"
+          mode=mock
+          environment=staging
+        else
+          name=preprod
+          mode=real
+          environment=preprod
+        fi
+        if [ "$action" != none ] && [ -z "$STAND_DOMAIN" ]; then
+          echo "::error::The repository variable STAND_DOMAIN is not set"
+          exit 1
+        fi
+
+        {
+          echo "action=$action"
+          echo "name=$name"
+          echo "pr=$pr"
+          echo "mode=$mode"
+          echo "environment=$environment"
+          echo "host=$name.$STAND_DOMAIN"
+          # Same tag as docker/metadata-action `type=sha` in docker.yml
+          echo "image-tag=sha-${GITHUB_SHA::7}"
+        } | tee -a "$GITHUB_OUTPUT"
+
+  build:
+    name: Build
+    needs: plan
+    if: needs.plan.outputs.action == 'deploy'
+    permissions:
+      contents: read
+      packages: write
+    uses: ./.github/workflows/docker.yml
+
+  deploy:
+    name: Deploy ${{ needs.plan.outputs.name }}
+    needs: [ plan, build ]
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    concurrency:
+      group: stand-${{ needs.plan.outputs.name }}
+    permissions:
+      contents: read
+      packages: read
+    environment:
+      name: ${{ needs.plan.outputs.environment }}
+      url: https://${{ needs.plan.outputs.host }}
+    env:
+      NAME: ${{ needs.plan.outputs.name }}
+      MODE: ${{ needs.plan.outputs.mode }}
+      HOST: ${{ needs.plan.outputs.host }}
+      IMAGE_TAG: ${{ needs.plan.outputs.image-tag }}
+    steps:
+    - uses: actions/checkout@v7
+
+    - name: Set up SSH
+      uses: ./.github/actions/stand-ssh
+      with:
+        key: ${{ secrets.STAND_SSH_KEY }}
+        host: ${{ vars.STAND_SSH_HOST }}
+        user: ${{ vars.STAND_SSH_USER }}
+        port: ${{ vars.STAND_SSH_PORT || '22' }}
+        known-hosts: ${{ vars.STAND_SSH_KNOWN_HOSTS }}
+
+    - name: Prepare the stand files
+      env:
+        PROXY_NETWORK: ${{ vars.STAND_PROXY_NETWORK || 'proxy' }}
+        TELEGRAM_BOT_HANDLE: ${{ vars.TELEGRAM_BOT_HANDLE }}
+        TELEGRAM_BOT_ORIGIN: ${{ vars.TELEGRAM_BOT_ORIGIN }}
+      run: |
+        mkdir stand
+        cp deploy/compose.yaml deploy/compose.stand.yaml stand/
+        files=compose.yaml:compose.stand.yaml
+        if [ "$MODE" = mock ]; then
+          cp deploy/compose.mock.yaml deploy/proxy-mock.conf stand/
+          files="$files:compose.mock.yaml"
+        fi
+        # Read by docker compose in the stand directory
+        cat > stand/.env <<EOF
+        COMPOSE_PROJECT_NAME=vms-$NAME
+        COMPOSE_FILE=$files
+        IMAGE_TAG=$IMAGE_TAG
+        STAND_HOST=$HOST
+        STAND_URL=https://$HOST
+        PROXY_NETWORK=$PROXY_NETWORK
+        PUBLIC_URL=/
+        MODE=staging
+        TELEGRAM_BOT_HANDLE=$TELEGRAM_BOT_HANDLE
+        TELEGRAM_BOT_ORIGIN=$TELEGRAM_BOT_ORIGIN
+        EOF
+
+    # The mock mode has its own fake configuration, see deploy/compose.mock.yaml
+    - name: Prepare the backend configuration
+      if: env.MODE == 'real'
+      env:
+        SECRETS: ${{ toJSON(secrets) }}
+        VARS: ${{ toJSON(vars) }}
+      run: |
+        # VOLUNTEERS_* secrets and variables of the environment
+        for source in "$SECRETS" "$VARS"; do
+          jq -r 'to_entries[] | select(.key | startswith("VOLUNTEERS_")) | "\(.key)=\(.value|tostring)"' <<< "$source"
+        done > stand/backend.env
+
+    - name: Upload the stand files
+      run: |
+        chmod 600 stand/.env stand/*.env 2>/dev/null || true
+        # Files of the previous deploy are replaced, data volumes are kept
+        tar -C stand -cf - . | ssh stand "mkdir -p '$STANDS_DIR/$NAME' && cd '$STANDS_DIR/$NAME' \
+          && find . -maxdepth 1 -type f -delete && tar -xf - && chmod 600 .env"
+
+    - name: Start the stand
+      env:
+        GHCR_TOKEN: ${{ github.token }}
+        # The mock stand is always started from scratch, preprod keeps its data
+        RESET_DB: ${{ (needs.plan.outputs.mode == 'mock' || inputs.reset_db) && '1' || '0' }}
+      run: |
+        {
+          printf "GHCR_USER='%s'\nGHCR_TOKEN='%s'\nRESET_DB='%s'\n" "$GITHUB_ACTOR" "$GHCR_TOKEN" "$RESET_DB"
+          cat deploy/stand.sh
+        } | ssh stand "sh -s -- up '$STANDS_DIR' '$NAME'"
+
+    # nginx-proxy picks the stand up and acme-companion issues its certificate
+    - name: Wait for the stand to be reachable
+      run: |
+        for _ in $(seq 60); do
+          if curl -fsS -o /dev/null "https://$HOST/api/v1/auth/keycloak/config"; then
+            echo "https://$HOST is up"
+            exit 0
+          fi
+          sleep 5
+        done
+        echo "::error::https://$HOST is not reachable"
+        exit 1
+
+  e2e:
+    name: E2E tests on ${{ needs.plan.outputs.name }}
+    needs: [ plan, deploy ]
+    if: needs.plan.outputs.mode == 'mock'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    outputs:
+      run-tag: ${{ steps.tag.outputs.run-tag }}
+    env:
+      E2E_STAND_URL: https://${{ needs.plan.outputs.host }}
+    steps:
+    - uses: actions/checkout@v7
+
+    # Users and entities created by the tests get the tag in their names
+    - name: Set the run tag
+      id: tag
+      run: echo "run-tag=r${{ github.run_number }}a${{ github.run_attempt }}" | tee -a "$GITHUB_OUTPUT"
+
+    # The pnpm version is pinned by packageManager of the UI, as in e2e.yml
+    - name: Setup pnpm
+      uses: pnpm/action-setup@v6
+      with:
+        package_json_file: ui/package.json
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v7
+      with:
+        node-version: 'lts/*'
+        cache: 'pnpm'
+        cache-dependency-path: e2e/pnpm-lock.yaml
+
+    - name: Install e2e dependencies
+      run: pnpm --dir e2e install --frozen-lockfile
+
+    - name: Get Playwright version
+      id: playwright-version
+      run: echo "version=$(pnpm --dir e2e exec playwright --version | awk '{print $2}')" >> "$GITHUB_OUTPUT"
+
+    - name: Cache Playwright browsers
+      id: playwright-cache
+      uses: actions/cache@v6
+      with:
+        path: ~/.cache/ms-playwright
+        key: playwright-${{ runner.os }}-${{ steps.playwright-version.outputs.version }}
+
+    - name: Install Playwright browser
+      if: steps.playwright-cache.outputs.cache-hit != 'true'
+      run: pnpm --dir e2e exec playwright install --with-deps chromium
+
+    - name: Install Playwright system dependencies
+      if: steps.playwright-cache.outputs.cache-hit == 'true'
+      run: pnpm --dir e2e exec playwright install-deps chromium
+
+    - name: Run e2e tests
+      env:
+        E2E_RUN_TAG: ${{ steps.tag.outputs.run-tag }}
+      run: pnpm --dir e2e test
+
+    - name: Upload Playwright report
+      if: ${{ !cancelled() }}
+      uses: actions/upload-artifact@v4
+      with:
+        name: stand-playwright-report
+        path: e2e/playwright-report/
+        retention-days: 14
+
+    - name: Upload test results
+      if: ${{ failure() }}
+      uses: actions/upload-artifact@v4
+      with:
+        name: stand-test-results
+        path: e2e/test-results/
+        retention-days: 14
+
+  destroy:
+    name: Destroy ${{ needs.plan.outputs.name }}
+    needs: plan
+    if: needs.plan.outputs.action == 'destroy'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    concurrency:
+      group: stand-${{ needs.plan.outputs.name }}
+    permissions:
+      contents: read
+      deployments: write
+    steps:
+    - uses: actions/checkout@v7
+
+    - name: Set up SSH
+      uses: ./.github/actions/stand-ssh
+      with:
+        key: ${{ secrets.STAND_SSH_KEY }}
+        host: ${{ vars.STAND_SSH_HOST }}
+        user: ${{ vars.STAND_SSH_USER }}
+        port: ${{ vars.STAND_SSH_PORT || '22' }}
+        known-hosts: ${{ vars.STAND_SSH_KNOWN_HOSTS }}
+
+    - name: Remove the stand
+      env:
+        NAME: ${{ needs.plan.outputs.name }}
+      run: ssh stand "sh -s -- destroy '$STANDS_DIR' '$NAME'" < deploy/stand.sh
+
+    # Hides the dead link from the Deployments block of the pull request
+    - name: Deactivate the deployments
+      uses: actions/github-script@v8
+      env:
+        ENVIRONMENT: ${{ needs.plan.outputs.environment }}
+        HOST: ${{ needs.plan.outputs.host }}
+      with:
+        script: |
+          const deployments = await github.paginate(github.rest.repos.listDeployments, {
+            ...context.repo,
+            environment: process.env.ENVIRONMENT,
+          });
+          for (const deployment of deployments) {
+            const { data: [status] } = await github.rest.repos.listDeploymentStatuses({
+              ...context.repo,
+              deployment_id: deployment.id,
+              per_page: 1,
+            });
+            if (status?.state !== "success" || status.environment_url !== `https://${process.env.HOST}`) {
+              continue;
+            }
+            await github.rest.repos.createDeploymentStatus({
+              ...context.repo,
+              deployment_id: deployment.id,
+              state: "inactive",
+            });
+          }
+
+  report:
+    name: Report
+    needs: [ plan, deploy, e2e, destroy ]
+    if: always() && needs.plan.outputs.pr != '' && needs.plan.outputs.action != 'none'
+    runs-on: ubuntu-latest
+    permissions:
+      pull-requests: write
+    steps:
+    - name: Update the stand comment
+      uses: actions/github-script@v8
+      env:
+        ACTION: ${{ needs.plan.outputs.action }}
+        PR: ${{ needs.plan.outputs.pr }}
+        HOST: ${{ needs.plan.outputs.host }}
+        IMAGE_TAG: ${{ needs.plan.outputs.image-tag }}
+        DEPLOY: ${{ needs.deploy.result }}
+        E2E: ${{ needs.e2e.result }}
+        DESTROY: ${{ needs.destroy.result }}
+        RUN_TAG: ${{ needs.e2e.outputs.run-tag }}
+      with:
+        script: |
+          const env = process.env;
+          const marker = "<!-- stand-comment -->";
+          const runUrl = `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`;
+          const url = `https://${env.HOST}`;
+          const icon = (result) =>
+            ({ success: "✅", failure: "❌", cancelled: "⏹️", skipped: "⏭️" })[result] ?? "❔";
+
+          let body;
+          if (env.ACTION === "destroy") {
+            body = `${marker}\n### Test stand\n\n${icon(env.DESTROY)} Stand \`${env.HOST}\` is removed ([run](${runUrl})).`;
+          } else {
+            const lines = [
+              marker,
+              "### Test stand",
+              "",
+              `| | |`,
+              `|---|---|`,
+              `| URL | ${url} |`,
+              `| Images | \`${env.IMAGE_TAG}\` |`,
+              `| Deploy | ${icon(env.DEPLOY)} ${env.DEPLOY} |`,
+              `| E2E tests | ${icon(env.E2E)} ${env.E2E} ([report](${runUrl}#artifacts)) |`,
+              "",
+              "External systems are mocked: **Sign in with ITMO ID** accepts any username, and",
+              `Telegram messages sent by the backend are at ${url}/__mock/telegram/messages.`,
+              "The database is recreated on every deploy and filled by the e2e tests.",
+            ];
+            // The users exist once the setup project of the tests has passed
+            if (env.RUN_TAG && env.E2E === "success") {
+              lines.push(
+                "",
+                "Users of the e2e run (sign in with these usernames):",
+                "- `e2e-admin` (admin)",
+                ...["vol1", "vol2", "vol3"].map((key) => `- \`e2e-${key}-${env.RUN_TAG}\``),
+              );
+            }
+            body = lines.join("\n");
+          }
+
+          const comments = await github.paginate(github.rest.issues.listComments, {
+            ...context.repo,
+            issue_number: Number(env.PR),
+          });
+          const existing = comments.find(
+            (c) => c.user?.type === "Bot" && c.body?.includes(marker),
+          );
+          if (existing) {
+            await github.rest.issues.updateComment({ ...context.repo, comment_id: existing.id, body });
+          } else {
+            await github.rest.issues.createComment({ ...context.repo, issue_number: Number(env.PR), body });
+          }
+
+  sweep:
+    name: Remove stands of closed pull requests
+    if: github.event_name == 'schedule'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+      pull-requests: read
+    steps:
+    - uses: actions/checkout@v7
+
+    - name: Set up SSH
+      uses: ./.github/actions/stand-ssh
+      with:
+        key: ${{ secrets.STAND_SSH_KEY }}
+        host: ${{ vars.STAND_SSH_HOST }}
+        user: ${{ vars.STAND_SSH_USER }}
+        port: ${{ vars.STAND_SSH_PORT || '22' }}
+        known-hosts: ${{ vars.STAND_SSH_KNOWN_HOSTS }}
+
+    - name: Remove the stands
+      env:
+        GH_TOKEN: ${{ github.token }}
+      run: |
+        for name in $(ssh stand "sh -s -- list '$STANDS_DIR'" < deploy/stand.sh); do
+          case "$name" in
+            pr-*) ;;
+            *) continue ;;
+          esac
+          state=$(gh pr view "${name#pr-}" --repo "$GITHUB_REPOSITORY" --json state --jq .state)
+          if [ "$state" != OPEN ]; then
+            echo "Removing $name ($state)"
+            ssh stand "sh -s -- destroy '$STANDS_DIR' '$name'" < deploy/stand.sh
+          fi
+        done

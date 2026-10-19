@@ -228,6 +228,11 @@ async def _resolve(
     return await _success_response(user, pending, config)
 
 
+def _is_bootstrap_admin(pending: PendingAuth, config: Config) -> bool:
+    keycloak = pending.get(IdentityProvider.KEYCLOAK)
+    return keycloak is not None and keycloak.display_name in config.bootstrap.admins
+
+
 def _keycloak_login_config(config: Config) -> KeycloakLoginConfig:
     return KeycloakLoginConfig(
         issuer=config.keycloak.issuer,
@@ -242,7 +247,9 @@ async def keycloak_config(
     config: Annotated[Config, Depends(Provide[Container.config])],
 ) -> KeycloakConfigResponse:
     return KeycloakConfigResponse(
-        authorization_endpoint=authorization_endpoint(config.keycloak.issuer),
+        authorization_endpoint=authorization_endpoint(
+            config.keycloak.public_issuer or config.keycloak.issuer
+        ),
         client_id=config.keycloak.client_id,
         scope=config.keycloak.scope,
     )
@@ -363,7 +370,7 @@ async def register(
             email=request.email,
             telegram_username=pending.telegram_username,
             gender=request.gender,
-            is_admin=False,
+            is_admin=_is_bootstrap_admin(pending, config),
         )
     )
     logger.info("User has been registered")

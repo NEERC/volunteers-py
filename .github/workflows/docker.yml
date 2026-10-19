@@ -5,9 +5,13 @@ on:
     branches: [ main ]
   pull_request:
     branches: [ main ]
+  # Test stands build the images of the commit they deploy, see stands.yml
+  workflow_call:
 
 concurrency:
-  group: docker-${{ github.ref }}
+  # The workflow name is the caller's one when called, so a stand build and the build
+  # of the same pull request don't cancel each other
+  group: docker-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
@@ -25,22 +29,20 @@ jobs:
         include:
           - image: backend
             context: .
+          # Configured on container start (base path, Telegram bot), see ui/docker-entrypoint.sh
           - image: frontend
             context: ui
-            # The frontend bakes these into the bundle at build time, so they come from repository variables
-            build-args: |
-              MODE=${{ vars.MODE || 'production' }}
-              PUBLIC_URL=${{ vars.PUBLIC_URL || '/' }}
-              VITE_TELEGRAM_BOT_HANDLE=${{ vars.VITE_TELEGRAM_BOT_HANDLE }}
-              VITE_TELEGRAM_BOT_ORIGIN=${{ vars.VITE_TELEGRAM_BOT_ORIGIN }}
           - image: proxy
             context: proxy
           - image: backup
             context: backup
+          # Mock of external systems for test stands, see deploy/compose.mock.yaml
+          - image: mock
+            context: e2e/mock
 
     env:
       # GITHUB_TOKEN of a pull request from a fork can't write packages, so such PRs only check that images build
-      PUSH: ${{ github.event_name == 'push' || github.event.pull_request.head.repo.full_name == github.repository }}
+      PUSH: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
 
     steps:
     - uses: actions/checkout@v7
@@ -71,7 +73,6 @@ jobs:
       uses: docker/build-push-action@v7
       with:
         context: ${{ matrix.context }}
-        build-args: ${{ matrix.build-args }}
         push: ${{ env.PUSH == 'true' }}
         tags: ${{ steps.meta.outputs.tags }}
         labels: ${{ steps.meta.outputs.labels }}

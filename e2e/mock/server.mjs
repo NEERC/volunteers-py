@@ -7,10 +7,14 @@
 // is the base64url-encoded user profile entered on the login page, so any username
 // can be used for manual testing. Telegram calls are recorded in memory and can be
 // read via GET /__mock/telegram/messages.
+//
+// On test stands the mock runs in a container behind the stand proxy, which routes
+// /__mock/ to it, so the Keycloak endpoints are also served under /__mock/realms/<realm>.
 import { createHash, randomInt } from "node:crypto";
 import { createServer } from "node:http";
 
 const PORT = Number(process.env.E2E_MOCK_PORT ?? 8099);
+const HOST = process.env.E2E_MOCK_HOST ?? "127.0.0.1";
 
 const telegramCalls = [];
 
@@ -232,7 +236,7 @@ const server = createServer(async (req, res) => {
     }
 
     const kc = path.match(
-      /^\/realms\/[^/]+\/(?:protocol\/openid-connect\/)?(auth|login|token|userinfo)$/,
+      /^(?:\/__mock)?\/realms\/[^/]+\/(?:protocol\/openid-connect\/)?(auth|login|token|userinfo)$/,
     );
     if (kc) {
       return await handleKeycloak(req, res, url, kc[1]);
@@ -250,6 +254,6 @@ const server = createServer(async (req, res) => {
   }
 });
 
-server.listen(PORT, "127.0.0.1", () => {
+server.listen(PORT, HOST, () => {
   console.log(`Mock of external systems listening on http://localhost:${PORT}`);
 });

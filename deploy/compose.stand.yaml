@@ -1,0 +1,22 @@
+# Test stand on the staging server: the proxy is published by nginx-proxy
+# (https://github.com/nginx-proxy/nginx-proxy) at https://${STAND_HOST}
+# with a Let's Encrypt certificate from acme-companion.
+#
+# Variables (.env):
+#   STAND_HOST     host name of the stand, e.g. pr-42.staging.example.com
+#   PROXY_NETWORK  docker network of nginx-proxy, proxy by default
+
+services:
+  proxy:
+    environment:
+      VIRTUAL_HOST: ${STAND_HOST:?STAND_HOST is required}
+      VIRTUAL_PORT: 8000
+      LETSENCRYPT_HOST: ${STAND_HOST}
+    networks:
+      - app-network
+      - proxy
+
+networks:
+  proxy:
+    name: ${PROXY_NETWORK:-proxy}
+    external: true
