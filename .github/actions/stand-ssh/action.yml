@@ -1,24 +1,26 @@
-name: Staging server SSH
+name: Server SSH
 description: >
-  Configures SSH access to the staging server as the `stand` host, from the repository
-  secret STAND_SSH_KEY and the variables STAND_SSH_HOST, STAND_SSH_USER, STAND_SSH_PORT
-  and STAND_SSH_KNOWN_HOSTS (the output of `ssh-keyscan <host>`).
+  Configures SSH access to a server as the host `alias` (the staging server is `stand`,
+  production is `prod`): ssh <alias> <command>.
 
 inputs:
+  alias:
+    description: Host name to use in ssh commands
+    default: stand
   key:
     description: Private key of the deploy user
     required: true
   host:
-    description: Host name of the staging server
+    description: Host name of the server
     required: true
   user:
-    description: Deploy user on the staging server
+    description: Deploy user on the server
     required: true
   port:
     description: SSH port
     default: "22"
   known-hosts:
-    description: known_hosts lines of the staging server
+    description: known_hosts lines of the server (the output of `ssh-keyscan <host>`)
     required: true
 
 runs:
@@ -26,6 +28,7 @@ runs:
   steps:
     - shell: bash
       env:
+        SSH_ALIAS: ${{ inputs.alias }}
         SSH_KEY: ${{ inputs.key }}
         SSH_HOST: ${{ inputs.host }}
         SSH_USER: ${{ inputs.user }}
@@ -34,15 +37,15 @@ runs:
       run: |
         mkdir -p ~/.ssh
         chmod 700 ~/.ssh
-        printf '%s\n' "$SSH_KEY" > ~/.ssh/stand_key
-        chmod 600 ~/.ssh/stand_key
+        printf '%s\n' "$SSH_KEY" > ~/.ssh/"${SSH_ALIAS}_key"
+        chmod 600 ~/.ssh/"${SSH_ALIAS}_key"
         printf '%s\n' "$KNOWN_HOSTS" >> ~/.ssh/known_hosts
         cat >> ~/.ssh/config <<CONFIG
-        Host stand
+        Host $SSH_ALIAS
           HostName $SSH_HOST
           User $SSH_USER
           Port ${SSH_PORT:-22}
-          IdentityFile ~/.ssh/stand_key
+          IdentityFile ~/.ssh/${SSH_ALIAS}_key
           IdentitiesOnly yes
           StrictHostKeyChecking yes
           ServerAliveInterval 30

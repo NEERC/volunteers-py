@@ -1,0 +1,187 @@
+name: Deploy production
+
+# Deploys the images of a commit of main (built by docker.yml) to production, see
+# deploy/README.md. A rollback is a run with the tag of an older commit. Migrations are not
+# rolled back, the database is backed up to the backups directory before every deploy.
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Images to deploy, sha-<short commit> of main (the commit of the run by default)
+        type: string
+        default: ""
+      dry_run:
+        description: Only upload the files and pull the images, nothing is restarted
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+concurrency:
+  group: deploy-production
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    name: Deploy ${{ inputs.tag || 'the commit' }}${{ inputs.dry_run && ' (dry run)' || '' }}
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: read
+      packages: read
+    # Deployment branches: main, a required reviewer
+    environment:
+      name: production
+      url: ${{ vars.PROD_URL }}
+    env:
+      PROD_DIR: ${{ vars.PROD_DIR }}
+      DRY_RUN: ${{ inputs.dry_run && '1' || '0' }}
+    steps:
+    - uses: actions/checkout@v7
+
+    - name: Check the settings
+      env:
+        INPUT_TAG: ${{ inputs.tag }}
+        PROD_SSH_HOST: ${{ vars.PROD_SSH_HOST }}
+        PROD_SSH_USER: ${{ vars.PROD_SSH_USER }}
+        PROD_SSH_KNOWN_HOSTS: ${{ vars.PROD_SSH_KNOWN_HOSTS }}
+        PUBLIC_PORT: ${{ vars.PUBLIC_PORT }}
+        HAS_SSH_KEY: ${{ secrets.PROD_SSH_KEY != '' }}
+      run: |
+        failed=0
+        for name in PROD_SSH_HOST PROD_SSH_USER PROD_SSH_KNOWN_HOSTS PROD_DIR PUBLIC_PORT; do
+          if [ -z "${!name}" ]; then
+            echo "::error::The variable $name of the production environment is not set"
+            failed=1
+          fi
+        done
+        if [ "$HAS_SSH_KEY" != true ]; then
+          echo "::error::The secret PROD_SSH_KEY of the production environment is not set"
+          failed=1
+        fi
+        # Quoted with '' in the remote commands
+        if [[ "$PROD_DIR" == *"'"* ]]; then
+          echo "::error::PROD_DIR must not contain quotes"
+          failed=1
+        fi
+        # Same tag as docker/metadata-action `type=sha` in docker.yml
+        tag="${INPUT_TAG:-sha-${GITHUB_SHA::7}}"
+        if ! [[ "$tag" =~ ^[A-Za-z0-9_][A-Za-z0-9_.-]{0,127}$ ]]; then
+          echo "::error::Invalid image tag: $tag"
+          failed=1
+        fi
+        echo "IMAGE_TAG=$tag" | tee -a "$GITHUB_ENV"
+        exit "$failed"
+
+    - name: Log in to GitHub Container Registry
+      uses: docker/login-action@v4
+      with:
+        registry: ghcr.io
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Check that the images exist
+      run: |
+        failed=0
+        for image in backend frontend proxy backup; do
+          ref="ghcr.io/${GITHUB_REPOSITORY,,}/$image:$IMAGE_TAG"
+          if docker manifest inspect "$ref" > /dev/null; then
+            echo "$ref"
+          else
+            echo "::error::Image $ref does not exist, is the Docker workflow of the commit finished?"
+            failed=1
+          fi
+        done
+        exit "$failed"
+
+    - name: Set up SSH
+      uses: ./.github/actions/stand-ssh
+      with:
+        alias: prod
+        key: ${{ secrets.PROD_SSH_KEY }}
+        host: ${{ vars.PROD_SSH_HOST }}
+        user: ${{ vars.PROD_SSH_USER }}
+        port: ${{ vars.PROD_SSH_PORT || '22' }}
+        known-hosts: ${{ vars.PROD_SSH_KNOWN_HOSTS }}
+
+    - name: Prepare the files
+      env:
+        COMPOSE_PROJECT_NAME: ${{ vars.COMPOSE_PROJECT_NAME || 'vms-production' }}
+        PUBLIC_PORT: ${{ vars.PUBLIC_PORT }}
+        TELEGRAM_BOT_HANDLE: ${{ vars.TELEGRAM_BOT_HANDLE }}
+        TELEGRAM_BOT_ORIGIN: ${{ vars.TELEGRAM_BOT_ORIGIN }}
+        SECRETS: ${{ toJSON(secrets) }}
+        VARS: ${{ toJSON(vars) }}
+      run: |
+        mkdir prod
+        cp deploy/compose.yaml deploy/compose.prod.yaml prod/
+        # Read by docker compose in the production directory
+        cat > prod/.env <<EOF
+        COMPOSE_PROJECT_NAME=$COMPOSE_PROJECT_NAME
+        COMPOSE_FILE=compose.yaml:compose.prod.yaml
+        IMAGE_TAG=$IMAGE_TAG
+        PUBLIC_PORT=$PUBLIC_PORT
+        TELEGRAM_BOT_HANDLE=$TELEGRAM_BOT_HANDLE
+        TELEGRAM_BOT_ORIGIN=$TELEGRAM_BOT_ORIGIN
+        EOF
+        # VOLUNTEERS_* secrets and variables of the environment
+        for source in "$SECRETS" "$VARS"; do
+          jq -r 'to_entries[] | select(.key | startswith("VOLUNTEERS_")) | "\(.key)=\(.value|tostring)"' <<< "$source"
+        done > prod/backend.env
+        chmod 600 prod/.env prod/backend.env
+
+    - name: Upload the files
+      run: |
+        # Files of the previous deploy are replaced, the backups directory and the data
+        # volumes are kept. PROD_DIR is expanded here on purpose.
+        # shellcheck disable=SC2029
+        tar -C prod -cf - . | ssh prod "mkdir -p '$PROD_DIR' && cd '$PROD_DIR' \
+          && find . -maxdepth 1 -type f -delete && tar -xf - && chmod 600 .env backend.env"
+
+    # Without dry run: backs the database up, then starts everything and waits for the
+    # healthchecks (the proxy is the last one)
+    - name: ${{ inputs.dry_run && 'Check the configuration and pull the images' || 'Back up the database and start' }}
+      env:
+        GHCR_TOKEN: ${{ github.token }}
+      run: |
+        # shellcheck disable=SC2029
+        {
+          printf "GHCR_USER='%s'\nGHCR_TOKEN='%s'\nDRY_RUN='%s'\n" "$GITHUB_ACTOR" "$GHCR_TOKEN" "$DRY_RUN"
+          cat deploy/stand.sh
+        } | ssh prod "sh -s -- prod '$PROD_DIR'"
+
+    - name: Wait for the app to be reachable
+      if: ${{ !inputs.dry_run && vars.PROD_URL != '' }}
+      env:
+        PROD_URL: ${{ vars.PROD_URL }}
+      run: |
+        url="${PROD_URL%/}/api/v1/auth/keycloak/config"
+        for _ in $(seq 30); do
+          if curl -fsS -o /dev/null "$url"; then
+            echo "$PROD_URL is up"
+            exit 0
+          fi
+          sleep 5
+        done
+        echo "::error::$url is not reachable"
+        exit 1
+
+    - name: Summary
+      if: ${{ !cancelled() }}
+      env:
+        STATUS: ${{ job.status }}
+      run: |
+        dry_run=no
+        [ "$DRY_RUN" = 1 ] && dry_run=yes
+        {
+          echo "### Production"
+          echo
+          echo "| | |"
+          echo "|---|---|"
+          echo "| Images | \`$IMAGE_TAG\` |"
+          echo "| Dry run | $dry_run |"
+          echo "| Result | $STATUS |"
+        } >> "$GITHUB_STEP_SUMMARY"
