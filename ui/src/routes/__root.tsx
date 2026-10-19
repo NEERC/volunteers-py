@@ -2,6 +2,7 @@ import { blue, green, red, yellow } from "@mui/material/colors";
 import type { QueryClient } from "@tanstack/react-query";
 import { createRootRouteWithContext, Outlet } from "@tanstack/react-router";
 import { TanStackRouterDevtools } from "@tanstack/react-router-devtools";
+import { MODE } from "@/const";
 import { NotFound } from "../components/NotFound";
 import TanStackQueryLayout from "../integrations/tanstack-query/layout.tsx";
 
@@ -44,12 +45,10 @@ export const Route = createRootRouteWithContext<MyRouterContext>()({
   component: () => {
     return (
       <>
-        {import.meta.env.MODE !== "production" ? (
+        {MODE !== "production" ? (
           <EnvBadge
-            label={import.meta.env.MODE}
-            color={
-              MODE_COLORS[import.meta.env.MODE as keyof typeof MODE_COLORS]
-            }
+            label={MODE}
+            color={MODE_COLORS[MODE as keyof typeof MODE_COLORS]}
           />
         ) : (
           <EnvBadge label={"public-beta"} color={MODE_COLORS["public-beta"]} />

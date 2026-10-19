@@ -1,7 +1,7 @@
 import { mkdirSync } from "node:fs";
 import { resolve } from "node:path";
 import { defineConfig, devices } from "@playwright/test";
-import { services, UI_URL } from "./stack.config.mjs";
+import { STAND_URL, services, UI_URL } from "./stack.config.mjs";
 
 // Unique tag of the run: entities and users get it in their names, so runs never
 // collide and nothing has to be cleaned up. Inherited by the workers.
@@ -51,14 +51,17 @@ export default defineConfig({
       dependencies: ["setup"],
     },
   ],
-  webServer: services.map(({ name, command, cwd, env, url }) => ({
-    command: logDir ? `${command} > "${logDir}/${name}.log" 2>&1` : command,
-    cwd,
-    env: { ...(process.env as Record<string, string>), ...(env as Record<string, string>) },
-    url,
-    reuseExistingServer: !process.env.CI,
-    timeout: 180_000,
-    stdout: "ignore",
-    stderr: "pipe",
-  })),
+  // A deployed test stand is already running, a local stack is started otherwise
+  webServer: STAND_URL
+    ? []
+    : services.map(({ name, command, cwd, env, url }) => ({
+      command: logDir ? `${command} > "${logDir}/${name}.log" 2>&1` : command,
+      cwd,
+      env: { ...(process.env as Record<string, string>), ...(env as Record<string, string>) },
+      url,
+      reuseExistingServer: !process.env.CI,
+      timeout: 180_000,
+      stdout: "ignore",
+      stderr: "pipe",
+    })),
 });

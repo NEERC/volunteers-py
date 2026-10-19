@@ -1,6 +1,6 @@
 import { createHash } from "node:crypto";
 import { resolve } from "node:path";
-import { E2E_DIR } from "../stack.config.mjs";
+import { ADMIN_USERNAME, E2E_DIR } from "../stack.config.mjs";
 
 /** Unique tag of the current run, see playwright.config.ts. */
 export const RUN_TAG = process.env.E2E_RUN_TAG ?? "local";
@@ -33,6 +33,8 @@ const PROFILES: Record<string, [string, string, string, string]> = {
 /**
  * A user of the current run. Users are unique per run (the tag is in the
  * username and in the English last name), so runs don't affect each other.
+ * The admin is the same in all runs: the backend makes them admin on registration
+ * by the username (VOLUNTEERS_BOOTSTRAP__ADMINS), and later runs just log in.
  */
 export function makeUser(key: string): TestUser {
   const [firstNameRu, lastNameRu, firstNameEn, lastNameEn] = PROFILES[key] ?? [
@@ -41,7 +43,8 @@ export function makeUser(key: string): TestUser {
     "Test",
     key.charAt(0).toUpperCase() + key.slice(1),
   ];
-  const username = `e2e-${key}-${RUN_TAG}`;
+  const isAdmin = key === "admin";
+  const username = isAdmin ? ADMIN_USERNAME : `e2e-${key}-${RUN_TAG}`;
   return {
     key,
     username,
@@ -49,7 +52,7 @@ export function makeUser(key: string): TestUser {
     lastNameRu,
     patronymicRu: "Тестович",
     firstNameEn,
-    lastNameEn: `${lastNameEn}-${RUN_TAG}`,
+    lastNameEn: isAdmin ? lastNameEn : `${lastNameEn}-${RUN_TAG}`,
     // Same in all workers of the run
     isuId:
       100000 +

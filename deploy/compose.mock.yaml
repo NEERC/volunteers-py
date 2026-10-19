@@ -1,0 +1,57 @@
+# External systems of the stand are replaced by the mock of the e2e tests (e2e/mock):
+# ITMO Keycloak (any username logs in) and the Telegram Bot API. The browser reaches the
+# mock at ${STAND_URL}/__mock, the backend reaches it directly. All secrets are fake and
+# match the e2e stack (e2e/stack.config.mjs), so the e2e tests can run against the stand.
+#
+# Variables (.env):
+#   STAND_URL  public URL of the stand, e.g. https://pr-42.staging.example.com
+
+x-mock-backend-env: &mock-backend-env
+  VOLUNTEERS_LOGGING__LEVEL: INFO
+  VOLUNTEERS_JWT__SECRET: e2e-secret
+  VOLUNTEERS_JWT__ALGORITHM: HS256
+  VOLUNTEERS_JWT__EXPIRATION: 3600
+  VOLUNTEERS_JWT__REFRESH_EXPIRATION: 15552000
+  VOLUNTEERS_TELEGRAM__TOKEN: 123456:e2e-telegram-token
+  VOLUNTEERS_TELEGRAM__EXPIRATION_TIME: 3600
+  VOLUNTEERS_TELEGRAM__API_SERVER: http://mock:8099
+  VOLUNTEERS_KEYCLOAK__ISSUER: http://mock:8099/realms/e2e
+  VOLUNTEERS_KEYCLOAK__PUBLIC_ISSUER: ${STAND_URL:?STAND_URL is required}/__mock/realms/e2e
+  VOLUNTEERS_KEYCLOAK__CLIENT_ID: volunteers
+  VOLUNTEERS_KEYCLOAK__CLIENT_SECRET: e2e-client-secret
+  VOLUNTEERS_NOTIFICATION__TG_CHAT_ID: -100
+  # The admin of the e2e tests gets the role on registration
+  VOLUNTEERS_BOOTSTRAP__ADMINS: '["e2e-admin"]'
+
+services:
+  mock:
+    image: ${IMAGE_REGISTRY:-ghcr.io/neerc/volunteers-py}/mock:${IMAGE_TAG}
+    networks:
+      - app-network
+    healthcheck:
+      test: [ "CMD-SHELL", "wget -qO- http://127.0.0.1:8099/__mock/health | grep -q ok" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  backend-db-migration:
+    environment: *mock-backend-env
+
+  backend:
+    environment: *mock-backend-env
+    depends_on:
+      mock:
+        condition: service_healthy
+
+  frontend:
+    environment:
+      TELEGRAM_BOT_HANDLE: "@e2e_bot"
+      TELEGRAM_BOT_ORIGIN: ${STAND_URL}
+
+  proxy:
+    volumes:
+      - ./proxy-mock.conf:/etc/nginx/locations.d/mock.conf:ro
+    depends_on:
+      mock:
+        condition: service_healthy

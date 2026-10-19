@@ -12,11 +12,21 @@ export const MOCK_PORT = port("E2E_MOCK_PORT", 8099);
 export const BACKEND_PORT = port("E2E_BACKEND_PORT", 8001);
 export const UI_PORT = port("E2E_UI_PORT", 3001);
 
-export const MOCK_URL = `http://localhost:${MOCK_PORT}`;
-export const BACKEND_URL = `http://localhost:${BACKEND_PORT}`;
-export const UI_URL = `http://localhost:${UI_PORT}`;
+// URL of a deployed test stand: its proxy serves the UI, the backend (/api) and the mock
+// of external systems (/__mock). When set, the tests run against the stand and no local
+// stack is started, see deploy/README.md.
+export const STAND_URL = process.env.E2E_STAND_URL?.replace(/\/+$/, "");
 
-export const KEYCLOAK_ISSUER = `${MOCK_URL}/realms/e2e`;
+export const MOCK_URL = STAND_URL ?? `http://localhost:${MOCK_PORT}`;
+export const BACKEND_URL = STAND_URL ?? `http://localhost:${BACKEND_PORT}`;
+export const UI_URL = STAND_URL ?? `http://localhost:${UI_PORT}`;
+
+export const KEYCLOAK_ISSUER = STAND_URL
+  ? `${STAND_URL}/__mock/realms/e2e`
+  : `${MOCK_URL}/realms/e2e`;
+
+/** ITMO ID username of the admin, who gets the role on registration (bootstrap admin). */
+export const ADMIN_USERNAME = "e2e-admin";
 
 export const DB_ADMIN_URL =
   process.env.E2E_DB_ADMIN_URL ??
@@ -24,7 +34,10 @@ export const DB_ADMIN_URL =
 export const DB_NAME = process.env.E2E_DB_NAME ?? "volunteers_e2e";
 export const DB_URL = DB_ADMIN_URL.replace(/\/[^/]*$/, `/${DB_NAME}`);
 
-/** Environment of the backend: everything external points to the mock server. */
+/**
+ * Environment of the backend: everything external points to the mock server.
+ * Test stands in the mock mode use the same secrets, see deploy/compose.mock.yaml.
+ */
 export const backendEnv = {
   VOLUNTEERS_JWT__SECRET: "e2e-secret",
   VOLUNTEERS_JWT__ALGORITHM: "HS256",
@@ -44,6 +57,7 @@ export const backendEnv = {
   VOLUNTEERS_SERVER__HOST: "127.0.0.1",
   VOLUNTEERS_LOGGING__LEVEL: "INFO",
   VOLUNTEERS_NOTIFICATION__TG_CHAT_ID: "-100",
+  VOLUNTEERS_BOOTSTRAP__ADMINS: JSON.stringify([ADMIN_USERNAME]),
 };
 
 export const uiEnv = {
