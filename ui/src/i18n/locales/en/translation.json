@@ -35,6 +35,7 @@
   "This is a demonstration of the drag and drop interface for day-specific assignments. Currently showing users based on their registration status. Assignment saving functionality will be added in future updates.": "This is a demonstration of the drag and drop interface for day-specific assignments. Currently showing users based on their registration status. Assignment saving functionality will be added in future updates.",
   "Drag and drop volunteers to assign them to positions for this day": "Drag and drop volunteers to assign them to positions for this day",
   "Logout": "Logout",
+  "Version": "Version",
   "Login with Telegram": "Login with Telegram",
   "Click the button below to authenticate": "Click the button below to authenticate",
   "Don't have Telegram?": "Don't have Telegram?",

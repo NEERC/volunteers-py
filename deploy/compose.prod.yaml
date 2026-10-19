@@ -1,0 +1,42 @@
+# Production: the proxy is published on PUBLIC_PORT of the server, an external nginx
+# proxies https://<domain>/volunteers/ to it (stripping the prefix). Daily database
+# backups go to ./backups.
+#
+# Variables (.env):
+#   PUBLIC_PORT  port of the server the proxy is published on
+#   PUBLIC_URL   base path of the app, /volunteers/ by default
+
+services:
+  db:
+    ports:
+      - "127.0.0.1:15432:5432" # left open for manual intervention
+
+  frontend:
+    environment:
+      PUBLIC_URL: ${PUBLIC_URL:-/volunteers/}
+      MODE: production
+
+  proxy:
+    ports:
+      - "${PUBLIC_PORT:?PUBLIC_PORT is required}:8000"
+
+  backup:
+    image: ${IMAGE_REGISTRY:-ghcr.io/neerc/volunteers-py}/backup:${IMAGE_TAG}
+    networks:
+      - app-network
+    environment:
+      DB_HOST: db
+      DB_PORT: 5432
+      DB_NAME: postgres
+      DB_USER: postgres
+      DB_PASSWORD: postgres
+      BACKUP_DIR: /backups
+      RETENTION_DAYS: 2
+    volumes:
+      - ./backups:/backups
+      # Created by stand.sh before the start, docker would make a directory of it
+      - ./backups/log.txt:/var/log/backup.log
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: unless-stopped

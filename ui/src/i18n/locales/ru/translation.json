@@ -27,6 +27,7 @@
   "This is a demonstration of the drag and drop interface for day-specific assignments. Currently showing users based on their registration status. Assignment saving functionality will be added in future updates.": "Это демонстрация интерфейса перетаскивания для назначений конкретного дня. В настоящее время показываются пользователи на основе их статуса регистрации. Функциональность сохранения назначений будет добавлена в будущих обновлениях.",
   "Drag and drop volunteers to assign them to positions for this day": "Перетащите волонтеров для назначения их на позиции для этого дня",
   "Logout": "Выйти",
+  "Version": "Версия",
   "Login with Telegram": "Вход через Telegram",
   "Click the button below to authenticate": "Нажмите кнопку ниже для аутентификации",
   "Don't have Telegram?": "Нет Telegram?",

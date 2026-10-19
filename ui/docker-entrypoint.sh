@@ -27,5 +27,6 @@ window.__VMS_CONFIG__ = {
   mode: $(json_string "${MODE:-production}"),
   telegramBotHandle: $(json_string "${TELEGRAM_BOT_HANDLE:-}"),
   telegramBotOrigin: $(json_string "${TELEGRAM_BOT_ORIGIN:-}"),
+  commit: $(json_string "${GIT_COMMIT:-}"),
 };
 CONFIG

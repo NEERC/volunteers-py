@@ -11,9 +11,11 @@ RUN mkdir -p /backups
 COPY backup.sh /usr/local/bin/backup.sh
 RUN chmod +x /usr/local/bin/backup.sh
 
-# Create cron job to run backup daily at 2 AM
-RUN echo "0 2 * * * /usr/local/bin/backup.sh >> /var/log/backup.log 2>&1" | crontab -
-RUN echo "@reboot /usr/local/bin/backup.sh >> /var/log/backup.log 2>&1" | crontab -
+# Run backup daily at 2 AM and on container start (one crontab, `crontab -` replaces it)
+RUN printf '%s\n' \
+    "0 2 * * * /usr/local/bin/backup.sh >> /var/log/backup.log 2>&1" \
+    "@reboot /usr/local/bin/backup.sh >> /var/log/backup.log 2>&1" \
+    | crontab -
 
 # Create log file
 RUN touch /var/log/backup.log
