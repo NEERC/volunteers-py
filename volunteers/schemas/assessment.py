@@ -1,4 +1,4 @@
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 
 class CommentRequired(ValueError):
@@ -38,5 +38,18 @@ class AssessmentEditIn(BaseModel):
         return trimmed
 
 
-class AssessmentOut(AssessmentIn):
+class AssessmentAuthorOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    first_name_en: str
+    last_name_en: str
+    telegram_username: str | None
+
+
+class AssessmentOut(BaseModel):
     assessment_id: int
+    user_day_id: int
+    comment: str
+    value: float
+    author: AssessmentAuthorOut | None

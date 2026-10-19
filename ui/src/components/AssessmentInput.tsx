@@ -14,6 +14,7 @@ import {
 import { useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import type { AssessmentInAttendance } from "@/client/types.gen";
+import { getAssessmentAuthorLabel } from "@/utils/assessment";
 
 interface AssessmentInputProps {
   userDayId: number;
@@ -119,12 +120,35 @@ export function AssessmentInput({
         {averageScore !== null ? (
           <Tooltip
             title={
-              assessments.length > 1
-                ? `${t("Average of")} ${assessments.length} ${t("assessments")}`
-                : assessments[0]?.comment || t("Assessment")
+              <Box sx={{ display: "flex", flexDirection: "column", gap: 0.5 }}>
+                {assessments.length > 1 && (
+                  <Typography variant="caption" fontWeight="bold">
+                    {t("Average of")} {assessments.length} {t("assessments")}
+                  </Typography>
+                )}
+                {assessments.map((assessment) => (
+                  <Box key={assessment.assessment_id}>
+                    <Typography variant="caption" sx={{ display: "block" }}>
+                      {t("Score")}: {formatAverage(assessment.value)}
+                    </Typography>
+                    <Typography variant="caption" sx={{ display: "block" }}>
+                      {t("Author")}:{" "}
+                      {getAssessmentAuthorLabel(assessment.author, t)}
+                    </Typography>
+                    <Typography variant="caption">
+                      {assessment.comment}
+                    </Typography>
+                  </Box>
+                ))}
+              </Box>
             }
           >
             <Box
+              aria-label={
+                assessments.length > 1
+                  ? `${t("Average of")} ${assessments.length} ${t("assessments")}`
+                  : assessments[0]?.comment || t("Assessment")
+              }
               sx={{
                 display: "flex",
                 alignItems: "center",
@@ -173,6 +197,12 @@ export function AssessmentInput({
         </DialogTitle>
         <DialogContent>
           <Box sx={{ display: "flex", flexDirection: "column", gap: 2, mt: 1 }}>
+            {editingAssessment && (
+              <Typography variant="body2" color="text.secondary">
+                {t("Author")}:{" "}
+                {getAssessmentAuthorLabel(editingAssessment.author, t)}
+              </Typography>
+            )}
             <TextField
               label={t("Score")}
               type="number"

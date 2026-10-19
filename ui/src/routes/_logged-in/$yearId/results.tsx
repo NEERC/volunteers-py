@@ -17,7 +17,9 @@ import {
 import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
+import type { AssessmentOut } from "@/client/types.gen";
 import { useYearResults } from "@/data/use-admin";
+import { getAssessmentAuthorLabel } from "@/utils/assessment";
 import { openAuthenticatedPage } from "@/utils/download";
 import { shouldBeAdmin } from "@/utils/should-be-logged-in";
 
@@ -41,9 +43,7 @@ function RouteComponent() {
     element: HTMLElement;
     userId: number;
     type: PopoverType;
-    data:
-      | Array<[string, Array<string>]>
-      | Array<{ assessment_id: number; comment: string; value: number }>;
+    data: Array<[string, Array<string>]> | Array<AssessmentOut>;
   } | null>(null);
 
   const handleOpenExperiencePopover = (
@@ -62,11 +62,7 @@ function RouteComponent() {
   const handleOpenAssessmentsPopover = (
     event: React.MouseEvent<HTMLElement>,
     userId: number,
-    assessments: Array<{
-      assessment_id: number;
-      comment: string;
-      value: number;
-    }>,
+    assessments: Array<AssessmentOut>,
   ) => {
     setPopoverAnchor({
       element: event.currentTarget,
@@ -460,15 +456,13 @@ function RouteComponent() {
             if (!data || !Array.isArray(data)) {
               return null;
             }
-            return (
-              data as Array<{
-                assessment_id: number;
-                comment: string;
-                value: number;
-              }>
-            ).map((assessment, idx, arr) => (
+            if (popoverAnchor?.type !== "assessments") {
+              return null;
+            }
+            const assessments = data as Array<AssessmentOut>;
+            return assessments.map((assessment, idx, arr) => (
               <Box
-                key={assessment?.assessment_id ?? idx}
+                key={assessment.assessment_id ?? idx}
                 sx={{
                   mb: 2,
                   pb: 2,
@@ -480,18 +474,22 @@ function RouteComponent() {
                   sx={{ display: "flex", alignItems: "center", gap: 1, mb: 1 }}
                 >
                   <Chip
-                    label={(assessment?.value ?? 0).toFixed(2)}
+                    label={(assessment.value ?? 0).toFixed(2)}
                     size="small"
                     color="success"
                     variant="outlined"
                     sx={{ fontWeight: 600 }}
                   />
                   <Typography variant="caption" color="text.secondary">
-                    ID: {assessment?.assessment_id ?? "N/A"}
+                    ID: {assessment.assessment_id ?? "N/A"}
+                  </Typography>
+                  <Typography variant="caption" color="text.secondary">
+                    {t("Author")}:{" "}
+                    {getAssessmentAuthorLabel(assessment.author, t)}
                   </Typography>
                 </Box>
                 <Typography variant="body2" color="text.secondary">
-                  {assessment?.comment || ""}
+                  {assessment.comment || ""}
                 </Typography>
               </Box>
             ));

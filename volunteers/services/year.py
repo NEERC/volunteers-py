@@ -198,7 +198,7 @@ class YearService(BaseService):
                     selectinload(UserDay.day),
                     selectinload(UserDay.position),
                     selectinload(UserDay.hall),
-                    selectinload(UserDay.assessments),
+                    selectinload(UserDay.assessments).selectinload(Assessment.author),
                 )
                 .order_by(UserDay.created_at)
             )
@@ -656,11 +656,14 @@ class YearService(BaseService):
 
             return copied_count
 
-    async def add_assessment(self, assessment_in: AssessmentIn) -> Assessment:
+    async def add_assessment(
+        self, assessment_in: AssessmentIn, author_id: int | None = None
+    ) -> Assessment:
         created_assessment = Assessment(
             user_day_id=assessment_in.user_day_id,
             comment=assessment_in.comment,
             value=assessment_in.value,
+            author_id=author_id,
         )
         async with self.session_scope() as session:
             session.add(created_assessment)
@@ -809,7 +812,7 @@ class YearService(BaseService):
                     selectinload(UserDay.day),
                     selectinload(UserDay.position),
                     selectinload(UserDay.hall),
-                    selectinload(UserDay.assessments),
+                    selectinload(UserDay.assessments).selectinload(Assessment.author),
                 )
             )
             return result.scalar_one_or_none()
@@ -1093,7 +1096,9 @@ class YearService(BaseService):
                 .options(
                     selectinload(ApplicationForm.user),
                     selectinload(ApplicationForm.year),
-                    selectinload(ApplicationForm.user_days).selectinload(UserDay.assessments),
+                    selectinload(ApplicationForm.user_days)
+                    .selectinload(UserDay.assessments)
+                    .selectinload(Assessment.author),
                     selectinload(ApplicationForm.user_days).selectinload(UserDay.day),
                     selectinload(ApplicationForm.user_days).selectinload(UserDay.position),
                 )

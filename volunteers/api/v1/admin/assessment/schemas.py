@@ -1,5 +1,6 @@
 from pydantic import BaseModel, Field
 
+from volunteers.schemas.assessment import AssessmentAuthorOut
 from volunteers.schemas.base import BaseSuccessResponse
 
 
@@ -30,6 +31,7 @@ class AssessmentItem(BaseModel):
     user_day_id: int
     comment: str
     value: float
+    author: AssessmentAuthorOut | None
 
 
 class AssessmentsResponse(BaseModel):

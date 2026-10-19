@@ -6,9 +6,14 @@ from volunteers.services.base import BaseService
 
 
 class AssessmentService(BaseService):
-    async def add_assessment(self, assessment_in: AssessmentIn) -> Assessment:
+    async def add_assessment(
+        self, assessment_in: AssessmentIn, author_id: int | None = None
+    ) -> Assessment:
         async with self.session_scope() as session:
-            assessment = Assessment(**assessment_in.model_dump())
+            assessment = Assessment(
+                **assessment_in.model_dump(),
+                author_id=author_id,
+            )
             session.add(assessment)
             await session.commit()
             await session.refresh(assessment)
