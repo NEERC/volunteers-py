@@ -31,6 +31,11 @@ ENV NGINX_ENVSUBST_TEMPLATE_DIR=/etc/nginx/templates \
     NGINX_ENVSUBST_OUTPUT_DIR=/etc/nginx/conf.d \
     PORT=8000
 
+# Commit the image is built from, shown in the menu. Set after the build of the app,
+# so a new commit doesn't invalidate its cache
+ARG GIT_COMMIT=
+ENV GIT_COMMIT=${GIT_COMMIT}
+
 # Configuration of the deployment applied on start, see docker-entrypoint.sh
 ENV PUBLIC_URL=/ \
     MODE=production \

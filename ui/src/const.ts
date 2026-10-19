@@ -9,6 +9,7 @@ type RuntimeConfig = {
   mode?: string;
   telegramBotHandle?: string;
   telegramBotOrigin?: string;
+  commit?: string;
 };
 
 declare global {
@@ -24,6 +25,10 @@ export const TELEGRAM_BOT_HANDLE =
   runtimeConfig.telegramBotHandle || import.meta.env.VITE_TELEGRAM_BOT_HANDLE;
 export const TELEGRAM_BOT_ORIGIN =
   runtimeConfig.telegramBotOrigin || import.meta.env.VITE_TELEGRAM_BOT_ORIGIN;
+
+// Commit the frontend image is built from, empty in development
+export const COMMIT = runtimeConfig.commit || "";
+export const REPOSITORY_URL = "https://github.com/NEERC/volunteers-py";
 
 // Translation keys of identity provider names
 export const PROVIDER_NAMES: Record<IdentityProvider, string> = {
