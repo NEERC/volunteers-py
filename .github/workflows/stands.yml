@@ -242,10 +242,11 @@ jobs:
       id: tag
       run: echo "run-tag=r${{ github.run_number }}a${{ github.run_attempt }}" | tee -a "$GITHUB_OUTPUT"
 
+    # The pnpm version is pinned by packageManager of the UI, as in e2e.yml
     - name: Setup pnpm
       uses: pnpm/action-setup@v6
       with:
-        package_json_file: e2e/package.json
+        package_json_file: ui/package.json
 
     - name: Setup Node.js
       uses: actions/setup-node@v7
@@ -400,7 +401,8 @@ jobs:
               `Telegram messages sent by the backend are at ${url}/__mock/telegram/messages.`,
               "The database is recreated on every deploy and filled by the e2e tests.",
             ];
-            if (env.RUN_TAG) {
+            // The users exist once the setup project of the tests has passed
+            if (env.RUN_TAG && env.E2E === "success") {
               lines.push(
                 "",
                 "Users of the e2e run (sign in with these usernames):",
