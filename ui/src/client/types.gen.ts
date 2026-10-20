@@ -329,6 +329,50 @@ export type LegacyAuthRequest = {
     password: string;
 };
 
+export type MergeFormConflict = {
+    year_id: number;
+    year_name: string;
+    forms: Array<MergeFormSummary>;
+};
+
+export type MergeFormDay = {
+    day_name: string;
+    position_name: string;
+    assessments_count: number;
+};
+
+export type MergeFormSummary = {
+    form_id: number;
+    user_id: number;
+    itmo_group: string | null;
+    comments: string;
+    created_at: string;
+    desired_positions: Array<string>;
+    days: Array<MergeFormDay>;
+};
+
+export type MergeIdentityConflict = {
+    provider: IdentityProvider;
+    identities: Array<UserIdentityResponse>;
+};
+
+export type MergePreviewResponse = {
+    target: VolunteersApiV1AdminUserSchemasUserResponse;
+    source: VolunteersApiV1AdminUserSchemasUserResponse;
+    merged: VolunteersApiV1AdminUserSchemasUserResponse;
+    form_conflicts: Array<MergeFormConflict>;
+    identity_conflicts: Array<MergeIdentityConflict>;
+};
+
+export type MergeUsersRequest = {
+    kept_form_ids?: {
+        [key: string]: number;
+    };
+    kept_identity_ids?: {
+        [key: string]: number;
+    };
+};
+
 export type PendingIdentityResponse = {
     provider: IdentityProvider;
     display_name: string | null;
@@ -1036,6 +1080,62 @@ export type DeleteUserIdentityApiV1AdminUserUserIdIdentitiesIdentityIdDeleteResp
 };
 
 export type DeleteUserIdentityApiV1AdminUserUserIdIdentitiesIdentityIdDeleteResponse = DeleteUserIdentityApiV1AdminUserUserIdIdentitiesIdentityIdDeleteResponses[keyof DeleteUserIdentityApiV1AdminUserUserIdIdentitiesIdentityIdDeleteResponses];
+
+export type GetMergePreviewApiV1AdminUserUserIdMergeOtherUserIdGetData = {
+    body?: never;
+    path: {
+        user_id: number;
+        other_user_id: number;
+    };
+    query?: never;
+    url: '/api/v1/admin/user/{user_id}/merge/{other_user_id}';
+};
+
+export type GetMergePreviewApiV1AdminUserUserIdMergeOtherUserIdGetErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type GetMergePreviewApiV1AdminUserUserIdMergeOtherUserIdGetError = GetMergePreviewApiV1AdminUserUserIdMergeOtherUserIdGetErrors[keyof GetMergePreviewApiV1AdminUserUserIdMergeOtherUserIdGetErrors];
+
+export type GetMergePreviewApiV1AdminUserUserIdMergeOtherUserIdGetResponses = {
+    /**
+     * Successful Response
+     */
+    200: MergePreviewResponse;
+};
+
+export type GetMergePreviewApiV1AdminUserUserIdMergeOtherUserIdGetResponse = GetMergePreviewApiV1AdminUserUserIdMergeOtherUserIdGetResponses[keyof GetMergePreviewApiV1AdminUserUserIdMergeOtherUserIdGetResponses];
+
+export type MergeUsersApiV1AdminUserUserIdMergeOtherUserIdPostData = {
+    body: MergeUsersRequest;
+    path: {
+        user_id: number;
+        other_user_id: number;
+    };
+    query?: never;
+    url: '/api/v1/admin/user/{user_id}/merge/{other_user_id}';
+};
+
+export type MergeUsersApiV1AdminUserUserIdMergeOtherUserIdPostErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type MergeUsersApiV1AdminUserUserIdMergeOtherUserIdPostError = MergeUsersApiV1AdminUserUserIdMergeOtherUserIdPostErrors[keyof MergeUsersApiV1AdminUserUserIdMergeOtherUserIdPostErrors];
+
+export type MergeUsersApiV1AdminUserUserIdMergeOtherUserIdPostResponses = {
+    /**
+     * Successful Response
+     */
+    200: VolunteersApiV1AdminUserSchemasUserResponse;
+};
+
+export type MergeUsersApiV1AdminUserUserIdMergeOtherUserIdPostResponse = MergeUsersApiV1AdminUserUserIdMergeOtherUserIdPostResponses[keyof MergeUsersApiV1AdminUserUserIdMergeOtherUserIdPostResponses];
 
 export type AddUserDayApiV1AdminUserDayAddPostData = {
     body: AddUserDayRequest;
