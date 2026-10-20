@@ -4,8 +4,10 @@ import {
   Alert,
   Box,
   Button,
+  Checkbox,
   Chip,
   CircularProgress,
+  FormControlLabel,
   InputAdornment,
   Link,
   Paper,
@@ -34,6 +36,7 @@ import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useAllUsers } from "@/data/use-admin";
 import { downloadFile } from "@/utils/download";
+import { findSuspectedDuplicates } from "@/utils/duplicates";
 import { getGenderLabel } from "@/utils/gender";
 import { shouldBeAdmin } from "@/utils/should-be-logged-in";
 
@@ -54,6 +57,12 @@ function RouteComponent() {
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
   const [globalFilter, setGlobalFilter] = useState("");
   const [exportError, setExportError] = useState<string | null>(null);
+  const [onlyDuplicates, setOnlyDuplicates] = useState(false);
+
+  const tableData = useMemo(() => {
+    const users = data?.users ?? [];
+    return onlyDuplicates ? findSuspectedDuplicates(users) : users;
+  }, [data, onlyDuplicates]);
 
   const columns: ColumnDef<NonNullable<typeof data>["users"][number]>[] =
     useMemo(
@@ -226,7 +235,7 @@ function RouteComponent() {
     );
 
   const table = useReactTable({
-    data: data?.users || [],
+    data: tableData,
     columns,
     state: {
       sorting,
@@ -258,8 +267,6 @@ function RouteComponent() {
       </Box>
     );
   }
-
-  const users = data?.users || [];
 
   return (
     <Box p={3}>
@@ -296,7 +303,7 @@ function RouteComponent() {
         </Button>
       </Box>
 
-      <Box sx={{ mb: 2 }}>
+      <Box sx={{ mb: 2, display: "flex", alignItems: "center", gap: 2 }}>
         <TextField
           fullWidth
           placeholder={t("Search users...")}
@@ -311,10 +318,22 @@ function RouteComponent() {
             ),
           }}
         />
+        <FormControlLabel
+          control={
+            <Checkbox
+              checked={onlyDuplicates}
+              onChange={(e) => setOnlyDuplicates(e.target.checked)}
+            />
+          }
+          label={t("Suspected duplicates")}
+          sx={{ whiteSpace: "nowrap" }}
+        />
       </Box>
 
-      {users.length === 0 ? (
-        <Alert severity="info">{t("No users found")}</Alert>
+      {tableData.length === 0 ? (
+        <Alert severity="info">
+          {onlyDuplicates ? t("No suspected duplicates") : t("No users found")}
+        </Alert>
       ) : (
         <TableContainer component={Paper}>
           <Table size="small" stickyHeader>

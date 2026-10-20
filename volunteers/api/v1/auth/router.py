@@ -47,15 +47,13 @@ from volunteers.auth.providers.legacy import verify_legacy_password
 from volunteers.core.config import Config
 from volunteers.core.di import Container
 from volunteers.models import IdentityProvider, User, UserIdentity
+from volunteers.models.identity_provider import SINGLE_IDENTITY_PROVIDERS
 from volunteers.schemas.user import UserIn, UserUpdate
 from volunteers.services.i18n import I18nService
 from volunteers.services.identity import IdentityService
 from volunteers.services.user import UserService
 
 router = APIRouter(tags=["auth"])
-
-# A user can have at most one identity of these providers
-SINGLE_IDENTITY_PROVIDERS = {IdentityProvider.TELEGRAM, IdentityProvider.KEYCLOAK}
 
 
 def verify_telegram_login(data: TelegramLoginData, config: Config) -> bool:

@@ -11,6 +11,7 @@ from volunteers.services.export import ExportService
 from volunteers.services.i18n import I18nService
 from volunteers.services.identity import IdentityService
 from volunteers.services.user import UserService
+from volunteers.services.user_merge import UserMergeService
 from volunteers.services.year import YearService
 
 
@@ -46,6 +47,7 @@ class Container(containers.DeclarativeContainer):
     identity_service = providers.Singleton(IdentityService)
     assessment_service = providers.Singleton(AssessmentService)
     export_service = providers.Singleton(ExportService)
+    user_merge_service = providers.Singleton(UserMergeService)
 
 
 # Create a global container instance (not wired yet)
