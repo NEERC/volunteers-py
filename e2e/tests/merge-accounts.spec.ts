@@ -8,13 +8,15 @@ import { authFile, makeUser, RUN_TAG, type TestUser } from "../support/users";
 
 type UserDetails = {
   user_id: number;
+  email: string | null;
   phone: string | null;
   identities: { provider: string; subject: string }[];
 };
 
 // Two accounts of the same person ("Тестов Тест"), registered via ITMO ID with
 // Telegram linked, both applied for the same year: the admin finds them among the
-// suspected duplicates and merges the newer one into the older one, resolving
+// suspected duplicates and merges the newer one into the older one (keeping the
+// id of the older account and the profile of the newer one), resolving
 // the conflicts (application forms, ITMO ID and Telegram accounts).
 test("admin merges duplicate accounts", async ({
   browser,
@@ -112,6 +114,8 @@ test("admin merges duplicate accounts", async ({
   await expect(adminApi.get(`/admin/user/${newerId}`)).rejects.toThrow(/404/);
 
   const merged = await adminApi.get<UserDetails>(`/admin/user/${olderId}`);
+  // The profile is taken from the newer account
+  expect(merged.email).toBe(newer.email);
   expect(merged.phone).toBe("+79990000000");
   expect(
     merged.identities.map((i) => `${i.provider}:${i.subject}`).sort(),

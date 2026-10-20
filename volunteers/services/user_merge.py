@@ -20,7 +20,8 @@ from volunteers.models.identity_provider import SINGLE_IDENTITY_PROVIDERS
 from .base import BaseService
 from .errors import DomainError
 
-# Profile fields taken from the kept user, or from the merged one when empty on the kept one
+# Profile fields taken from the newer user (it has the latest data), or from the older one
+# when empty on the newer one
 MERGED_FIELDS = (
     "first_name_ru",
     "last_name_ru",
@@ -76,7 +77,10 @@ class IdentityConflict:
 
 @dataclass
 class MergePlan:
-    """Merge of two users: the older one (smaller id) is kept, the newer one is merged into it."""
+    """Merge of two users: the older one (smaller id) is kept, the newer one is merged into it.
+
+    The kept user gets the profile of the newer one, see `merge_user_fields`.
+    """
 
     target: User
     source: User
@@ -90,10 +94,11 @@ def _is_empty(value: Any) -> bool:
 
 
 def merge_user_fields(target: User, source: User) -> dict[str, Any]:
+    """Profile of the merged user: fields of the newer `source`, empty ones filled from `target`."""
     fields: dict[str, Any] = {}
     for field in MERGED_FIELDS:
-        value = getattr(target, field)
-        fields[field] = getattr(source, field) if _is_empty(value) else value
+        value = getattr(source, field)
+        fields[field] = getattr(target, field) if _is_empty(value) else value
     fields["is_admin"] = bool(target.is_admin or source.is_admin)
     return fields
 

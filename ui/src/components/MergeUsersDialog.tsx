@@ -211,7 +211,7 @@ export function MergeUsersDialog({ user, open, onClose }: Props) {
           <>
             <Alert severity="warning" sx={{ mt: 2 }}>
               {t(
-                "Account #{{target}} (the older one) is kept. Everything of account #{{source}} is moved to it, then account #{{source}} is deleted. This cannot be undone.",
+                "Account #{{target}} (the older one) is kept with the profile of account #{{source}}. Everything of account #{{source}} is moved to it, then account #{{source}} is deleted. This cannot be undone.",
                 { target: data.target.user_id, source: data.source.user_id },
               )}
             </Alert>
@@ -221,7 +221,7 @@ export function MergeUsersDialog({ user, open, onClose }: Props) {
             </Typography>
             <Typography variant="body2" color="text.secondary">
               {t(
-                "Fields are taken from the older account, empty ones are filled from the newer account.",
+                "Fields are taken from the newer account, empty ones are filled from the older account.",
               )}
             </Typography>
             <Table size="small" sx={{ mt: 1 }}>
@@ -235,18 +235,26 @@ export function MergeUsersDialog({ user, open, onClose }: Props) {
               </TableHead>
               <TableBody>
                 {FIELDS.map(([field, label]) => {
-                  const differs =
+                  // The value of the older account is replaced by the newer one
+                  const replaced =
                     fieldValue(data.target, field) !==
-                    fieldValue(data.source, field);
+                    fieldValue(data.merged, field);
                   return (
                     <TableRow key={field}>
                       <TableCell>{t(label)}</TableCell>
-                      <TableCell>{fieldValue(data.target, field)}</TableCell>
                       <TableCell
-                        sx={differs ? { color: "warning.main" } : undefined}
+                        sx={
+                          replaced
+                            ? {
+                                color: "warning.main",
+                                textDecoration: "line-through",
+                              }
+                            : undefined
+                        }
                       >
-                        {fieldValue(data.source, field)}
+                        {fieldValue(data.target, field)}
                       </TableCell>
+                      <TableCell>{fieldValue(data.source, field)}</TableCell>
                       <TableCell sx={{ fontWeight: "medium" }}>
                         {fieldValue(data.merged, field)}
                       </TableCell>

@@ -77,7 +77,7 @@ class MergeIdentityConflict(BaseModel):
 
 
 class MergePreviewResponse(BaseModel):
-    # The older user (smaller id) is kept, the newer one is merged into it and deleted
+    # The older user (smaller id) is kept with the profile of the newer one, which is deleted
     target: UserResponse
     source: UserResponse
     merged: UserResponse

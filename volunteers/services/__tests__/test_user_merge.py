@@ -52,31 +52,35 @@ def make_user(**kwargs: object) -> User:
     return User(**fields)
 
 
-def test_merge_user_fields_prefers_target_and_fills_empty_fields() -> None:
-    target = make_user(
-        id=1, patronymic_ru=None, phone="  ", email="old@example.com", gender=None, isu_id=None
-    )
-    source = make_user(
-        id=2,
-        first_name_ru="Ваня",
-        patronymic_ru="Петрович",
-        phone="+7999",
-        email="new@example.com",
+def test_merge_user_fields_prefers_newer_and_fills_empty_fields() -> None:
+    older = make_user(
+        id=1,
+        patronymic_ru="Иванович",
+        email="old@example.com",
         gender=Gender.MALE,
-        isu_id=123456,
-        telegram_username="ivan",
+        telegram_username="ivan_old",
         is_admin=True,
     )
+    newer = make_user(
+        id=2,
+        first_name_ru="Ваня",
+        patronymic_ru=None,
+        phone="+7999",
+        email="new@example.com",
+        gender=None,
+        isu_id=123456,
+        telegram_username="  ",
+    )
 
-    fields = merge_user_fields(target, source)
+    fields = merge_user_fields(older, newer)
 
-    assert fields["first_name_ru"] == "Иван"
-    assert fields["email"] == "old@example.com"
-    assert fields["patronymic_ru"] == "Петрович"
+    assert fields["first_name_ru"] == "Ваня"
+    assert fields["email"] == "new@example.com"
     assert fields["phone"] == "+7999"
-    assert fields["gender"] == Gender.MALE
     assert fields["isu_id"] == 123456
-    assert fields["telegram_username"] == "ivan"
+    assert fields["patronymic_ru"] == "Иванович"
+    assert fields["gender"] == Gender.MALE
+    assert fields["telegram_username"] == "ivan_old"
     assert fields["is_admin"] is True
 
 
@@ -134,7 +138,7 @@ async def seed(engine: AsyncEngine) -> Seed:
         position2 = Position(year_id=year2.id, name="Helper", can_desire=True)
         session.add_all([day1, day2, position1, position2])
 
-        old_user = make_user(email="old@example.com", phone=None)
+        old_user = make_user(email="old@example.com", phone=None, patronymic_ru="Иванович")
         new_user = make_user(email="new@example.com", phone="+7999", is_admin=True)
         other_user = make_user(first_name_ru="Пётр", last_name_ru="Петров")
         session.add_all([old_user, new_user, other_user])
@@ -226,8 +230,9 @@ async def test_plan_reports_conflicts(engine: AsyncEngine, service: UserMergeSer
     assert [(c.provider, [i.id for i in c.identities]) for c in plan.identity_conflicts] == [
         (IdentityProvider.TELEGRAM, [s.old_telegram_id, s.new_telegram_id])
     ]
-    assert plan.merged_fields["email"] == "old@example.com"
+    assert plan.merged_fields["email"] == "new@example.com"
     assert plan.merged_fields["phone"] == "+7999"
+    assert plan.merged_fields["patronymic_ru"] == "Иванович"
     assert plan.merged_fields["is_admin"] is True
 
 
@@ -269,8 +274,9 @@ async def test_merge_moves_everything_to_the_older_user(
         assert await session.get(User, s.new_user_id) is None
         user = await session.get(User, s.old_user_id)
         assert user is not None
-        assert user.email == "old@example.com"
+        assert user.email == "new@example.com"
         assert user.phone == "+7999"
+        assert user.patronymic_ru == "Иванович"
         assert user.is_admin is True
 
         forms = (
