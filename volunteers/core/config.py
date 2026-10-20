@@ -14,6 +14,9 @@ class TelegramConfig(BaseModel):
     expiration_time: int
     # Bot API server base URL, the official one is used when not set
     api_server: str | None = None
+    # Proxy for Bot API requests, e.g. http://user:pass@host:3128 (socks5:// works too),
+    # requests go directly when not set
+    proxy: str | None = None
 
 
 class KeycloakConfig(BaseModel):
