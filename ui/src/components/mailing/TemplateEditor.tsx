@@ -25,6 +25,7 @@ type Props = {
 };
 
 const SINGLE_LINE_HEIGHT = 34;
+const SINGLE_LINE_CONTEXT = "mailingSingleLineEditor";
 
 export function TemplateEditor({
   value,
@@ -77,8 +78,14 @@ export function TemplateEditor({
     editorRef.current = editor;
     monacoRef.current = m as unknown as typeof monaco;
     if (singleLine) {
-      // Enter still accepts a suggestion
-      editor.addCommand(m.KeyCode.Enter, () => {}, "!suggestWidgetVisible");
+      // Commands are shared by all editors: the context key limits this one to one-line
+      // editors. Enter still accepts a suggestion
+      editor.createContextKey(SINGLE_LINE_CONTEXT, true);
+      editor.addCommand(
+        m.KeyCode.Enter,
+        () => {},
+        `${SINGLE_LINE_CONTEXT} && !suggestWidgetVisible`,
+      );
     }
   };
 

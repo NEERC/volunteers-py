@@ -73,9 +73,11 @@ test("admin sends a mailing to the volunteers of a day", async ({
 
   await test.step("write the template in Monaco", async () => {
     await page.getByTestId("mailing-template").click();
-    await page.keyboard.type(
-      "Hi, <b>{{ user.first_name_en }}</b>! {{ day.name }}: {{ position.name }}",
-    );
+    await page.keyboard.type("Hi, <b>{{ user.first_name_en }}</b>!");
+    await page.keyboard.press("Escape");
+    // Enter adds a line in the message, unlike in the one-line button fields
+    await page.keyboard.press("Enter");
+    await page.keyboard.type("{{ day.name }}: {{ position.name }}");
     await page.keyboard.press("Escape");
 
     await page.getByRole("button", { name: "Add button" }).click();
@@ -88,6 +90,7 @@ test("admin sends a mailing to the volunteers of a day", async ({
   });
 
   const firstName = users.vol1.firstNameEn;
+  // toHaveText collapses the line break to a space
   const expectedText = `Hi, ${firstName}! ${day1}: ${usher}`;
   await expect(page.getByTestId("telegram-message")).toHaveText(expectedText);
   await expect(page.getByRole("link", { name: "Schedule" })).toHaveAttribute(
@@ -117,7 +120,7 @@ test("admin sends a mailing to the volunteers of a day", async ({
     );
     const message = sent.find((m) => m.params.text?.includes(day1));
     expect(message?.params.text).toBe(
-      `Hi, <b>${firstName}</b>! ${day1}: ${usher}`,
+      `Hi, <b>${firstName}</b>!\n${day1}: ${usher}`,
     );
     expect(message?.params.parse_mode).toBe("HTML");
     expect(JSON.parse(message?.params.reply_markup ?? "{}")).toEqual({
