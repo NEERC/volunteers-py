@@ -630,6 +630,9 @@ class YearService(BaseService):
             if replace_all:
                 for existing_assignment in existing_assignments_list:
                     await session.delete(existing_assignment)
+                # The unit of work inserts before it deletes, the copies would violate
+                # the unique constraint on the form and the day
+                await session.flush()
                 existing_assignments_list = []
                 existing_application_form_ids: set[int] = set()
             else:
@@ -658,6 +661,8 @@ class YearService(BaseService):
                         )
                         if existing_assignment_to_delete is not None:
                             await session.delete(existing_assignment_to_delete)
+                            # Before the copy is inserted, see replace_all
+                            await session.flush()
                     else:
                         # Skip this assignment
                         continue

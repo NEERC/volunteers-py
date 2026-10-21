@@ -361,6 +361,114 @@ async def test_copying_a_day_resets_confirmed_only(
     assert by_form[forms[seed.bob.id]] == Attendance.SICK
 
 
+async def attendance_by_user(engine: AsyncEngine, day_id: int) -> dict[int, Attendance]:
+    """User id -> attendance of their assignment on the day."""
+    async with async_sessionmaker(engine)() as session:
+        rows = await session.execute(
+            select(ApplicationForm.user_id, UserDay.attendance)
+            .join(UserDay)
+            .where(UserDay.day_id == day_id)
+        )
+        return dict(rows.tuples().all())
+
+
+async def prepare_day2(engine: AsyncEngine, seed: Seed, with_dave: bool = True) -> None:
+    """Alice is sick on day 2, Dave is assigned on day 2 only."""
+    async with async_sessionmaker(engine)() as session:
+        alice_day2 = await session.scalar(
+            select(UserDay)
+            .join(ApplicationForm)
+            .where(UserDay.day_id == seed.day2_id, ApplicationForm.user_id == seed.alice.id)
+        )
+        assert alice_day2 is not None
+        alice_day2.attendance = Attendance.SICK
+        if not with_dave:
+            await session.commit()
+            return
+        dave_form = await session.scalar(
+            select(ApplicationForm).where(ApplicationForm.user_id == seed.dave.id)
+        )
+        assert dave_form is not None
+        session.add(
+            UserDay(
+                application_form_id=dave_form.id,
+                day_id=seed.day2_id,
+                position_id=seed.registration_id,
+                information="",
+                attendance=Attendance.UNKNOWN,
+            )
+        )
+        await session.commit()
+
+
+async def test_copying_skips_volunteers_assigned_on_the_target_day(
+    service: YearService, engine: AsyncEngine, seed: Seed
+) -> None:
+    await prepare_day2(engine, seed)
+
+    copied = await service.copy_assignments_from_day(seed.day1_id, seed.day2_id)
+
+    assert copied == 3
+    day2 = await attendance_by_user(engine, seed.day2_id)
+    assert set(day2) == {
+        seed.manager.id,
+        seed.alice.id,
+        seed.bob.id,
+        seed.carol.id,
+        seed.dave.id,
+    }
+    assert day2[seed.alice.id] == Attendance.SICK
+
+
+async def test_copying_overwrites_assignments_on_the_target_day(
+    service: YearService, engine: AsyncEngine, seed: Seed
+) -> None:
+    await prepare_day2(engine, seed)
+
+    copied = await service.copy_assignments_from_day(
+        seed.day1_id, seed.day2_id, overwrite_existing=True
+    )
+
+    assert copied == 4
+    day2 = await attendance_by_user(engine, seed.day2_id)
+    # Dave is not on day 1 and keeps his assignment
+    assert set(day2) == {
+        seed.manager.id,
+        seed.alice.id,
+        seed.bob.id,
+        seed.carol.id,
+        seed.dave.id,
+    }
+    assert day2[seed.alice.id] == Attendance.UNKNOWN
+
+
+async def test_copying_replaces_all_assignments_on_the_target_day(
+    service: YearService, engine: AsyncEngine, seed: Seed
+) -> None:
+    await prepare_day2(engine, seed)
+
+    copied = await service.copy_assignments_from_day(seed.day1_id, seed.day2_id, replace_all=True)
+
+    assert copied == 4
+    day2 = await attendance_by_user(engine, seed.day2_id)
+    assert set(day2) == {seed.manager.id, seed.alice.id, seed.bob.id, seed.carol.id}
+    assert day2[seed.alice.id] == Attendance.UNKNOWN
+
+
+async def test_copying_replaces_a_conflicting_assignment_deleted_last(
+    service: YearService, engine: AsyncEngine, seed: Seed
+) -> None:
+    # Deleting another assignment after Alice's flushes her deletion by chance (loading its
+    # assessments), so here her assignment is the only one on day 2
+    await prepare_day2(engine, seed, with_dave=False)
+
+    copied = await service.copy_assignments_from_day(seed.day1_id, seed.day2_id, replace_all=True)
+
+    assert copied == 4
+    day2 = await attendance_by_user(engine, seed.day2_id)
+    assert day2[seed.alice.id] == Attendance.UNKNOWN
+
+
 async def forms_by_user(engine: AsyncEngine, seed: Seed) -> dict[int, int]:
     async with async_sessionmaker(engine)() as session:
         forms = await session.scalars(
