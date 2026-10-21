@@ -36,6 +36,8 @@ class DatabaseConfig(BaseModel):
 class ServerConfig(BaseModel):
     port: int
     host: str
+    # Public URL of the app, e.g. https://volunteers.example.com/, for links in notifications
+    public_url: str | None = None
 
 
 class LoggingConfig(BaseModel):
@@ -44,6 +46,15 @@ class LoggingConfig(BaseModel):
 
 class NotificationConfig(BaseModel):
     tg_chat_id: int
+
+
+class MailingConfig(BaseModel):
+    # Whether this process sends mailings. Several processes may, only one sends at a time
+    worker_enabled: bool = True
+    # Below the limits of Telegram (about 30 messages per second for a bot)
+    messages_per_second: float = 20
+    # Seconds between checks of the sending queue
+    poll_interval: float = 2
 
 
 class BootstrapConfig(BaseModel):
@@ -63,3 +74,4 @@ class Config(BaseSettings):
     logging: LoggingConfig
     notification: NotificationConfig
     bootstrap: BootstrapConfig = BootstrapConfig()
+    mailing: MailingConfig = MailingConfig()

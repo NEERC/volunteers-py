@@ -153,8 +153,9 @@ class AuthStore {
     this.refreshToken = null;
   }
 
+  /** Get a new access token, e.g. after a 401 of a request made without the API client. */
   @action
-  private async refresh() {
+  async refresh() {
     if (!this.refreshToken) {
       throw new Error("No refresh token");
     }

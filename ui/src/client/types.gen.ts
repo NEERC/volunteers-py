@@ -149,6 +149,11 @@ export type AssignmentItem = {
     hall_id: number | null;
 };
 
+/**
+ * Messages for an application form with several matching assignments.
+ */
+export type AssignmentMode = 'first' | 'all';
+
 export type AssignmentsResponse = {
     assignments: Array<AssignmentItem>;
 };
@@ -166,6 +171,10 @@ export type AuthFlowResponse = {
 
 export type AuthFlowStatus = 'success' | 'keycloak_required' | 'registration_required';
 
+export type BaseSuccessResponse = {
+    success: true;
+};
+
 export type CopyAssignmentsRequest = {
     source_day_id: number;
     target_day_id: number;
@@ -176,6 +185,10 @@ export type CopyAssignmentsRequest = {
 export type CopyAssignmentsResponse = {
     success: true;
     copied_count: number;
+};
+
+export type CreateMailingRequest = {
+    source_mailing_id?: number | null;
 };
 
 /**
@@ -329,6 +342,147 @@ export type LegacyAuthRequest = {
     password: string;
 };
 
+export type MailingButton = {
+    text?: string;
+    url?: string;
+};
+
+export type MailingCounts = {
+    pending: number;
+    sending: number;
+    sent: number;
+    failed: number;
+    unknown: number;
+    skipped: number;
+    cancelled: number;
+};
+
+/**
+ * Editable part of a mailing.
+ */
+export type MailingDraft = {
+    title?: string;
+    template?: string;
+    buttons?: Array<MailingButton>;
+    filter?: MailingFilter;
+    excluded_form_ids?: Array<number>;
+    assignment_mode?: AssignmentMode;
+};
+
+/**
+ * Conditions on a single assignment: AND between the fields, OR inside a field.
+ *
+ * An empty field does not restrict the assignment. Without any condition the mailing goes
+ * to all application forms of the year and assignments are not part of it.
+ */
+export type MailingFilter = {
+    day_ids?: Array<number>;
+    position_ids?: Array<number>;
+    hall_ids?: Array<number>;
+    no_hall?: boolean;
+    attendance?: Array<Attendance>;
+};
+
+export type MailingListResponse = {
+    mailings: Array<MailingResponse>;
+};
+
+export type MailingMessageResponse = {
+    message_id: number;
+    form_id: number | null;
+    user_day_id: number | null;
+    user_id: number | null;
+    recipient_name: string;
+    telegram_username: string | null;
+    assignment_label: string | null;
+    text: string;
+    buttons: Array<MailingButton>;
+    status: MailingMessageStatus;
+    error: string | null;
+    sent_at: string | null;
+    updated_at: string;
+};
+
+export type MailingMessageStatus = 'pending' | 'sending' | 'sent' | 'failed' | 'unknown' | 'skipped' | 'cancelled';
+
+export type MailingMessagesResponse = {
+    messages: Array<MailingMessageResponse>;
+};
+
+export type MailingPreviewRequest = {
+    draft: MailingDraft;
+    form_id: number;
+    user_day_id?: number | null;
+};
+
+export type MailingPreviewResponse = {
+    text: string;
+    buttons: Array<MailingButton>;
+    errors: Array<MailingRenderError>;
+};
+
+export type MailingRecipient = {
+    form_id: number;
+    user_id: number;
+    name: string;
+    telegram_username: string | null;
+    has_telegram: boolean;
+    excluded: boolean;
+    assignments: Array<RecipientAssignment>;
+    message_user_day_ids: Array<number | null>;
+};
+
+export type MailingRecipientError = {
+    field: 'text' | 'button_text' | 'button_url';
+    message: string;
+    button: number | null;
+    line: number | null;
+    form_id: number;
+    user_day_id: number | null;
+    recipient_name: string;
+};
+
+export type MailingRecipientsResponse = {
+    recipients: Array<MailingRecipient>;
+    uses_assignment: boolean;
+    has_unpublished_days: boolean;
+    messages: number;
+    skipped_messages: number;
+};
+
+export type MailingRenderError = {
+    field: 'text' | 'button_text' | 'button_url';
+    message: string;
+    button: number | null;
+    line: number | null;
+};
+
+export type MailingResponse = {
+    mailing_id: number;
+    year_id: number;
+    title: string;
+    status: MailingStatus;
+    template: string;
+    buttons: Array<MailingButton>;
+    filter: MailingFilter;
+    excluded_form_ids: Array<number>;
+    assignment_mode: AssignmentMode;
+    created_by: MailingUser | null;
+    started_by: MailingUser | null;
+    created_at: string;
+    queued_at: string | null;
+    started_at: string | null;
+    finished_at: string | null;
+    counts: MailingCounts;
+};
+
+export type MailingStatus = 'draft' | 'queued' | 'sending' | 'done' | 'cancelled';
+
+export type MailingUser = {
+    user_id: number;
+    name: string;
+};
+
 export type MergeFormConflict = {
     year_id: number;
     year_name: string;
@@ -390,6 +544,18 @@ export type PositionOut = {
     position_id: number;
 };
 
+export type RecipientAssignment = {
+    user_day_id: number;
+    day_id: number;
+    day_name: string;
+    day_published: boolean;
+    position_id: number;
+    position_name: string;
+    hall_id: number | null;
+    hall_name: string | null;
+    attendance: Attendance;
+};
+
 export type RefreshTokenRequest = {
     refresh_token: string;
 };
@@ -445,6 +611,10 @@ export type RegistrationRequest = {
     gender?: Gender | null;
 };
 
+export type ResendMessagesRequest = {
+    message_ids: Array<number>;
+};
+
 export type ResultItem = {
     user_id: number;
     first_name_ru: string;
@@ -475,6 +645,13 @@ export type SaveDayAttendanceRequest = {
     attendance: Attendance;
 };
 
+export type StartMailingResponse = {
+    started: boolean;
+    mailing: MailingResponse;
+    description: string | null;
+    errors: Array<MailingRecipientError>;
+};
+
 export type SuccessfulLoginResponse = {
     success: true;
     token: string;
@@ -502,6 +679,22 @@ export type TelegramLoginData = {
     telegram_last_name?: string | null;
     telegram_username?: string | null;
     telegram_photo_url?: string | null;
+};
+
+/**
+ * A variable of the template context, for autocompletion in the editor.
+ */
+export type TemplateVariable = {
+    name: string;
+    type: string;
+    nullable: boolean;
+    description: string;
+    assignment_only: boolean;
+    fields: Array<TemplateVariable>;
+};
+
+export type TemplateVariablesResponse = {
+    variables: Array<TemplateVariable>;
 };
 
 export type UserIdentityResponse = {
@@ -906,6 +1099,376 @@ export type GetYearHallsApiV1AdminHallYearYearIdGetResponses = {
 };
 
 export type GetYearHallsApiV1AdminHallYearYearIdGetResponse = GetYearHallsApiV1AdminHallYearYearIdGetResponses[keyof GetYearHallsApiV1AdminHallYearYearIdGetResponses];
+
+export type GetTemplateVariablesApiV1AdminMailingTemplateVariablesGetData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/v1/admin/mailing/template-variables';
+};
+
+export type GetTemplateVariablesApiV1AdminMailingTemplateVariablesGetResponses = {
+    /**
+     * Successful Response
+     */
+    200: TemplateVariablesResponse;
+};
+
+export type GetTemplateVariablesApiV1AdminMailingTemplateVariablesGetResponse = GetTemplateVariablesApiV1AdminMailingTemplateVariablesGetResponses[keyof GetTemplateVariablesApiV1AdminMailingTemplateVariablesGetResponses];
+
+export type GetMailingsApiV1AdminMailingYearYearIdGetData = {
+    body?: never;
+    path: {
+        year_id: number;
+    };
+    query?: never;
+    url: '/api/v1/admin/mailing/year/{year_id}';
+};
+
+export type GetMailingsApiV1AdminMailingYearYearIdGetErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type GetMailingsApiV1AdminMailingYearYearIdGetError = GetMailingsApiV1AdminMailingYearYearIdGetErrors[keyof GetMailingsApiV1AdminMailingYearYearIdGetErrors];
+
+export type GetMailingsApiV1AdminMailingYearYearIdGetResponses = {
+    /**
+     * Successful Response
+     */
+    200: MailingListResponse;
+};
+
+export type GetMailingsApiV1AdminMailingYearYearIdGetResponse = GetMailingsApiV1AdminMailingYearYearIdGetResponses[keyof GetMailingsApiV1AdminMailingYearYearIdGetResponses];
+
+export type CreateMailingApiV1AdminMailingYearYearIdPostData = {
+    body: CreateMailingRequest;
+    path: {
+        year_id: number;
+    };
+    query?: never;
+    url: '/api/v1/admin/mailing/year/{year_id}';
+};
+
+export type CreateMailingApiV1AdminMailingYearYearIdPostErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type CreateMailingApiV1AdminMailingYearYearIdPostError = CreateMailingApiV1AdminMailingYearYearIdPostErrors[keyof CreateMailingApiV1AdminMailingYearYearIdPostErrors];
+
+export type CreateMailingApiV1AdminMailingYearYearIdPostResponses = {
+    /**
+     * Successful Response
+     */
+    200: MailingResponse;
+};
+
+export type CreateMailingApiV1AdminMailingYearYearIdPostResponse = CreateMailingApiV1AdminMailingYearYearIdPostResponses[keyof CreateMailingApiV1AdminMailingYearYearIdPostResponses];
+
+export type GetRecipientsApiV1AdminMailingYearYearIdRecipientsPostData = {
+    body: MailingDraft;
+    path: {
+        year_id: number;
+    };
+    query?: never;
+    url: '/api/v1/admin/mailing/year/{year_id}/recipients';
+};
+
+export type GetRecipientsApiV1AdminMailingYearYearIdRecipientsPostErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type GetRecipientsApiV1AdminMailingYearYearIdRecipientsPostError = GetRecipientsApiV1AdminMailingYearYearIdRecipientsPostErrors[keyof GetRecipientsApiV1AdminMailingYearYearIdRecipientsPostErrors];
+
+export type GetRecipientsApiV1AdminMailingYearYearIdRecipientsPostResponses = {
+    /**
+     * Successful Response
+     */
+    200: MailingRecipientsResponse;
+};
+
+export type GetRecipientsApiV1AdminMailingYearYearIdRecipientsPostResponse = GetRecipientsApiV1AdminMailingYearYearIdRecipientsPostResponses[keyof GetRecipientsApiV1AdminMailingYearYearIdRecipientsPostResponses];
+
+export type PreviewMessageApiV1AdminMailingYearYearIdPreviewPostData = {
+    body: MailingPreviewRequest;
+    path: {
+        year_id: number;
+    };
+    query?: never;
+    url: '/api/v1/admin/mailing/year/{year_id}/preview';
+};
+
+export type PreviewMessageApiV1AdminMailingYearYearIdPreviewPostErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type PreviewMessageApiV1AdminMailingYearYearIdPreviewPostError = PreviewMessageApiV1AdminMailingYearYearIdPreviewPostErrors[keyof PreviewMessageApiV1AdminMailingYearYearIdPreviewPostErrors];
+
+export type PreviewMessageApiV1AdminMailingYearYearIdPreviewPostResponses = {
+    /**
+     * Successful Response
+     */
+    200: MailingPreviewResponse;
+};
+
+export type PreviewMessageApiV1AdminMailingYearYearIdPreviewPostResponse = PreviewMessageApiV1AdminMailingYearYearIdPreviewPostResponses[keyof PreviewMessageApiV1AdminMailingYearYearIdPreviewPostResponses];
+
+export type TestSendMessageApiV1AdminMailingYearYearIdTestSendPostData = {
+    body: MailingPreviewRequest;
+    path: {
+        year_id: number;
+    };
+    query?: never;
+    url: '/api/v1/admin/mailing/year/{year_id}/test-send';
+};
+
+export type TestSendMessageApiV1AdminMailingYearYearIdTestSendPostErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type TestSendMessageApiV1AdminMailingYearYearIdTestSendPostError = TestSendMessageApiV1AdminMailingYearYearIdTestSendPostErrors[keyof TestSendMessageApiV1AdminMailingYearYearIdTestSendPostErrors];
+
+export type TestSendMessageApiV1AdminMailingYearYearIdTestSendPostResponses = {
+    /**
+     * Successful Response
+     */
+    200: BaseSuccessResponse;
+};
+
+export type TestSendMessageApiV1AdminMailingYearYearIdTestSendPostResponse = TestSendMessageApiV1AdminMailingYearYearIdTestSendPostResponses[keyof TestSendMessageApiV1AdminMailingYearYearIdTestSendPostResponses];
+
+export type DeleteMailingApiV1AdminMailingMailingIdDeleteData = {
+    body?: never;
+    path: {
+        mailing_id: number;
+    };
+    query?: never;
+    url: '/api/v1/admin/mailing/{mailing_id}';
+};
+
+export type DeleteMailingApiV1AdminMailingMailingIdDeleteErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type DeleteMailingApiV1AdminMailingMailingIdDeleteError = DeleteMailingApiV1AdminMailingMailingIdDeleteErrors[keyof DeleteMailingApiV1AdminMailingMailingIdDeleteErrors];
+
+export type DeleteMailingApiV1AdminMailingMailingIdDeleteResponses = {
+    /**
+     * Successful Response
+     */
+    200: BaseSuccessResponse;
+};
+
+export type DeleteMailingApiV1AdminMailingMailingIdDeleteResponse = DeleteMailingApiV1AdminMailingMailingIdDeleteResponses[keyof DeleteMailingApiV1AdminMailingMailingIdDeleteResponses];
+
+export type GetMailingApiV1AdminMailingMailingIdGetData = {
+    body?: never;
+    path: {
+        mailing_id: number;
+    };
+    query?: never;
+    url: '/api/v1/admin/mailing/{mailing_id}';
+};
+
+export type GetMailingApiV1AdminMailingMailingIdGetErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type GetMailingApiV1AdminMailingMailingIdGetError = GetMailingApiV1AdminMailingMailingIdGetErrors[keyof GetMailingApiV1AdminMailingMailingIdGetErrors];
+
+export type GetMailingApiV1AdminMailingMailingIdGetResponses = {
+    /**
+     * Successful Response
+     */
+    200: MailingResponse;
+};
+
+export type GetMailingApiV1AdminMailingMailingIdGetResponse = GetMailingApiV1AdminMailingMailingIdGetResponses[keyof GetMailingApiV1AdminMailingMailingIdGetResponses];
+
+export type EditMailingApiV1AdminMailingMailingIdEditPostData = {
+    body: MailingDraft;
+    path: {
+        mailing_id: number;
+    };
+    query?: never;
+    url: '/api/v1/admin/mailing/{mailing_id}/edit';
+};
+
+export type EditMailingApiV1AdminMailingMailingIdEditPostErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type EditMailingApiV1AdminMailingMailingIdEditPostError = EditMailingApiV1AdminMailingMailingIdEditPostErrors[keyof EditMailingApiV1AdminMailingMailingIdEditPostErrors];
+
+export type EditMailingApiV1AdminMailingMailingIdEditPostResponses = {
+    /**
+     * Successful Response
+     */
+    200: MailingResponse;
+};
+
+export type EditMailingApiV1AdminMailingMailingIdEditPostResponse = EditMailingApiV1AdminMailingMailingIdEditPostResponses[keyof EditMailingApiV1AdminMailingMailingIdEditPostResponses];
+
+export type StartMailingApiV1AdminMailingMailingIdStartPostData = {
+    body: MailingDraft;
+    path: {
+        mailing_id: number;
+    };
+    query?: never;
+    url: '/api/v1/admin/mailing/{mailing_id}/start';
+};
+
+export type StartMailingApiV1AdminMailingMailingIdStartPostErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type StartMailingApiV1AdminMailingMailingIdStartPostError = StartMailingApiV1AdminMailingMailingIdStartPostErrors[keyof StartMailingApiV1AdminMailingMailingIdStartPostErrors];
+
+export type StartMailingApiV1AdminMailingMailingIdStartPostResponses = {
+    /**
+     * Successful Response
+     */
+    200: StartMailingResponse;
+};
+
+export type StartMailingApiV1AdminMailingMailingIdStartPostResponse = StartMailingApiV1AdminMailingMailingIdStartPostResponses[keyof StartMailingApiV1AdminMailingMailingIdStartPostResponses];
+
+export type CancelMailingApiV1AdminMailingMailingIdCancelPostData = {
+    body?: never;
+    path: {
+        mailing_id: number;
+    };
+    query?: never;
+    url: '/api/v1/admin/mailing/{mailing_id}/cancel';
+};
+
+export type CancelMailingApiV1AdminMailingMailingIdCancelPostErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type CancelMailingApiV1AdminMailingMailingIdCancelPostError = CancelMailingApiV1AdminMailingMailingIdCancelPostErrors[keyof CancelMailingApiV1AdminMailingMailingIdCancelPostErrors];
+
+export type CancelMailingApiV1AdminMailingMailingIdCancelPostResponses = {
+    /**
+     * Successful Response
+     */
+    200: MailingResponse;
+};
+
+export type CancelMailingApiV1AdminMailingMailingIdCancelPostResponse = CancelMailingApiV1AdminMailingMailingIdCancelPostResponses[keyof CancelMailingApiV1AdminMailingMailingIdCancelPostResponses];
+
+export type ResendMessagesApiV1AdminMailingMailingIdResendPostData = {
+    body: ResendMessagesRequest;
+    path: {
+        mailing_id: number;
+    };
+    query?: never;
+    url: '/api/v1/admin/mailing/{mailing_id}/resend';
+};
+
+export type ResendMessagesApiV1AdminMailingMailingIdResendPostErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type ResendMessagesApiV1AdminMailingMailingIdResendPostError = ResendMessagesApiV1AdminMailingMailingIdResendPostErrors[keyof ResendMessagesApiV1AdminMailingMailingIdResendPostErrors];
+
+export type ResendMessagesApiV1AdminMailingMailingIdResendPostResponses = {
+    /**
+     * Successful Response
+     */
+    200: MailingResponse;
+};
+
+export type ResendMessagesApiV1AdminMailingMailingIdResendPostResponse = ResendMessagesApiV1AdminMailingMailingIdResendPostResponses[keyof ResendMessagesApiV1AdminMailingMailingIdResendPostResponses];
+
+export type GetMessagesApiV1AdminMailingMailingIdMessagesGetData = {
+    body?: never;
+    path: {
+        mailing_id: number;
+    };
+    query?: {
+        status?: MailingMessageStatus | null;
+    };
+    url: '/api/v1/admin/mailing/{mailing_id}/messages';
+};
+
+export type GetMessagesApiV1AdminMailingMailingIdMessagesGetErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type GetMessagesApiV1AdminMailingMailingIdMessagesGetError = GetMessagesApiV1AdminMailingMailingIdMessagesGetErrors[keyof GetMessagesApiV1AdminMailingMailingIdMessagesGetErrors];
+
+export type GetMessagesApiV1AdminMailingMailingIdMessagesGetResponses = {
+    /**
+     * Successful Response
+     */
+    200: MailingMessagesResponse;
+};
+
+export type GetMessagesApiV1AdminMailingMailingIdMessagesGetResponse = GetMessagesApiV1AdminMailingMailingIdMessagesGetResponses[keyof GetMessagesApiV1AdminMailingMailingIdMessagesGetResponses];
+
+export type MailingEventsApiV1AdminMailingMailingIdEventsGetData = {
+    body?: never;
+    headers?: {
+        'last-event-id'?: string | null;
+    };
+    path: {
+        mailing_id: number;
+    };
+    query?: never;
+    url: '/api/v1/admin/mailing/{mailing_id}/events';
+};
+
+export type MailingEventsApiV1AdminMailingMailingIdEventsGetErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type MailingEventsApiV1AdminMailingMailingIdEventsGetError = MailingEventsApiV1AdminMailingMailingIdEventsGetErrors[keyof MailingEventsApiV1AdminMailingMailingIdEventsGetErrors];
+
+export type MailingEventsApiV1AdminMailingMailingIdEventsGetResponses = {
+    /**
+     * Successful Response
+     */
+    200: unknown;
+};
 
 export type AddPositionApiV1AdminPositionAddPostData = {
     body: AddPositionRequest;

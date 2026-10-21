@@ -1,6 +1,7 @@
 import AssessmentIcon from "@mui/icons-material/Assessment";
 import AssignmentIcon from "@mui/icons-material/Assignment";
 import CalendarMonthIcon from "@mui/icons-material/CalendarMonth";
+import CampaignIcon from "@mui/icons-material/Campaign";
 import CheckCircleIcon from "@mui/icons-material/CheckCircle";
 import ContactsIcon from "@mui/icons-material/Contacts";
 import DescriptionIcon from "@mui/icons-material/Description";
@@ -135,6 +136,14 @@ const getRoutesConfig = (
           labelKey: "Results",
           icon: AssessmentIcon,
           path: `/${selectedYear}/results`,
+          adminOnly: true,
+        },
+        {
+          id: "mailings",
+          type: "simple",
+          labelKey: "Mailings",
+          icon: CampaignIcon,
+          path: `/${selectedYear}/mailings`,
           adminOnly: true,
         },
         {
