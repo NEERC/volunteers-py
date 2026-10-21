@@ -110,6 +110,7 @@ async def get_day_assignments(
             application_form_id=assignment.application_form.id,
             position_id=assignment.position.id,
             hall_id=assignment.hall.id if assignment.hall else None,
+            attendance=assignment.attendance,
         )
         for assignment in assignments
     ]

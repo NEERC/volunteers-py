@@ -20,6 +20,7 @@ from volunteers.models import (
 )
 from volunteers.models.attendance import Attendance
 from volunteers.models.gender import Gender
+from volunteers.services.year import DayAssignmentView
 
 if TYPE_CHECKING:
     from dependency_injector.containers import DeclarativeContainer
@@ -112,7 +113,7 @@ def app(test_user: User) -> FastAPIWithContainer:
     # Mock the year service methods
     year_service.get_year_by_year_id = AsyncMock(return_value=None)
     year_service.get_day_by_id = AsyncMock(return_value=None)
-    year_service.get_all_assignments_by_day_id = AsyncMock(return_value=[])
+    year_service.get_day_assignments_for_viewer = AsyncMock(return_value=[])
 
     container.year_service.override(year_service)
     container.wire(modules=[year_router])
@@ -148,8 +149,8 @@ async def test_get_day_assignments_success(
     # Setup mocks
     app.container.year_service().get_year_by_year_id = AsyncMock(return_value=test_year)
     app.container.year_service().get_day_by_id = AsyncMock(return_value=test_day)
-    app.container.year_service().get_all_assignments_by_day_id = AsyncMock(
-        return_value=[test_user_day]
+    app.container.year_service().get_day_assignments_for_viewer = AsyncMock(
+        return_value=[DayAssignmentView(assignment=test_user_day, confirmed=None)]
     )
 
     app.dependency_overrides[get_with_user_dep()] = with_user_dep
@@ -245,7 +246,7 @@ async def test_get_day_assignments_empty_list(
     # Setup mocks - no assignments
     app.container.year_service().get_year_by_year_id = AsyncMock(return_value=test_year)
     app.container.year_service().get_day_by_id = AsyncMock(return_value=test_day)
-    app.container.year_service().get_all_assignments_by_day_id = AsyncMock(return_value=[])
+    app.container.year_service().get_day_assignments_for_viewer = AsyncMock(return_value=[])
 
     app.dependency_overrides[get_with_user_dep()] = with_user_dep
 

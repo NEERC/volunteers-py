@@ -3,7 +3,7 @@ from dataclasses import dataclass
 from typing import NamedTuple
 
 import socketio  # type: ignore[import-untyped]
-from sqlalchemy import and_, delete, select
+from sqlalchemy import and_, delete, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
@@ -25,6 +25,7 @@ from volunteers.models.attendance import Attendance
 from volunteers.schemas.application_form import ApplicationFormIn
 from volunteers.schemas.assessment import AssessmentEditIn, AssessmentIn
 from volunteers.schemas.day import DayEditIn, DayIn
+from volunteers.schemas.day_assignment import ConfirmationState
 from volunteers.schemas.hall import HallEditIn, HallIn
 from volunteers.schemas.position import PositionEditIn, PositionIn
 from volunteers.schemas.user_day import UserDayEditIn, UserDayIn
@@ -68,6 +69,37 @@ class AssessmentNotFound(DomainError):
 
 class HallNotFound(DomainError):
     """Hall not found"""
+
+
+class NotAssignedToDay(DomainError):
+    """The user has no assignment on the day"""
+
+    def __init__(self) -> None:
+        super().__init__("You are not assigned to this day")
+
+
+class AssignmentsNotPublished(DomainError):
+    """The assignments of the day are not published"""
+
+    def __init__(self) -> None:
+        super().__init__("Assignments are not published yet")
+
+
+@dataclass(frozen=True)
+class AssignmentConfirmation:
+    """The assignment of a user on a day, as the user sees it on the confirmation page."""
+
+    day: Day
+    state: ConfirmationState
+    # Only when assigned and published
+    assignment: UserDay | None
+
+
+@dataclass(frozen=True)
+class DayAssignmentView:
+    assignment: UserDay
+    # None when the viewer may not see the attendance of the assignment
+    confirmed: bool | None
 
 
 @dataclass(frozen=True)
@@ -598,6 +630,9 @@ class YearService(BaseService):
             if replace_all:
                 for existing_assignment in existing_assignments_list:
                     await session.delete(existing_assignment)
+                # The unit of work inserts before it deletes, the copies would violate
+                # the unique constraint on the form and the day
+                await session.flush()
                 existing_assignments_list = []
                 existing_application_form_ids: set[int] = set()
             else:
@@ -626,6 +661,8 @@ class YearService(BaseService):
                         )
                         if existing_assignment_to_delete is not None:
                             await session.delete(existing_assignment_to_delete)
+                            # Before the copy is inserted, see replace_all
+                            await session.flush()
                     else:
                         # Skip this assignment
                         continue
@@ -635,7 +672,10 @@ class YearService(BaseService):
                     application_form_id=source_assignment.application_form_id,
                     day_id=target_day_id,
                     information=source_assignment.information,
-                    attendance=source_assignment.attendance,
+                    # A confirmation is for one day only
+                    attendance=Attendance.UNKNOWN
+                    if source_assignment.attendance == Attendance.CONFIRMED
+                    else source_assignment.attendance,
                     position_id=source_assignment.position_id,
                     hall_id=source_assignment.hall_id,
                 )
@@ -703,6 +743,79 @@ class YearService(BaseService):
             user_day_obj.attendance = attendance
             await session.commit()
             self.xp_cache.purge()
+
+    async def get_assignment_confirmation(
+        self, year_id: int, day_id: int, user_id: int
+    ) -> AssignmentConfirmation:
+        """Get the assignment of a user on a day of a year, for the user to confirm it."""
+        async with self.session_scope() as session:
+            day = await session.scalar(select(Day).where(Day.id == day_id, Day.year_id == year_id))
+            if day is None:
+                raise DayNotFound()
+            if not day.assignment_published:
+                return AssignmentConfirmation(
+                    day=day, state=ConfirmationState.NOT_PUBLISHED, assignment=None
+                )
+            assignment = await session.scalar(
+                select(UserDay)
+                .join(ApplicationForm)
+                .where(UserDay.day_id == day_id, ApplicationForm.user_id == user_id)
+                .options(selectinload(UserDay.position), selectinload(UserDay.hall))
+            )
+            if assignment is None:
+                return AssignmentConfirmation(
+                    day=day, state=ConfirmationState.NOT_ASSIGNED, assignment=None
+                )
+            return AssignmentConfirmation(
+                day=day, state=ConfirmationState.ASSIGNED, assignment=assignment
+            )
+
+    async def confirm_assignment(
+        self, year_id: int, day_id: int, user_id: int
+    ) -> AssignmentConfirmation:
+        """Mark that the user will come on the day. Does nothing unless the attendance is unknown."""
+        confirmation = await self.get_assignment_confirmation(year_id, day_id, user_id)
+        if confirmation.state == ConfirmationState.NOT_PUBLISHED:
+            raise AssignmentsNotPublished()
+        if confirmation.assignment is None:
+            raise NotAssignedToDay()
+        async with self.session_scope() as session:
+            # Conditional, so that an attendance set by a manager meanwhile is kept
+            await session.execute(
+                update(UserDay)
+                .where(
+                    UserDay.id == confirmation.assignment.id,
+                    UserDay.attendance == Attendance.UNKNOWN,
+                )
+                .values(attendance=Attendance.CONFIRMED)
+            )
+            await session.commit()
+        self.xp_cache.purge()
+        return await self.get_assignment_confirmation(year_id, day_id, user_id)
+
+    async def get_day_assignments_for_viewer(
+        self, day: Day, viewer: User
+    ) -> list[DayAssignmentView]:
+        """Assignments of a day with confirmations visible to the viewer.
+
+        Admins see all confirmations, managers see those of the halls they manage on the day.
+        """
+        assignments = await self.get_all_assignments_by_day_id(day_id=day.id)
+        managed = (
+            set()
+            if viewer.is_admin
+            else await self.manager_for_year(user_id=viewer.id, year_id=day.year_id)
+        )
+        return [
+            DayAssignmentView(
+                assignment=assignment,
+                confirmed=assignment.attendance == Attendance.CONFIRMED
+                if viewer.is_admin
+                or ManagerForYear(hall_id=assignment.hall_id, day_id=assignment.day_id) in managed
+                else None,
+            )
+            for assignment in assignments
+        ]
 
     async def create_form(self, form: ApplicationFormIn) -> None:
         async with self.session_scope() as session:

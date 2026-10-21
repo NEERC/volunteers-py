@@ -7,3 +7,5 @@ class Attendance(str, enum.Enum):
     LATE = "late"
     SICK = "sick"
     UNKNOWN = "unknown"
+    # The volunteer promised to come, before the day; not an attendance yet
+    CONFIRMED = "confirmed"

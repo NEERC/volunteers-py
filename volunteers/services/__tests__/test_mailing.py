@@ -390,6 +390,27 @@ async def test_preview_renders_the_context_and_escapes_values_in_text_only(
     assert with_button.buttons[0].url == "https://x.example/?a=1&b=2"
 
 
+async def test_confirm_url_can_be_built_from_the_year_and_the_day(
+    service: MailingService, seed: Seed
+) -> None:
+    d = draft(
+        "Will you come?",
+        filter=MailingFilter(day_ids=[seed.day1_id]),
+        buttons=[
+            MailingButton(
+                text="Yes",
+                url="https://volunteers.example/{{ year.id }}/days/{{ day.id }}/confirm",
+            )
+        ],
+    )
+
+    message = await service.preview(seed.year_id, d, seed.alice_form_id, seed.alice_day1_id)
+    assert message.errors == []
+    assert message.buttons[0].url == (
+        f"https://volunteers.example/{seed.year_id}/days/{seed.day1_id}/confirm"
+    )
+
+
 async def test_undefined_variables_and_invalid_html_are_errors(
     service: MailingService, seed: Seed
 ) -> None:

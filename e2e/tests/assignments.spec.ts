@@ -1,5 +1,6 @@
 import type { Locator, Page } from "@playwright/test";
 import type { Api } from "../support/api";
+import { submitMockItmoLogin } from "../support/auth";
 import { telegramMessages } from "../support/external";
 import { expect, test } from "../support/fixtures";
 import { RUN_TAG, type UserKey, users, VOLUNTEERS } from "../support/users";
@@ -168,6 +169,8 @@ const ALL_ASSIGNED = "Current assignments: 3 volunteers assigned to positions";
 
 test("admin assigns volunteers to positions, publishes and copies the day", async ({
   adminPage: page,
+  // Not signed in: opens the confirmation link from a mailing
+  page: guestPage,
   adminApi,
   apiAs,
   pageAs,
@@ -263,6 +266,17 @@ test("admin assigns volunteers to positions, publishes and copies the day", asyn
     await expect(volunteerPage.getByText(tableNames.vol1)).toHaveCount(0);
   });
 
+  await test.step("volunteer can't confirm before publishing", async () => {
+    await volunteerPage.goto(`/${yearId}/days/${ids.day1}/confirm`);
+    await expect(
+      volunteerPage.getByText("Assignments are not published yet"),
+    ).toBeVisible();
+    await expect(
+      volunteerPage.getByRole("button", { name: "Yes, I'll come" }),
+    ).toHaveCount(0);
+    await volunteerPage.goto(`/${yearId}/days/${ids.day1}`);
+  });
+
   // --- 3. Publish ---
   await test.step("publish the day", async () => {
     const publish = page.getByLabel("Publish Assignments");
@@ -303,6 +317,71 @@ test("admin assigns volunteers to positions, publishes and copies the day", asyn
     await expect(rowOf("vol1")).toContainText(`${steward}${hallA}`);
   });
 
+  // --- Confirmations: vol2 (hall B) from a mailing link, vol3 (manager without a hall) ---
+  const confirmed = (scope: Page | Locator) => scope.getByTestId("confirmed-mark");
+
+  await test.step("logged out volunteer confirms from the link", async () => {
+    const confirmPath = `/${yearId}/days/${ids.day1}/confirm`;
+    await guestPage.goto(confirmPath);
+    await guestPage.waitForURL(/\/login\?redirect=/);
+    await guestPage.getByRole("button", { name: "Sign in with ITMO ID" }).click();
+    await submitMockItmoLogin(guestPage, users.vol2);
+    await guestPage.waitForURL((url) => url.pathname === confirmPath);
+
+    await expect(
+      guestPage.getByText(
+        `On ${names.day1} you are ${steward} in hall ${hallB}.`,
+      ),
+    ).toBeVisible();
+    await guestPage.getByRole("button", { name: "Yes, I'll come" }).click();
+    await expect(
+      guestPage.getByText("Thank you! We are waiting for you."),
+    ).toBeVisible();
+
+    await guestPage.reload();
+    await expect(
+      guestPage.getByText("You have already confirmed that you will come."),
+    ).toBeVisible();
+    await expect(
+      guestPage.getByRole("button", { name: "Yes, I'll come" }),
+    ).toHaveCount(0);
+
+    const vol3Api = await apiAs("vol3");
+    await vol3Api.post(`/year/${yearId}/days/${ids.day1}/confirmation`);
+  });
+
+  await test.step("admin sees the confirmations", async () => {
+    await page.reload();
+    await expect(confirmed(board.card("vol2"))).toBeVisible();
+    await expect(confirmed(board.card("vol3"))).toBeVisible();
+    await expect(confirmed(board.card("vol1"))).toHaveCount(0);
+
+    const adminDayPage = await pageAs("admin");
+    await adminDayPage.goto(`/${yearId}/days/${ids.day1}`);
+    const adminRow = (key: Volunteer) =>
+      adminDayPage.getByRole("row").filter({ hasText: tableNames[key] });
+    await expect(confirmed(adminRow("vol2"))).toBeVisible();
+    await expect(confirmed(adminRow("vol3"))).toBeVisible();
+    await expect(confirmed(adminRow("vol1"))).toHaveCount(0);
+  });
+
+  await test.step("manager sees the confirmations of their hall only", async () => {
+    // vol3 manages the assignments without a hall on day 1
+    const managerPage = await pageAs("vol3");
+    await managerPage.goto(`/${yearId}/days/${ids.day1}`);
+    const managerRow = (key: Volunteer) =>
+      managerPage.getByRole("row").filter({ hasText: tableNames[key] });
+    await expect(confirmed(managerRow("vol3"))).toBeVisible();
+    await expect(managerRow("vol2")).toBeVisible();
+    await expect(confirmed(managerRow("vol2"))).toHaveCount(0);
+  });
+
+  await test.step("volunteer sees no confirmations", async () => {
+    await volunteerPage.reload();
+    await expect(rowOf("vol2")).toBeVisible();
+    await expect(confirmed(volunteerPage)).toHaveCount(0);
+  });
+
   // --- 5. Copy assignments from day 1 to day 2 ---
   await test.step("copy assignments to day 2", async () => {
     await board.open(yearId, ids.day2);
@@ -338,6 +417,8 @@ test("admin assigns volunteers to positions, publishes and copies the day", asyn
     expect(strip(await dayAssignments(adminApi, ids.day2))).toEqual(
       strip(await dayAssignments(adminApi, ids.day1)),
     );
+    // A confirmation is for one day only
+    await expect(confirmed(page)).toHaveCount(0);
   });
 
   // --- 6. Telegram notifications ---
