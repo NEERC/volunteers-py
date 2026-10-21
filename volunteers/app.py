@@ -1,3 +1,5 @@
+import asyncio
+import contextlib
 import sys
 from collections.abc import AsyncGenerator, Awaitable, Callable
 from contextlib import asynccontextmanager
@@ -31,6 +33,16 @@ container.wire(
 )
 
 
+async def run_mailing_worker() -> None:
+    # Created in the task: a misconfigured bot must not prevent the app from starting
+    try:
+        mailing_worker = await container.mailing_worker.async_()
+    except Exception:
+        logger.exception("Mailing worker is not started")
+        return
+    await mailing_worker.run()
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncGenerator[None]:
     # Startup
@@ -45,7 +57,15 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None]:
     await register_assignment_handlers(sio)
     logger.info("WebSocket handlers registered")
 
+    mailing_worker_task = None
+    if c.mailing.worker_enabled:
+        mailing_worker_task = asyncio.create_task(run_mailing_worker())
+
     yield
+    if mailing_worker_task is not None:
+        mailing_worker_task.cancel()
+        with contextlib.suppress(asyncio.CancelledError):
+            await mailing_worker_task
     # Shutdown
     shutdown_resources = container.shutdown_resources()
     if shutdown_resources:

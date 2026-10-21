@@ -28,7 +28,15 @@ export default defineConfig({
     rollupOptions: {
       output: {
         manualChunks(id) {
+          // Shared by all lazy chunks, would land in the Monaco one otherwise
+          if (id.includes("vite/preload-helper")) {
+            return "preload-helper";
+          }
           if (id.includes("node_modules")) {
+            // Loaded only with the mailing editor
+            if (id.includes("monaco-editor")) {
+              return "monaco-vendor";
+            }
             if (id.includes("mobx")) {
               return "mobx-vendor";
             }

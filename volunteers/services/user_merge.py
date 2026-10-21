@@ -11,6 +11,8 @@ from volunteers.models import (
     ExtraExperience,
     FormPositionAssociation,
     IdentityProvider,
+    Mailing,
+    MailingMessage,
     User,
     UserDay,
     UserIdentity,
@@ -248,6 +250,21 @@ class UserMergeService(BaseService):
                 update(Assessment)
                 .where(Assessment.author_id == source_id)
                 .values(author_id=target_id)
+            )
+            await session.execute(
+                update(Mailing)
+                .where(Mailing.created_by_id == source_id)
+                .values(created_by_id=target_id)
+            )
+            await session.execute(
+                update(Mailing)
+                .where(Mailing.started_by_id == source_id)
+                .values(started_by_id=target_id)
+            )
+            await session.execute(
+                update(MailingMessage)
+                .where(MailingMessage.user_id == source_id)
+                .values(user_id=target_id)
             )
 
             await session.execute(delete(User).where(User.id == source_id))
