@@ -34,6 +34,7 @@ class FormContext(BaseModel):
 
 
 class YearContext(BaseModel):
+    id: int = Field(description="Year ID")
     year_name: str = Field(description="Year name")
 
 
@@ -59,7 +60,7 @@ class AssignmentContext(BaseModel):
     day: DayContext = Field(description="Day")
     position: PositionContext = Field(description="Position")
     hall: HallContext | None = Field(description="Hall, empty when not assigned to a hall")
-    attendance: str = Field(description="Attendance: yes, no, late, sick or unknown")
+    attendance: str = Field(description="Attendance: yes, no, late, sick, unknown or confirmed")
     information: str = Field(description="Assignment information")
 
 

@@ -142,11 +142,24 @@ export type AssessmentsResponse = {
     assessments: Array<AssessmentItem>;
 };
 
+/**
+ * The assignment of the current user on a day, for the confirmation page
+ */
+export type AssignmentConfirmationResponse = {
+    day_name: string;
+    day_information: string;
+    state: ConfirmationState;
+    position: string | null;
+    hall: string | null;
+    attendance: Attendance | null;
+};
+
 export type AssignmentItem = {
     user_day_id: number;
     application_form_id: number;
     position_id: number;
     hall_id: number | null;
+    attendance: Attendance;
 };
 
 /**
@@ -158,7 +171,7 @@ export type AssignmentsResponse = {
     assignments: Array<AssignmentItem>;
 };
 
-export type Attendance = 'yes' | 'no' | 'late' | 'sick' | 'unknown';
+export type Attendance = 'yes' | 'no' | 'late' | 'sick' | 'unknown' | 'confirmed';
 
 export type AuthFlowResponse = {
     status: AuthFlowStatus;
@@ -174,6 +187,11 @@ export type AuthFlowStatus = 'success' | 'keycloak_required' | 'registration_req
 export type BaseSuccessResponse = {
     success: true;
 };
+
+/**
+ * Whether the user can confirm their assignment on a day
+ */
+export type ConfirmationState = 'assigned' | 'not_assigned' | 'not_published';
 
 export type CopyAssignmentsRequest = {
     source_day_id: number;
@@ -199,6 +217,7 @@ export type DayAssignmentItem = {
     telegram: string | null;
     position: string;
     hall: string | null;
+    confirmed?: boolean | null;
 };
 
 /**
@@ -2454,6 +2473,62 @@ export type GetDayAssignmentsApiV1YearYearIdDaysDayIdAssignmentsGetResponses = {
 };
 
 export type GetDayAssignmentsApiV1YearYearIdDaysDayIdAssignmentsGetResponse = GetDayAssignmentsApiV1YearYearIdDaysDayIdAssignmentsGetResponses[keyof GetDayAssignmentsApiV1YearYearIdDaysDayIdAssignmentsGetResponses];
+
+export type GetAssignmentConfirmationApiV1YearYearIdDaysDayIdConfirmationGetData = {
+    body?: never;
+    path: {
+        year_id: number;
+        day_id: number;
+    };
+    query?: never;
+    url: '/api/v1/year/{year_id}/days/{day_id}/confirmation';
+};
+
+export type GetAssignmentConfirmationApiV1YearYearIdDaysDayIdConfirmationGetErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type GetAssignmentConfirmationApiV1YearYearIdDaysDayIdConfirmationGetError = GetAssignmentConfirmationApiV1YearYearIdDaysDayIdConfirmationGetErrors[keyof GetAssignmentConfirmationApiV1YearYearIdDaysDayIdConfirmationGetErrors];
+
+export type GetAssignmentConfirmationApiV1YearYearIdDaysDayIdConfirmationGetResponses = {
+    /**
+     * Successful Response
+     */
+    200: AssignmentConfirmationResponse;
+};
+
+export type GetAssignmentConfirmationApiV1YearYearIdDaysDayIdConfirmationGetResponse = GetAssignmentConfirmationApiV1YearYearIdDaysDayIdConfirmationGetResponses[keyof GetAssignmentConfirmationApiV1YearYearIdDaysDayIdConfirmationGetResponses];
+
+export type ConfirmAssignmentApiV1YearYearIdDaysDayIdConfirmationPostData = {
+    body?: never;
+    path: {
+        year_id: number;
+        day_id: number;
+    };
+    query?: never;
+    url: '/api/v1/year/{year_id}/days/{day_id}/confirmation';
+};
+
+export type ConfirmAssignmentApiV1YearYearIdDaysDayIdConfirmationPostErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type ConfirmAssignmentApiV1YearYearIdDaysDayIdConfirmationPostError = ConfirmAssignmentApiV1YearYearIdDaysDayIdConfirmationPostErrors[keyof ConfirmAssignmentApiV1YearYearIdDaysDayIdConfirmationPostErrors];
+
+export type ConfirmAssignmentApiV1YearYearIdDaysDayIdConfirmationPostResponses = {
+    /**
+     * Successful Response
+     */
+    200: AssignmentConfirmationResponse;
+};
+
+export type ConfirmAssignmentApiV1YearYearIdDaysDayIdConfirmationPostResponse = ConfirmAssignmentApiV1YearYearIdDaysDayIdConfirmationPostResponses[keyof ConfirmAssignmentApiV1YearYearIdDaysDayIdConfirmationPostResponses];
 
 export type HealthCheckHcGetData = {
     body?: never;

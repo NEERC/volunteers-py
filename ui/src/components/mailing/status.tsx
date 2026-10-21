@@ -56,6 +56,7 @@ export const ATTENDANCE_LABELS: Record<Attendance, string> = {
   late: "Late",
   sick: "Sick",
   unknown: "Unknown",
+  confirmed: "Confirmed",
 };
 
 export function MailingStatusChip({ status }: { status: MailingStatus }) {

@@ -178,7 +178,7 @@ def template_context(
             email=user.email,
         ),
         form=FormContext(itmo_group=form.itmo_group, needs_invitation=form.needs_invitation),
-        year=YearContext(year_name=year.year_name),
+        year=YearContext(id=year.id, year_name=year.year_name),
         assignment=assignment,
         day=assignment.day if assignment else None,
         position=assignment.position if assignment else None,

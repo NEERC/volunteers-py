@@ -1,8 +1,9 @@
 from pydantic import BaseModel
 
+from volunteers.models.attendance import Attendance
 from volunteers.schemas.base import BaseSuccessResponse
 from volunteers.schemas.day import DayOutUser
-from volunteers.schemas.day_assignment import DayAssignmentItem
+from volunteers.schemas.day_assignment import ConfirmationState, DayAssignmentItem
 from volunteers.schemas.position import PositionOut
 from volunteers.schemas.year import YearIn
 
@@ -40,3 +41,15 @@ class DayAssignmentsResponse(BaseModel):
 
     assignments: list[DayAssignmentItem]
     is_published: bool
+
+
+class AssignmentConfirmationResponse(BaseModel):
+    """The assignment of the current user on a day, for the confirmation page"""
+
+    day_name: str
+    day_information: str
+    state: ConfirmationState
+    # Only when assigned and published
+    position: str | None
+    hall: str | None
+    attendance: Attendance | None

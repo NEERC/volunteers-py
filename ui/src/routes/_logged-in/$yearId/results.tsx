@@ -340,7 +340,9 @@ function RouteComponent() {
                                     ? "warning"
                                     : attendance === "sick"
                                       ? "info"
-                                      : "default"
+                                      : attendance === "confirmed"
+                                        ? "primary"
+                                        : "default"
                               }
                               variant="outlined"
                               sx={{ fontSize: "0.65rem", height: "18px" }}

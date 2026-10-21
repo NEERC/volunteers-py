@@ -69,6 +69,9 @@ const DEBOUNCE_MS = 700;
 const NO_HALL = -1;
 const ATTENDANCES = Object.keys(ATTENDANCE_LABELS) as Attendance[];
 
+// The app is served under BASE_URL, same as the router
+const CONFIRM_URL_TEMPLATE = `${new URL(import.meta.env.BASE_URL, window.location.origin).toString()}{{ year.id }}/days/{{ day.id }}/confirm`;
+
 type Selection = { formId: number; userDayId: number | null };
 
 const toDraft = (mailing: MailingResponse): MailingDraft => ({
@@ -617,6 +620,18 @@ export function MailingDraftEditor({ mailing }: { mailing: MailingResponse }) {
                   {t("Add button")}
                 </Button>
               </Box>
+              <Typography variant="caption" color="text.secondary">
+                {t(
+                  "To ask volunteers to confirm that they will come, use this button URL (needs a filter by day):",
+                )}{" "}
+                <Box
+                  component="code"
+                  sx={{ wordBreak: "break-all" }}
+                  data-testid="mailing-confirm-url-hint"
+                >
+                  {CONFIRM_URL_TEMPLATE}
+                </Box>
+              </Typography>
             </Stack>
           </CardContent>
         </Card>
