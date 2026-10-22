@@ -100,14 +100,28 @@ Inputs:
   `docker compose up` by hand would start it.
 
 The app is served by an external nginx of the server, which proxies
-`https://<domain>/volunteers/` to the proxy container and strips the prefix:
+`https://<domain>/volunteers/` to the proxy container and strips the prefix. The `Upgrade`
+and `Connection` headers let realtime updates (Socket.IO) switch to WebSocket, without them
+they stay on long polling:
 
 ```nginx
 location /volunteers/ {
     proxy_pass http://127.0.0.1:<PUBLIC_PORT>/;
+    proxy_http_version 1.1;
+    proxy_set_header Upgrade $http_upgrade;
+    proxy_set_header Connection $connection_upgrade;
     proxy_set_header Host $host;
     proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
     proxy_set_header X-Forwarded-Proto $scheme;
+}
+```
+
+`$connection_upgrade` is the usual map in the `http` block:
+
+```nginx
+map $http_upgrade $connection_upgrade {
+    default upgrade;
+    '' close;
 }
 ```
 
