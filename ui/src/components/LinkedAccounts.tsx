@@ -17,7 +17,6 @@ import { PROVIDER_NAMES } from "@/const";
 import {
   useLinkTelegram,
   useMyIdentities,
-  useTelegramAvailable,
   useUnlinkIdentity,
 } from "@/data/use-auth";
 import { apiErrorMessage } from "@/utils/apiErrorHandling";
@@ -27,7 +26,6 @@ export function LinkedAccounts() {
   const { data: identities, isLoading } = useMyIdentities();
   const linkTelegram = useLinkTelegram();
   const unlinkIdentity = useUnlinkIdentity();
-  const telegramAvailable = useTelegramAvailable();
 
   const error = linkTelegram.error ?? unlinkIdentity.error;
   const hasTelegram = identities?.some((i) => i.provider === "telegram");
@@ -71,7 +69,7 @@ export function LinkedAccounts() {
           ))}
         </List>
       )}
-      {!isLoading && !hasTelegram && telegramAvailable && (
+      {!isLoading && !hasTelegram && (
         <>
           <Typography variant="body2" color="text.secondary" gutterBottom>
             {t("Link your Telegram account to sign in with it")}
@@ -86,6 +84,9 @@ export function LinkedAccounts() {
           >
             <TelegramLoginButton onAuth={(data) => linkTelegram.mutate(data)} />
           </Box>
+          <Typography variant="caption" color="text.secondary">
+            {t("Telegram may not work in Russia")}
+          </Typography>
         </>
       )}
       {error && (
