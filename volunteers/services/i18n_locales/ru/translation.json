@@ -13,7 +13,7 @@
     "Last name on Russian is required": "Фамилия на русском обязательна",
     "Full name in English is required": "Полное имя на английском обязательно",
     "Phone is required": "Телефон обязателен",
-    "Please select at least one position": "Выберите хотя бы одну позицию",
+    "Please select at least one position": "Выберите хотя бы одну роль",
     "Required": "Обязательно",
     "Invalid email format": "Неверный формат email",
     "These accounts are linked to different users": "Эти аккаунты привязаны к разным пользователям",
@@ -28,5 +28,5 @@
     "Telegram account must be linked to register": "Для регистрации необходимо привязать Telegram",
     "Day not found": "День не найден",
     "You are not assigned to this day": "Вы не назначены на этот день",
-    "Assignments are not published yet": "Расстановка ещё не опубликована"
+    "Assignments are not published yet": "Распределение ещё не опубликовано"
 }
