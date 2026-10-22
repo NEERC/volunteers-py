@@ -17,4 +17,6 @@ Russian glossary, used the same way on every screen and in the backend:
 - hall — холл
 - score of a position or a day — баллы; assessment — оценка
 
+Russian texts about a person are gender-neutral, since the gender of a volunteer or an admin is unknown: use nouns and impersonal forms («Опоздание», «Участие подтверждено», «Запущена пользователем {{name}}») and address the reader with «вы».
+
 Generated code (ui/src/client, ui/src/routeTree.gen.ts) is excluded from all linters and formatters and is checked in CI (.github/workflows/codegen.yml): regenerating it must not change any files. Commit the generator output as is, don't edit or format it by hand. Alembic migrations are regular code: they are linted, may be edited by hand, and CI runs `alembic check` to make sure models have no unmigrated changes.
