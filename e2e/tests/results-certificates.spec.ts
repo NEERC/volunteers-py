@@ -219,8 +219,7 @@ test("attendance -> assessment -> results -> certificates -> export", async ({
   await test.step("year export downloads CSVs with the volunteers", async () => {
     await page.goto(`/${yearId}/settings`);
     const downloadPromise = page.waitForEvent("download");
-    // The key is "Export to ZIP", but its English translation says CSV
-    await page.getByRole("button", { name: "Export to CSV" }).click();
+    await page.getByRole("button", { name: "Export to ZIP" }).click();
     const download = await downloadPromise;
     expect(download.suggestedFilename()).toMatch(/\.zip$/);
 
