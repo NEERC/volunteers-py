@@ -29,10 +29,8 @@ export function getSocket(): Socket {
     ? "" // Use relative path in dev (Vite proxy handles it)
     : baseURL.replace(/\/$/, ""); // Remove trailing slash if present
 
-  // Get current auth token
-  const token = authStore.getAccessToken(); // prone to errors. TODO: fix this.
-
-  // Create socket instance with authentication
+  // Create socket instance with authentication. `auth` is a callback so every
+  // reconnect picks up the current (possibly refreshed) token.
   socketInstance = io(socketURL, {
     path: "/socket.io",
     transports: ["websocket", "polling"],
@@ -41,11 +39,10 @@ export function getSocket(): Socket {
     reconnectionDelay: 1000,
     reconnectionDelayMax: 5000,
     reconnectionAttempts: Number.POSITIVE_INFINITY,
-    auth: token
-      ? {
-          token: `Bearer ${token}`,
-        }
-      : undefined,
+    auth: (cb) => {
+      const token = authStore.getAccessToken();
+      cb(token ? { token: `Bearer ${token}` } : {});
+    },
   });
 
   // Handle connection errors

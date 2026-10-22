@@ -10,8 +10,14 @@ async def register_assignment_handlers(sio: socketio.AsyncServer) -> None:
     """Register all assignment-related socket handlers."""
 
     @sio.event  # type: ignore[misc]
-    async def connect(sid: str, environ: dict[str, Any]) -> None:
-        """Handle client connection."""
+    async def connect(
+        sid: str, environ: dict[str, Any], auth: dict[str, Any] | None = None
+    ) -> None:
+        """Handle client connection.
+
+        python-socketio passes `auth` whenever the client sends it, and the UI
+        always sends its token, so the handler must accept it.
+        """
         logger.info(f"Client connected: {sid}")
 
     @sio.event  # type: ignore[misc]
