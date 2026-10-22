@@ -129,7 +129,8 @@ export function AssessmentInput({
                 {assessments.map((assessment) => (
                   <Box key={assessment.assessment_id}>
                     <Typography variant="caption" sx={{ display: "block" }}>
-                      {t("Score")}: {formatAverage(assessment.value)}
+                      {t("Score", { context: "assessment" })}:{" "}
+                      {formatAverage(assessment.value)}
                     </Typography>
                     <Typography variant="caption" sx={{ display: "block" }}>
                       {t("Author")}:{" "}
@@ -204,7 +205,7 @@ export function AssessmentInput({
               </Typography>
             )}
             <TextField
-              label={t("Score")}
+              label={t("Score", { context: "assessment" })}
               type="number"
               value={value}
               onChange={(e) => setValue(e.target.value)}
