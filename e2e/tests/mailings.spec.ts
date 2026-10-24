@@ -63,6 +63,30 @@ test("admin sends a mailing to the volunteers of a day", async ({
   // Without a filter: all application forms of the year
   await expect(recipients.getByRole("row")).toHaveCount(3);
 
+  await test.step("search by name and select all", async () => {
+    const sendToAll = page.getByRole("checkbox", { name: "Send to all shown" });
+    const search = page.getByRole("searchbox", { name: "Search by name" });
+    await search.fill(users.vol2.lastNameRu);
+    await expect(recipients.getByRole("row")).toHaveCount(1);
+    await expect(recipients).toContainText(recipientName("vol2"));
+    // Unchecking all found recipients leaves the others in the mailing
+    await sendToAll.uncheck();
+    await search.clear();
+    await expect(recipients.getByRole("row")).toHaveCount(3);
+    await expect(
+      page.getByRole("checkbox", { name: `Send to ${recipientName("vol2")}` }),
+    ).not.toBeChecked();
+    await expect(
+      page.getByRole("checkbox", { name: `Send to ${recipientName("vol1")}` }),
+    ).toBeChecked();
+    await expect(sendToAll).toHaveAttribute("data-indeterminate", "true");
+    await sendToAll.click();
+    await expect(sendToAll).toBeChecked();
+    await expect(
+      page.getByRole("checkbox", { name: `Send to ${recipientName("vol2")}` }),
+    ).toBeChecked();
+  });
+
   await test.step("filter by day", async () => {
     await page.getByRole("combobox", { name: "Days" }).click();
     await page.getByRole("option", { name: day1 }).click();
