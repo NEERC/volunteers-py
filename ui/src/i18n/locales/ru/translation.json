@@ -457,5 +457,8 @@
   "Day name is required": "Название дня обязательно",
   "Edit Day": "Редактировать день",
   "This position requires assignment to a specific hall": "Для этой роли нужно назначение в конкретный холл",
-  "Failed to download data": "Не удалось скачать данные"
+  "Failed to download data": "Не удалось скачать данные",
+  "Search by name": "Поиск по имени",
+  "Send to all shown": "Отправить всем показанным",
+  "Nobody found": "Никого не найдено"
 }

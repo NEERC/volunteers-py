@@ -200,6 +200,26 @@ export function MailingDraftEditor({ mailing }: { mailing: MailingResponse }) {
     update({ excluded_form_ids: [...next] });
   };
 
+  // Search by name only hides rows; the checkbox in the header sends to or
+  // excludes all the found recipients
+  const [search, setSearch] = useState("");
+  const query = search.trim().toLocaleLowerCase();
+  const shownRecipients = query
+    ? recipientList.filter((r) => r.name.toLocaleLowerCase().includes(query))
+    : recipientList;
+  // From the draft, so the header follows clicks before the recipients reload
+  const shownIncluded = shownRecipients.filter(
+    (r) => !excluded.has(r.form_id),
+  ).length;
+  const setShownExcluded = (value: boolean) => {
+    const next = new Set(excluded);
+    for (const r of shownRecipients) {
+      if (value) next.add(r.form_id);
+      else next.delete(r.form_id);
+    }
+    update({ excluded_form_ids: [...next] });
+  };
+
   const buttons = draft.buttons ?? [];
   const setButtons = (next: MailingButton[]) => update({ buttons: next });
   const moveButton = (from: number, to: number) => {
@@ -416,18 +436,55 @@ export function MailingDraftEditor({ mailing }: { mailing: MailingResponse }) {
               },
             )}
           </Typography>
+          <TextField
+            size="small"
+            type="search"
+            label={t("Search by name")}
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            sx={{ mb: 1, width: { xs: "100%", sm: 300 } }}
+          />
           <TableContainer sx={{ maxHeight: 400 }}>
             <Table size="small" stickyHeader>
               <TableHead>
                 <TableRow>
-                  <TableCell padding="checkbox">{t("Send")}</TableCell>
+                  <TableCell padding="checkbox">
+                    <Checkbox
+                      checked={
+                        shownRecipients.length > 0 &&
+                        shownIncluded === shownRecipients.length
+                      }
+                      indeterminate={
+                        shownIncluded > 0 &&
+                        shownIncluded < shownRecipients.length
+                      }
+                      disabled={shownRecipients.length === 0}
+                      onChange={() =>
+                        setShownExcluded(
+                          shownIncluded === shownRecipients.length,
+                        )
+                      }
+                      slotProps={{
+                        input: { "aria-label": t("Send to all shown") },
+                      }}
+                    />
+                  </TableCell>
                   <TableCell>{t("Name")}</TableCell>
                   <TableCell>{t("Telegram")}</TableCell>
                   <TableCell>{t("Assignments")}</TableCell>
                 </TableRow>
               </TableHead>
               <TableBody data-testid="mailing-recipients">
-                {recipientList.map((recipient) => (
+                {query && shownRecipients.length === 0 && (
+                  <TableRow>
+                    <TableCell colSpan={4}>
+                      <Typography variant="body2" color="text.secondary">
+                        {t("Nobody found")}
+                      </Typography>
+                    </TableCell>
+                  </TableRow>
+                )}
+                {shownRecipients.map((recipient) => (
                   <TableRow
                     key={recipient.form_id}
                     hover
