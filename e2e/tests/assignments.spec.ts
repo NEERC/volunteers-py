@@ -451,12 +451,6 @@ test("volunteer day page updates in realtime", async ({
   apiAs,
   pageAs,
 }) => {
-  // App bug: volunteers/sockets/assignments.py `connect(sid, environ)` doesn't
-  // accept the `auth` argument, but the UI always connects with
-  // `auth: { token }`, so python-socketio raises TypeError, never acks the
-  // namespace CONNECT and no `assignment_updated` event reaches the browser.
-  test.fail(true, "socket.io connect handler rejects clients that send auth");
-
   const { yearId, ids, names, formIds, tableNames } = await seedYear(
     adminApi,
     apiAs,
