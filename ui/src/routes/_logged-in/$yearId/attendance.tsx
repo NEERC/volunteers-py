@@ -73,16 +73,17 @@ export interface VolunteerAttendance {
 
 const ATTENDANCE_SORT_RANK: Record<Attendance, number> = {
   yes: 0,
-  late: 1,
-  sick: 2,
-  no: 3,
-  unknown: 4,
+  confirmed: 1,
+  late: 2,
+  sick: 3,
+  no: 4,
+  unknown: 5,
 };
 
 export function getAttendanceSortRank(
   attendance: Attendance | undefined,
 ): number {
-  return attendance === undefined ? 5 : ATTENDANCE_SORT_RANK[attendance];
+  return attendance === undefined ? 6 : ATTENDANCE_SORT_RANK[attendance];
 }
 
 export function flattenVolunteers(

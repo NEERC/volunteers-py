@@ -27,6 +27,7 @@ describe("getAttendanceSortRank", () => {
   test("orders statuses by design rank", () => {
     const ranks = [
       getAttendanceSortRank("yes"),
+      getAttendanceSortRank("confirmed"),
       getAttendanceSortRank("late"),
       getAttendanceSortRank("sick"),
       getAttendanceSortRank("no"),
