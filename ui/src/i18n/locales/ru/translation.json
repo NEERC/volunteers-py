@@ -403,6 +403,7 @@
   "Resend selected ({{count}})": "Отправить выбранные ещё раз ({{count}})",
   "Saved": "Сохранено",
   "Saving…": "Сохранение…",
+  "Select all / Clear selection": "Выделить все / Снять выделение",
   "Send": "Отправить",
   "Send a test message to me": "Отправить тестовое сообщение мне",
   "Send to {{name}}": "Отправить {{name}}",

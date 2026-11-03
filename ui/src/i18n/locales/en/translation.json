@@ -399,6 +399,7 @@
   "Resend selected ({{count}})": "Resend selected ({{count}})",
   "Saved": "Saved",
   "Saving…": "Saving…",
+  "Select all / Clear selection": "Select all / Clear selection",
   "Send": "Send",
   "Send a test message to me": "Send a test message to me",
   "Send to {{name}}": "Send to {{name}}",

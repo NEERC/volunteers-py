@@ -61,6 +61,7 @@ import {
 } from "@/data/use-mailings";
 import { useDebouncedValue } from "@/hooks/useDebouncedValue";
 import { apiErrorMessage } from "@/utils/apiErrorHandling";
+import { updateExcludedFormIds } from "./recipientSelection";
 import { ATTENDANCE_LABELS, MailingStatusChip } from "./status";
 import { TelegramMessage } from "./TelegramMessage";
 import { TemplateEditor } from "./TemplateEditor";
@@ -199,6 +200,20 @@ export function MailingDraftEditor({ mailing }: { mailing: MailingResponse }) {
     else next.add(recipient.form_id);
     update({ excluded_form_ids: [...next] });
   };
+  const allSelected =
+    recipientList.length > 0 &&
+    recipientList.every((recipient) => !excluded.has(recipient.form_id));
+  const someSelected = recipientList.some(
+    (recipient) => !excluded.has(recipient.form_id),
+  );
+  const toggleAllRecipients = () =>
+    update({
+      excluded_form_ids: updateExcludedFormIds(
+        [...excluded],
+        recipientList.map((recipient) => recipient.form_id),
+        allSelected,
+      ),
+    });
 
   const buttons = draft.buttons ?? [];
   const setButtons = (next: MailingButton[]) => update({ buttons: next });
@@ -427,9 +442,39 @@ export function MailingDraftEditor({ mailing }: { mailing: MailingResponse }) {
                 </TableRow>
               </TableHead>
               <TableBody data-testid="mailing-recipients">
+                <TableRow
+                  data-testid="mailing-select-all"
+                  hover
+                  selected={allSelected}
+                  sx={{
+                    cursor: recipientList.length === 0 ? "default" : "pointer",
+                  }}
+                  onClick={
+                    recipientList.length > 0 ? toggleAllRecipients : undefined
+                  }
+                >
+                  <TableCell padding="checkbox">
+                    <Checkbox
+                      checked={allSelected}
+                      indeterminate={!allSelected && someSelected}
+                      disabled={recipientList.length === 0}
+                      onClick={(e) => e.stopPropagation()}
+                      onChange={toggleAllRecipients}
+                      slotProps={{
+                        input: {
+                          "aria-label": t("Select all / Clear selection"),
+                        },
+                      }}
+                    />
+                  </TableCell>
+                  <TableCell colSpan={3}>
+                    {t("Select all / Clear selection")}
+                  </TableCell>
+                </TableRow>
                 {recipientList.map((recipient) => (
                   <TableRow
                     key={recipient.form_id}
+                    data-testid="mailing-recipient"
                     hover
                     selected={selection?.formId === recipient.form_id}
                     sx={{

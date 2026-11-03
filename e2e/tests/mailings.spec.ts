@@ -35,6 +35,12 @@ test("admin sends a mailing to the volunteers of a day", async ({
     year_id: yearId,
     name: `Closing ${RUN_TAG}`,
   });
+  const emptyDay = `No assignments ${RUN_TAG}`;
+  await adminApi.createDay({
+    year_id: yearId,
+    name: emptyDay,
+    assignment_published: true,
+  });
   const userIds: Record<string, number> = {};
   for (const key of ["vol1", "vol2", "vol3"] as const) {
     const api = await apiAs(key);
@@ -60,14 +66,77 @@ test("admin sends a mailing to the volunteers of a day", async ({
   await page.getByTestId("mailing-title").fill(title);
 
   const recipients = page.getByTestId("mailing-recipients");
+  const recipientRows = recipients.getByTestId("mailing-recipient");
+  const selectAllRow = page.getByTestId("mailing-select-all");
+  const selectAll = selectAllRow.getByRole("checkbox", {
+    name: "Select all / Clear selection",
+  });
+  const sendTo = (key: "vol1" | "vol2" | "vol3") =>
+    recipients.getByRole("checkbox", {
+      name: `Send to ${recipientName(key)}`,
+    });
+
   // Without a filter: all application forms of the year
-  await expect(recipients.getByRole("row")).toHaveCount(3);
+  await expect(recipientRows).toHaveCount(3);
+  await expect(selectAll).toBeChecked();
+
+  await test.step("select and clear all recipients", async () => {
+    await selectAllRow.click();
+    for (const key of ["vol1", "vol2", "vol3"] as const) {
+      await expect(sendTo(key)).not.toBeChecked();
+    }
+    await expect(selectAll).not.toBeChecked();
+
+    await selectAllRow.click();
+    for (const key of ["vol1", "vol2", "vol3"] as const) {
+      await expect(sendTo(key)).toBeChecked();
+    }
+
+    await sendTo("vol1").click();
+    await expect(sendTo("vol1")).not.toBeChecked();
+    await expect(selectAll).toHaveAttribute("data-indeterminate", "true");
+    await selectAllRow.click();
+    for (const key of ["vol1", "vol2", "vol3"] as const) {
+      await expect(sendTo(key)).toBeChecked();
+    }
+  });
+
+  await test.step("disable selection for an empty recipient list", async () => {
+    await page.getByRole("combobox", { name: "Days" }).click();
+    await page.getByRole("option", { name: emptyDay }).click();
+    await page.keyboard.press("Escape");
+    await expect(recipientRows).toHaveCount(0);
+    await expect(selectAll).toBeDisabled();
+    await page
+      .getByTestId("mailing-filter-days")
+      .getByRole("button", { name: "Clear" })
+      .click();
+    await expect(recipientRows).toHaveCount(3);
+  });
+
+  await test.step("preserve recipients hidden by a filter", async () => {
+    await page.getByRole("combobox", { name: "Days" }).click();
+    await page.getByRole("option", { name: day1 }).click();
+    await page.keyboard.press("Escape");
+    await expect(recipientRows).toHaveCount(1);
+    await selectAllRow.click();
+    await expect(sendTo("vol1")).not.toBeChecked();
+
+    await page.getByRole("combobox", { name: "Days" }).focus();
+    await page.keyboard.press("Backspace");
+    await expect(recipientRows).toHaveCount(3);
+    await expect(sendTo("vol1")).not.toBeChecked();
+    await expect(sendTo("vol2")).toBeChecked();
+    await expect(sendTo("vol3")).toBeChecked();
+    await selectAllRow.click();
+    await expect(sendTo("vol1")).toBeChecked();
+  });
 
   await test.step("filter by day", async () => {
     await page.getByRole("combobox", { name: "Days" }).click();
     await page.getByRole("option", { name: day1 }).click();
     await page.keyboard.press("Escape");
-    await expect(recipients.getByRole("row")).toHaveCount(1);
+    await expect(recipientRows).toHaveCount(1);
     await expect(recipients).toContainText(recipientName("vol1"));
   });
 
