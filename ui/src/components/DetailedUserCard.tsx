@@ -14,7 +14,7 @@ import {
   TableRow,
   Typography,
 } from "@mui/material";
-import { useState } from "react";
+import { type ReactNode, useState } from "react";
 import { useTranslation } from "react-i18next";
 import type { RegistrationFormItem } from "@/client";
 
@@ -22,10 +22,12 @@ export function DetailedUserCard({
   user,
   expandedDefault,
   expandable = true,
+  beforeName,
 }: {
   user: RegistrationFormItem;
   expandedDefault: boolean;
   expandable?: boolean;
+  beforeName?: ReactNode;
 }) {
   const { t } = useTranslation();
   const [expanded, setExpanded] = useState(expandedDefault);
@@ -56,7 +58,8 @@ export function DetailedUserCard({
         //   expandable && setExpanded(!expanded);
         // }}
       >
-        <Box sx={{ flex: 1 }}>
+        <Box sx={{ flex: 1, display: "flex", alignItems: "center", gap: 0.5 }}>
+          {beforeName}
           <Typography variant="body2" sx={{ fontWeight: 600 }}>
             {fullName}
           </Typography>

@@ -511,7 +511,6 @@ function DraggableRegistrationForm({
           : undefined
       }
       sx={{
-        position: "relative",
         mb: 0.5,
         cursor: isMobile ? "pointer" : "grab",
         "&:active": {
@@ -551,12 +550,11 @@ function DraggableRegistrationForm({
         }),
       }}
     >
-      {confirmed && (
-        <Box sx={{ position: "absolute", top: 4, right: 4, zIndex: 1 }}>
-          <ConfirmedMark />
-        </Box>
-      )}
-      <DetailedUserCard user={registrationForm} expandedDefault={false} />
+      <DetailedUserCard
+        user={registrationForm}
+        expandedDefault={false}
+        beforeName={confirmed ? <ConfirmedMark /> : null}
+      />
     </Card>
   );
 }
