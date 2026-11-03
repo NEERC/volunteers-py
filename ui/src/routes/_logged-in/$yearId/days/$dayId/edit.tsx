@@ -17,11 +17,6 @@ import {
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import {
-  Person as PersonIcon,
-  PushPin as PinIcon,
-  PushPinOutlined as PinOutlinedIcon,
-} from "@mui/icons-material";
 import ContentCopyIcon from "@mui/icons-material/ContentCopy";
 import DownloadIcon from "@mui/icons-material/Download";
 import {
@@ -38,7 +33,6 @@ import {
   Divider,
   FormControl,
   FormControlLabel,
-  IconButton,
   MenuItem,
   Paper,
   Radio,
@@ -59,6 +53,7 @@ import type {
   PositionOut,
   RegistrationFormItem,
 } from "@/client/types.gen";
+import { AvailableVolunteersDrawer } from "@/components/AvailableVolunteersDrawer";
 import { ConfirmedMark } from "@/components/ConfirmedMark";
 import { DetailedUserCard } from "@/components/DetailedUserCard";
 import {
@@ -135,325 +130,6 @@ type HallWithPositions = HallOut & {
 export const Route = createFileRoute("/_logged-in/$yearId/days/$dayId/edit")({
   component: RouteComponent,
 });
-
-function DraggableDetailedUserCard({
-  user,
-  isSelected,
-  onClick,
-  isMobile = false,
-}: {
-  user: RegistrationFormItem;
-  isSelected: boolean;
-  onClick: () => void;
-  isMobile?: boolean;
-}) {
-  const {
-    attributes,
-    listeners,
-    setNodeRef,
-    transform,
-    transition,
-    isDragging,
-  } = useSortable({
-    id: `user-${user.user_id}`,
-    disabled: isMobile, // Disable drag on mobile
-  });
-
-  const style = {
-    transform: CSS.Transform.toString(transform),
-    transition,
-    opacity: isDragging ? 0.5 : 1,
-  };
-
-  return (
-    <Card
-      ref={setNodeRef}
-      style={style}
-      {...(isMobile ? {} : attributes)}
-      {...(isMobile ? {} : listeners)}
-      onClick={(e) => {
-        e.stopPropagation();
-        onClick();
-      }}
-      sx={{
-        mb: 2,
-        cursor: isMobile ? "pointer" : "grab",
-        "&:active": { cursor: isMobile ? "pointer" : "grabbing" },
-        opacity: isDragging ? 0.5 : 1,
-        border: isSelected ? "2px solid" : "1px solid",
-        borderColor: isSelected ? "primary.main" : "divider",
-        backgroundColor: isSelected ? "action.selected" : "background.paper",
-        "&:hover": {
-          backgroundColor: isSelected ? "action.selected" : "action.hover",
-        },
-      }}
-    >
-      <DetailedUserCard user={user} expandedDefault={true} />
-    </Card>
-  );
-}
-
-function HoverDrawer({
-  unassignedUsers,
-  activeId,
-  isPinned,
-  onPinChange,
-  clickSelectedUserId,
-  onUserClick,
-  onRemoveAssignment,
-  isMobile = false,
-}: {
-  unassignedUsers: RegistrationFormItem[];
-  activeId: string | null;
-  isPinned: boolean;
-  onPinChange: (pinned: boolean) => void;
-  clickSelectedUserId: number | null;
-  onUserClick: (userId: number) => void;
-  onRemoveAssignment: (userId: number) => void;
-  isMobile?: boolean;
-}) {
-  const { t } = useTranslation();
-  const [isHovered, setIsHovered] = useState(false);
-  const { isOver, setNodeRef } = useDroppable({
-    id: "hover-drawer-area",
-  });
-
-  // Don't open drawer when dragging, but show if pinned
-  // On mobile, only show if pinned (no hover)
-  const shouldShowDrawer = isMobile
-    ? isPinned && !activeId
-    : (isHovered || isPinned) && !activeId;
-
-  return (
-    <Box
-      ref={setNodeRef}
-      sx={{
-        position: "fixed",
-        // Desktop: right side drawer
-        ...(isMobile
-          ? {}
-          : {
-              right: 0,
-              top: 0,
-              height: "100vh",
-              width: shouldShowDrawer ? "500px" : "50px",
-            }),
-        // Mobile: bottom drawer
-        ...(isMobile
-          ? {
-              bottom: 0,
-              left: 0,
-              right: 0,
-              height: shouldShowDrawer ? "60vh" : "60px",
-              width: "100vw",
-            }
-          : {}),
-        backgroundColor: isOver
-          ? "action.hover"
-          : clickSelectedUserId
-            ? "action.selected"
-            : "background.paper",
-        border: isOver
-          ? "2px dashed"
-          : clickSelectedUserId
-            ? "2px solid"
-            : "1px solid",
-        boxSizing: "border-box",
-        borderColor: isOver
-          ? "primary.main"
-          : clickSelectedUserId
-            ? "primary.main"
-            : "divider",
-        transition: isPinned
-          ? "none"
-          : isMobile
-            ? "height 0.3s ease-in-out"
-            : "width 0.3s ease-in-out",
-        zIndex: 3000,
-        overflow: "hidden",
-        cursor: clickSelectedUserId ? "pointer" : "default",
-        "&:hover": {
-          // Only apply hover effects on desktop
-          ...(isMobile
-            ? {}
-            : {
-                width: isPinned ? "500px" : shouldShowDrawer ? "500px" : "50px",
-              }),
-        },
-      }}
-      onMouseEnter={() => !isMobile && !isPinned && setIsHovered(true)}
-      onMouseLeave={() => !isMobile && !isPinned && setIsHovered(false)}
-    >
-      {/* Hover trigger area */}
-      <Box
-        onClick={(e) => {
-          e.stopPropagation();
-          // On mobile, clicking the trigger area toggles the drawer
-          if (isMobile) {
-            onPinChange(!isPinned);
-          }
-        }}
-        sx={{
-          position: "absolute",
-          // Desktop: right side trigger
-          ...(isMobile
-            ? {}
-            : {
-                right: 0,
-                top: 0,
-                width: "50px",
-                height: "100%",
-                flexDirection: "column",
-              }),
-          // Mobile: bottom trigger
-          ...(isMobile
-            ? {
-                bottom: 0,
-                left: 0,
-                right: 0,
-                height: "60px",
-                width: "100%",
-                flexDirection: "row",
-              }
-            : {}),
-          backgroundColor: "primary.main",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          gap: 1,
-          cursor: "pointer",
-          zIndex: 3001,
-          pointerEvents: "auto",
-        }}
-      >
-        <PersonIcon
-          sx={{
-            color: "white",
-            transform: isMobile ? "none" : "rotate(90deg)",
-          }}
-        />
-        <IconButton
-          size="small"
-          onClick={(e) => {
-            e.stopPropagation();
-            onPinChange(!isPinned);
-          }}
-          sx={{
-            color: "white",
-            padding: 0.5,
-            "&:hover": {
-              backgroundColor: "rgba(255, 255, 255, 0.1)",
-            },
-          }}
-        >
-          {isPinned ? (
-            <PinIcon sx={{ fontSize: 16 }} />
-          ) : (
-            <PinOutlinedIcon sx={{ fontSize: 16 }} />
-          )}
-        </IconButton>
-      </Box>
-
-      {/* Drawer content */}
-      <Box
-        onClick={(e) => {
-          e.stopPropagation();
-          // Handle clicks on empty areas of the drawer content
-          if (clickSelectedUserId) {
-            onRemoveAssignment(clickSelectedUserId);
-          }
-        }}
-        sx={{
-          // Desktop: right side content
-          ...(isMobile
-            ? {}
-            : {
-                width: "calc(500px - 50px - 2px)",
-                height: "100%",
-                pt: 8,
-              }),
-          // Mobile: bottom content
-          ...(isMobile
-            ? {
-                width: "100%",
-                height: "calc(60vh - 60px - 2px)",
-                pb: 8,
-              }
-            : {}),
-          boxSizing: "border-box",
-          p: 2,
-          overflowY: "auto",
-          overflowX: "hidden",
-          // opacity: shouldShowDrawer ? 1 : 0,
-          // transition: "opacity 0.2s ease-in-out",
-          pointerEvents: "auto",
-          position: "relative",
-          // ...(clickSelectedUserId && {
-          //   "&::before": {
-          //     content: '""',
-          //     position: "absolute",
-          //     top: 0,
-          //     left: 0,
-          //     right: 0,
-          //     bottom: 0,
-          //     border: "2px dashed",
-          //     borderColor: "primary.main",
-          //     borderRadius: 1,
-          //     pointerEvents: "none",
-          //     animation: "pulse 2s infinite",
-          //   },
-          // }),
-        }}
-      >
-        <Typography
-          variant="h6"
-          sx={{ mb: 1, display: "flex", alignItems: "center", gap: 1 }}
-        >
-          <PersonIcon />
-          {t("Available Volunteers")}
-        </Typography>
-
-        {clickSelectedUserId && (
-          <Box sx={{ mb: 2 }}>
-            <Button
-              onClick={() => onRemoveAssignment(clickSelectedUserId)}
-              variant="contained"
-              color="error"
-            >
-              {t("Click here to remove assignment")}
-            </Button>
-          </Box>
-        )}
-
-        <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-          {unassignedUsers.length} {t("volunteers available")}
-        </Typography>
-
-        <Divider sx={{ mb: 2 }} />
-
-        {unassignedUsers.length === 0 ? (
-          <Typography
-            variant="body2"
-            color="text.secondary"
-            sx={{ textAlign: "center", py: 4 }}
-          >
-            {t("All volunteers have been assigned to positions")}
-          </Typography>
-        ) : (
-          unassignedUsers.map((user) => (
-            <DraggableDetailedUserCard
-              key={user.user_id}
-              user={user}
-              isSelected={clickSelectedUserId === user.user_id}
-              onClick={() => onUserClick(user.user_id)}
-              isMobile={isMobile}
-            />
-          ))
-        )}
-      </Box>
-    </Box>
-  );
-}
 
 function DraggableRegistrationForm({
   registrationForm,
@@ -1634,8 +1310,9 @@ function RouteComponent() {
         </Box>
 
         {/* Hover Drawer for Available Volunteers */}
-        <HoverDrawer
+        <AvailableVolunteersDrawer
           unassignedUsers={unassignedUsers}
+          positions={positionsData ?? []}
           activeId={activeId}
           isPinned={isDrawerPinned}
           onPinChange={setIsDrawerPinned}
