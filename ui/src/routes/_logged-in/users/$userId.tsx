@@ -1,4 +1,5 @@
 import DeleteIcon from "@mui/icons-material/Delete";
+import MergeIcon from "@mui/icons-material/MergeType";
 import {
   Alert,
   Box,
@@ -19,8 +20,10 @@ import {
 } from "@mui/material";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useFormik } from "formik";
+import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import * as yup from "yup";
+import { MergeUsersDialog } from "@/components/MergeUsersDialog";
 import { PROVIDER_NAMES } from "@/const";
 import { useDeleteUserIdentity, useEditUser, useUser } from "@/data/use-admin";
 import { shouldBeAdmin } from "@/utils/should-be-logged-in";
@@ -56,6 +59,7 @@ function RouteComponent() {
   const { data: user, isLoading, error } = useUser(userId);
   const editUserMutation = useEditUser();
   const deleteIdentityMutation = useDeleteUserIdentity();
+  const [mergeOpen, setMergeOpen] = useState(false);
 
   const formik = useFormik({
     initialValues: user || {
@@ -127,9 +131,30 @@ function RouteComponent() {
   return (
     <Container maxWidth="md" sx={{ py: 4 }}>
       <Paper elevation={3} sx={{ p: 4 }}>
-        <Typography variant="h4" component="h1" gutterBottom>
-          {t("Edit User")}
-        </Typography>
+        <Box
+          sx={{
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "flex-start",
+            gap: 2,
+          }}
+        >
+          <Typography variant="h4" component="h1" gutterBottom>
+            {t("Edit User")}
+          </Typography>
+          <Button
+            variant="outlined"
+            startIcon={<MergeIcon />}
+            onClick={() => setMergeOpen(true)}
+          >
+            {t("Merge accounts")}
+          </Button>
+        </Box>
+        <MergeUsersDialog
+          user={user}
+          open={mergeOpen}
+          onClose={() => setMergeOpen(false)}
+        />
 
         <form onSubmit={formik.handleSubmit}>
           <Typography variant="h6" gutterBottom sx={{ mt: 3 }}>

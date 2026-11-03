@@ -59,6 +59,7 @@ import type {
   PositionOut,
   RegistrationFormItem,
 } from "@/client/types.gen";
+import { ConfirmedMark } from "@/components/ConfirmedMark";
 import { DetailedUserCard } from "@/components/DetailedUserCard";
 import {
   useCopyAssignments,
@@ -480,6 +481,14 @@ function DraggableRegistrationForm({
     id: `user-${registrationForm.user_id}`,
     disabled: isMobile, // Disable drag on mobile
   });
+  // Shared with the page through the query cache
+  const { dayId } = Route.useParams();
+  const { data: assignmentsData } = useDayAssignments(dayId);
+  const confirmed = assignmentsData?.assignments.some(
+    (assignment) =>
+      assignment.application_form_id === registrationForm.form_id &&
+      assignment.attendance === "confirmed",
+  );
 
   const style = {
     transform: CSS.Transform.toString(transform),
@@ -502,6 +511,7 @@ function DraggableRegistrationForm({
           : undefined
       }
       sx={{
+        position: "relative",
         mb: 0.5,
         cursor: isMobile ? "pointer" : "grab",
         "&:active": {
@@ -541,6 +551,11 @@ function DraggableRegistrationForm({
         }),
       }}
     >
+      {confirmed && (
+        <Box sx={{ position: "absolute", top: 4, right: 4, zIndex: 1 }}>
+          <ConfirmedMark />
+        </Box>
+      )}
       <DetailedUserCard user={registrationForm} expandedDefault={false} />
     </Card>
   );

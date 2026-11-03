@@ -12,6 +12,7 @@ from volunteers.api.v1.attendance.schemas import (
 from volunteers.auth.deps import with_user
 from volunteers.core.di import Container
 from volunteers.models.models import User
+from volunteers.schemas.assessment import AssessmentAuthorOut
 from volunteers.services.year import ManagerForYear, YearService
 
 router = APIRouter(tags=["attendance"])
@@ -96,6 +97,11 @@ async def get_all_attendance(
                     assessment_id=assessment.id,
                     comment=assessment.comment,
                     value=assessment.value,
+                    author=(
+                        AssessmentAuthorOut.model_validate(assessment.author)
+                        if assessment.author
+                        else None
+                    ),
                 )
                 for assessment in assignment.assessments
             ],

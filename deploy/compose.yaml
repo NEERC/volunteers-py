@@ -1,0 +1,105 @@
+# Base of all deployments: the app from the images built by .github/workflows/docker.yml.
+# Combined with an overlay (compose.stand.yaml, compose.mock.yaml), see README.md.
+#
+# Variables (.env next to this file):
+#   IMAGE_TAG       tag of the images, e.g. sha-1a2b3c4
+#   IMAGE_REGISTRY  registry and namespace of the images, ghcr.io/neerc/volunteers-py by default
+#   PUBLIC_URL      base path the app is served under, / by default
+#   MODE            deployment name shown in the UI badge (production hides it)
+#   TELEGRAM_BOT_HANDLE, TELEGRAM_BOT_ORIGIN  Telegram login widget
+# The backend configuration (VOLUNTEERS_*) is read from backend.env.
+
+x-backend: &backend
+  image: ${IMAGE_REGISTRY:-ghcr.io/neerc/volunteers-py}/backend:${IMAGE_TAG:?IMAGE_TAG is required}
+  env_file:
+    - path: backend.env
+      required: false
+  environment:
+    VOLUNTEERS_DATABASE__URL: postgresql+asyncpg://postgres:postgres@db:5432/postgres
+    VOLUNTEERS_SERVER__HOST: 0.0.0.0
+    VOLUNTEERS_SERVER__PORT: 8000
+  networks:
+    - app-network
+
+services:
+  db:
+    image: postgres:16
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: postgres
+    volumes:
+      - db-data:/var/lib/postgresql/data
+    networks:
+      - app-network
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -d $${POSTGRES_DB} -U $${POSTGRES_USER}" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  backend-db-migration:
+    <<: *backend
+    command: alembic upgrade head
+    depends_on:
+      db:
+        condition: service_healthy
+
+  backend:
+    <<: *backend
+    healthcheck:
+      test: [ "CMD-SHELL", "curl http://localhost:8000/hc 2> /dev/null | grep -q 'OK'" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    depends_on:
+      db:
+        condition: service_healthy
+      backend-db-migration:
+        condition: service_completed_successfully
+    restart: unless-stopped
+
+  frontend:
+    image: ${IMAGE_REGISTRY:-ghcr.io/neerc/volunteers-py}/frontend:${IMAGE_TAG}
+    # Applied to the built app on start, see ui/docker-entrypoint.sh
+    environment:
+      PUBLIC_URL: ${PUBLIC_URL:-/}
+      MODE: ${MODE:-production}
+      TELEGRAM_BOT_HANDLE: ${TELEGRAM_BOT_HANDLE:-}
+      TELEGRAM_BOT_ORIGIN: ${TELEGRAM_BOT_ORIGIN:-}
+    networks:
+      - app-network
+    healthcheck:
+      test: [ "CMD-SHELL", "curl http://localhost:8000/nginx-hc 2> /dev/null | grep -q 'OK'" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  proxy:
+    image: ${IMAGE_REGISTRY:-ghcr.io/neerc/volunteers-py}/proxy:${IMAGE_TAG}
+    environment:
+      PORT: 8000
+      BACKEND_SITE: http://backend:8000
+      FRONTEND_SITE: http://frontend:8000
+    networks:
+      - app-network
+    healthcheck:
+      test: [ "CMD-SHELL", "curl http://localhost:$$PORT/nginx-hc 2> /dev/null | grep -q 'OK'" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    depends_on:
+      backend:
+        condition: service_healthy
+      frontend:
+        condition: service_healthy
+    restart: unless-stopped
+
+volumes:
+  db-data:
+
+networks:
+  app-network:
+    driver: bridge

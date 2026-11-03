@@ -1,10 +1,8 @@
 name: Tests
 
+# Disabled on push/PR: only e2e tests run in CI. Can still be run manually.
 on:
-  push:
-    branches: [ main ]
-  pull_request:
-    branches: [ main ]
+  workflow_dispatch:
 
 jobs:
   test:

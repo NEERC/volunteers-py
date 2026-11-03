@@ -1,7 +1,12 @@
 // Runs the e2e stack (mock, backend, UI) in the foreground for manual testing
 // on the data left by the test runs. Stop with Ctrl+C.
 import { spawn } from "node:child_process";
-import { MOCK_URL, services, UI_URL } from "../stack.config.mjs";
+import { MOCK_URL, STAND_URL, services, UI_URL } from "../stack.config.mjs";
+
+if (STAND_URL) {
+  console.error(`E2E_STAND_URL is set: the stack is already running at ${STAND_URL}`);
+  process.exit(1);
+}
 
 const children = services.map(({ name, command, cwd, env }) => {
   const child = spawn(command, {

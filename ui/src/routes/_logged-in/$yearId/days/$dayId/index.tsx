@@ -41,6 +41,7 @@ import {
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import type { DayAssignmentItem } from "@/client/types.gen";
+import { ConfirmedMark } from "@/components/ConfirmedMark";
 import { LinkButton } from "@/components/LinkButton";
 import { useUserDayAssignments } from "@/data";
 import { useAssignmentUpdates } from "@/hooks/useAssignmentUpdates";
@@ -157,6 +158,11 @@ function AssignmentsTable({ assignments }: AssignmentsTableProps) {
   const columns = [
     columnHelper.accessor("name", {
       header: t("Name"),
+      cell: (info) => (
+        <>
+          {info.getValue()} {info.row.original.confirmed && <ConfirmedMark />}
+        </>
+      ),
       enableGrouping: false,
       enableColumnFilter: false,
     }),

@@ -9,6 +9,7 @@ ATTENDANCE_MAP = {
     Attendance.NO: -1,
     Attendance.SICK: 0.0,
     Attendance.UNKNOWN: 0.0,
+    Attendance.CONFIRMED: 0.0,
 }
 
 

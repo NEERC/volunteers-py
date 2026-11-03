@@ -1,0 +1,4 @@
+nginx_proxy_image: nginxproxy/nginx-proxy:1.11
+nginx_proxy_acme_image: nginxproxy/acme-companion:2.8
+# Let's Encrypt account email (expiry notices), optional
+nginx_proxy_acme_email: ""

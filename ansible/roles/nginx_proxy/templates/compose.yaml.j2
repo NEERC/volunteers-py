@@ -1,0 +1,45 @@
+# {{ ansible_managed }}
+name: nginx-proxy
+
+services:
+  nginx-proxy:
+    image: {{ nginx_proxy_image }}
+    container_name: nginx-proxy
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - certs:/etc/nginx/certs
+      - html:/usr/share/nginx/html
+      - /var/run/docker.sock:/tmp/docker.sock:ro
+    networks:
+      - proxy
+    restart: unless-stopped
+
+  acme-companion:
+    image: {{ nginx_proxy_acme_image }}
+    environment:
+{% if nginx_proxy_acme_email %}
+      DEFAULT_EMAIL: {{ nginx_proxy_acme_email }}
+{% endif %}
+      NGINX_PROXY_CONTAINER: nginx-proxy
+    volumes:
+      - certs:/etc/nginx/certs
+      - html:/usr/share/nginx/html
+      - acme:/etc/acme.sh
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    networks:
+      - proxy
+    depends_on:
+      - nginx-proxy
+    restart: unless-stopped
+
+volumes:
+  certs:
+  html:
+  acme:
+
+networks:
+  proxy:
+    # Stands join it by this name (STAND_PROXY_NETWORK)
+    name: {{ proxy_network }}

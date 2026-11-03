@@ -1,0 +1,10 @@
+# User the stands are deployed by (STAND_SSH_USER), it is in the docker group
+deploy_user: deploy
+# Deploy key pair generated on the control machine, the private key goes to the
+# STAND_SSH_KEY secret of the repository
+deploy_key_path: "{{ playbook_dir }}/.keys/stand_deploy"
+# Docker network of nginx-proxy, STAND_PROXY_NETWORK in GitHub
+proxy_network: proxy
+nginx_proxy_dir: /opt/nginx-proxy
+# Docker, images of several commits and databases of the stands
+min_free_disk_gb: 15

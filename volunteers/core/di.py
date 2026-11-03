@@ -10,7 +10,10 @@ from volunteers.services.assessment import AssessmentService
 from volunteers.services.export import ExportService
 from volunteers.services.i18n import I18nService
 from volunteers.services.identity import IdentityService
+from volunteers.services.mailing import MailingService
+from volunteers.services.mailing_sender import MailingWorker, TelegramSender
 from volunteers.services.user import UserService
+from volunteers.services.user_merge import UserMergeService
 from volunteers.services.year import YearService
 
 
@@ -27,7 +30,10 @@ class Container(containers.DeclarativeContainer):
     db = providers.Singleton(create_engine, config.provided.database.url)
     # logger = providers.Singleton(Logger)
     telegram = providers.Singleton(
-        get_bot, config.provided.telegram.token, config.provided.telegram.api_server
+        get_bot,
+        config.provided.telegram.token,
+        config.provided.telegram.api_server,
+        config.provided.telegram.proxy,
     )
 
     socketio_server: providers.Provider[socketio.AsyncServer] = providers.Singleton(
@@ -43,6 +49,19 @@ class Container(containers.DeclarativeContainer):
     identity_service = providers.Singleton(IdentityService)
     assessment_service = providers.Singleton(AssessmentService)
     export_service = providers.Singleton(ExportService)
+    user_merge_service = providers.Singleton(UserMergeService)
+    telegram_sender = providers.Singleton(TelegramSender, bot=telegram)
+    mailing_worker = providers.Singleton(
+        MailingWorker,
+        sender=telegram_sender,
+        notifier=notifier,
+        public_url=config.provided.server.public_url,
+        messages_per_second=config.provided.mailing.messages_per_second,
+        poll_interval=config.provided.mailing.poll_interval,
+    )
+    mailing_service = providers.Singleton(
+        MailingService, sender=telegram_sender, worker=mailing_worker
+    )
 
 
 # Create a global container instance (not wired yet)

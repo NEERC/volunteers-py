@@ -22,10 +22,11 @@ Ports and the database can be changed with `E2E_MOCK_PORT`, `E2E_BACKEND_PORT`, 
 ## Users
 
 The `setup` project (`tests/auth.setup.ts`) registers an admin and three volunteers through
-the UI (mock ITMO ID → registration form), grants the admin role directly in the database
-(there is no API for it) and saves the sessions to `.auth/`. Every run has a unique tag
-(`E2E_RUN_TAG`, a timestamp by default) used in usernames and entity names, so runs never
-collide and nothing has to be cleaned up.
+the UI (mock ITMO ID → registration form) and saves the sessions to `.auth/`. Every run has a
+unique tag (`E2E_RUN_TAG`, a timestamp by default) used in usernames and entity names, so runs
+never collide and nothing has to be cleaned up. The admin is the same in all runs: the backend
+grants the admin role on registration to `e2e-admin` (`VOLUNTEERS_BOOTSTRAP__ADMINS`), and later
+runs just log in.
 
 ## Running
 
@@ -58,6 +59,17 @@ the tail of the backend and mock logs is attached too. Everything is in the HTML
 `.github/workflows/e2e.yml` runs the suite on pushes and pull requests to `main` against a
 Postgres service container. It uploads the HTML report and the service logs on every run, and
 `test-results/` (traces, videos) when the tests fail.
+
+## Running against a test stand
+
+With `E2E_STAND_URL` set (e.g. `https://pr-42.staging.example.com`) no local stack is started:
+the tests use the UI, the backend and the mock (`/__mock`) of a deployed stand in the mock
+mode, see `deploy/README.md`. `.github/workflows/stands.yml` runs them this way after
+deploying a pull request stand. Service logs are not attached in this mode.
+
+```bash
+E2E_STAND_URL=https://pr-42.staging.example.com pnpm --dir e2e test
+```
 
 ## Manual testing on the test data
 

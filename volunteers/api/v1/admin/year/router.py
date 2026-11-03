@@ -10,7 +10,7 @@ from volunteers.auth.deps import with_admin
 from volunteers.core.di import Container
 from volunteers.core.experience import get_rank
 from volunteers.models import User
-from volunteers.schemas.assessment import AssessmentOut
+from volunteers.schemas.assessment import AssessmentAuthorOut, AssessmentOut
 from volunteers.schemas.position import PositionOut
 from volunteers.schemas.year import YearEditIn, YearIn
 from volunteers.services.export import ExportService
@@ -246,6 +246,7 @@ async def get_year_results(
                 user_day_id=a.user_day_id,
                 comment=a.comment,
                 value=a.value,
+                author=(AssessmentAuthorOut.model_validate(a.author) if a.author else None),
             )
             for a in result_item.assessments
         ]

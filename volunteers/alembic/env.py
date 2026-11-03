@@ -1,6 +1,8 @@
 import asyncio
 from typing import Any
 
+# Autogenerates changes of enum values
+import alembic_postgresql_enum  # noqa: F401
 from alembic import context
 from sqlalchemy import Connection
 

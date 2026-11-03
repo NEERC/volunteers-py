@@ -31,6 +31,7 @@ import { useTelegramAvailable } from "@/data/use-auth";
 import { authStore } from "@/store/auth";
 import { apiErrorMessage } from "@/utils/apiErrorHandling";
 import { consumeKeycloakCallback, startKeycloakLogin } from "@/utils/keycloak";
+import { safeRedirect } from "@/utils/login-redirect";
 
 // Custom TextField component for Field
 const TextFieldComponent = ({
@@ -64,6 +65,9 @@ const TextFieldComponent = ({
 
 export const Route = createFileRoute("/login")({
   component: observer(RouteComponent),
+  validateSearch: (search: Record<string, unknown>): { redirect?: string } => ({
+    redirect: typeof search.redirect === "string" ? search.redirect : undefined,
+  }),
 });
 
 type RegistrationValues = {
@@ -98,6 +102,9 @@ const registrationInitialValues = (
 function RouteComponent() {
   const { t } = useTranslation();
   const navigate = useNavigate();
+  const search = Route.useSearch();
+  // Replaced by the one saved before the redirect to Keycloak
+  const redirectTo = useRef(safeRedirect(search.redirect));
   const telegramAvailable = useTelegramAvailable();
   const [flow, setFlow] = useState<AuthFlowResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -118,7 +125,7 @@ function RouteComponent() {
       try {
         const result = await step();
         if (result.status === "success") {
-          navigate({ to: "/" });
+          navigate({ href: redirectTo.current });
           return;
         }
         setFlow(result);
@@ -145,6 +152,7 @@ function RouteComponent() {
     if (callback === "error") {
       setError(t("ITMO login failed. Please try again."));
     } else if (callback) {
+      redirectTo.current = callback.redirect;
       runStep(() =>
         authStore.authKeycloak({
           code: callback.code,
@@ -160,7 +168,7 @@ function RouteComponent() {
     setIsSubmitting(true);
     setError(null);
     try {
-      await startKeycloakLogin(pendingToken);
+      await startKeycloakLogin(pendingToken, redirectTo.current);
     } catch (error) {
       console.error("Keycloak error:", error);
       setError(t(apiErrorMessage(error, "Unknown error")));

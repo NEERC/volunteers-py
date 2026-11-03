@@ -47,3 +47,46 @@ class EditUserRequest(BaseModel):
     telegram_username: str | None = None
     is_admin: bool | None = None
     gender: Gender | None
+
+
+class MergeFormDay(BaseModel):
+    day_name: str
+    position_name: str
+    assessments_count: int
+
+
+class MergeFormSummary(BaseModel):
+    form_id: int
+    user_id: int
+    itmo_group: str | None
+    comments: str
+    created_at: datetime
+    desired_positions: list[str]
+    days: list[MergeFormDay]
+
+
+class MergeFormConflict(BaseModel):
+    year_id: int
+    year_name: str
+    forms: list[MergeFormSummary]
+
+
+class MergeIdentityConflict(BaseModel):
+    provider: IdentityProvider
+    identities: list[UserIdentityResponse]
+
+
+class MergePreviewResponse(BaseModel):
+    # The older user (smaller id) is kept with the profile of the newer one, which is deleted
+    target: UserResponse
+    source: UserResponse
+    merged: UserResponse
+    form_conflicts: list[MergeFormConflict]
+    identity_conflicts: list[MergeIdentityConflict]
+
+
+class MergeUsersRequest(BaseModel):
+    # Year id -> id of the application form to keep, for every form conflict
+    kept_form_ids: dict[int, int] = {}
+    # Provider -> id of the identity to keep, for every identity conflict
+    kept_identity_ids: dict[IdentityProvider, int] = {}

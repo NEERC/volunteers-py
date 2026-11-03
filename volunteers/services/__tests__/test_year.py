@@ -529,10 +529,11 @@ async def test_add_assessment(year_service: YearService) -> None:
     mock_session.commit = AsyncMock()
     mock_session.refresh = AsyncMock()
     with patch.object(year_service, "session_scope", return_value=make_async_cm(mock_session)):
-        assessment = await year_service.add_assessment(assessment_in)
+        assessment = await year_service.add_assessment(assessment_in, author_id=42)
         assert assessment.user_day_id == assessment_in.user_day_id
         assert assessment.comment == assessment_in.comment
         assert assessment.value == assessment_in.value
+        assert assessment.author_id == 42
         mock_session.add.assert_called_once_with(assessment)
         mock_session.commit.assert_awaited_once()
 

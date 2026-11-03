@@ -13,11 +13,18 @@ from volunteers.schemas.day_assignment import DayAssignmentItem
 from volunteers.schemas.position import PositionOut
 from volunteers.services.i18n import I18nService
 from volunteers.services.identity import IdentityService
-from volunteers.services.year import YearService
+from volunteers.services.year import (
+    AssignmentConfirmation,
+    AssignmentsNotPublished,
+    DayNotFound,
+    NotAssignedToDay,
+    YearService,
+)
 
 from .schemas import (
     ApplicationFormYearSavedResponse,
     ApplicationFormYearSaveRequest,
+    AssignmentConfirmationResponse,
     DayAssignmentsResponse,
     YearOut,
     YearsResponse,
@@ -190,20 +197,80 @@ async def get_day_assignments(
         logger.debug(f"{DB_PREFIX} Assignments not published for day {day_id}")
         return DayAssignmentsResponse(assignments=[], is_published=False)
 
-    assignments = await year_service.get_all_assignments_by_day_id(day_id=day_id)
+    views = await year_service.get_day_assignments_for_viewer(day=day, viewer=user)
 
     assignment_items = [
         DayAssignmentItem(
-            name=f"{assignment.application_form.user.first_name_en} {assignment.application_form.user.last_name_en}",
-            telegram=assignment.application_form.user.telegram_username,
-            position=assignment.position.name,
-            hall=assignment.hall.name if assignment.hall else None,
-            # attendance=assignment.attendance,
+            name=f"{view.assignment.application_form.user.first_name_en} {view.assignment.application_form.user.last_name_en}",
+            telegram=view.assignment.application_form.user.telegram_username,
+            position=view.assignment.position.name,
+            hall=view.assignment.hall.name if view.assignment.hall else None,
+            confirmed=view.confirmed,
         )
-        for assignment in assignments
+        for view in views
     ]
 
     logger.debug(f"{DB_PREFIX} Got day assignments for user-facing API")
     return DayAssignmentsResponse(
         assignments=assignment_items, is_published=day.assignment_published
     )
+
+
+def _confirmation_response(confirmation: AssignmentConfirmation) -> AssignmentConfirmationResponse:
+    assignment = confirmation.assignment
+    return AssignmentConfirmationResponse(
+        day_name=confirmation.day.name,
+        day_information=confirmation.day.information,
+        state=confirmation.state,
+        position=assignment.position.name if assignment else None,
+        hall=assignment.hall.name if assignment and assignment.hall else None,
+        attendance=assignment.attendance if assignment else None,
+    )
+
+
+@router.get(
+    "/{year_id}/days/{day_id}/confirmation",
+    description="Get the assignment of the current user on a day, to confirm that they will come",
+)
+@inject
+async def get_assignment_confirmation(
+    year_id: Annotated[int, Path(title="The ID of the year")],
+    day_id: Annotated[int, Path(title="The ID of the day")],
+    user: Annotated[User, Depends(with_user)],
+    year_service: Annotated[YearService, Depends(Provide[Container.year_service])],
+    i18n: Annotated[I18nService, Depends(Provide[Container.i18n_service])],
+) -> AssignmentConfirmationResponse:
+    try:
+        confirmation = await year_service.get_assignment_confirmation(
+            year_id=year_id, day_id=day_id, user_id=user.id
+        )
+    except DayNotFound:
+        raise HTTPException(status_code=404, detail=i18n.translate("Day not found")) from None
+    return _confirmation_response(confirmation)
+
+
+@router.post(
+    "/{year_id}/days/{day_id}/confirmation",
+    description="Confirm that the current user will come on a day. "
+    "Does nothing when the attendance is already set.",
+)
+@inject
+async def confirm_assignment(
+    year_id: Annotated[int, Path(title="The ID of the year")],
+    day_id: Annotated[int, Path(title="The ID of the day")],
+    user: Annotated[User, Depends(with_user)],
+    year_service: Annotated[YearService, Depends(Provide[Container.year_service])],
+    i18n: Annotated[I18nService, Depends(Provide[Container.i18n_service])],
+) -> AssignmentConfirmationResponse:
+    try:
+        confirmation = await year_service.confirm_assignment(
+            year_id=year_id, day_id=day_id, user_id=user.id
+        )
+    except DayNotFound:
+        raise HTTPException(status_code=404, detail=i18n.translate("Day not found")) from None
+    except NotAssignedToDay as exc:
+        raise HTTPException(status_code=404, detail=i18n.translate(str(exc))) from None
+    except AssignmentsNotPublished as exc:
+        raise HTTPException(status_code=403, detail=i18n.translate(str(exc))) from None
+    logger.info(f"User {user.id} confirmed day {day_id}: {confirmation.state}")
+    return _confirmation_response(confirmation)

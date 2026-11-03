@@ -1,0 +1,49 @@
+# Docker Engine from the official repository, https://docs.docker.com/engine/install/ubuntu/
+- name: Install the prerequisites
+  ansible.builtin.apt:
+    # python3-debian is needed by deb822_repository
+    name: [ca-certificates, curl, python3-debian]
+    update_cache: true
+    cache_valid_time: 3600
+
+- name: Add the Docker repository
+  ansible.builtin.deb822_repository:
+    name: docker
+    types: deb
+    uris: https://download.docker.com/linux/ubuntu
+    suites: "{{ ansible_distribution_release }}"
+    components: stable
+    architectures: "{{ 'arm64' if ansible_architecture == 'aarch64' else 'amd64' }}"
+    signed_by: https://download.docker.com/linux/ubuntu/gpg
+
+- name: Install Docker
+  ansible.builtin.apt:
+    name: "{{ docker_packages }}"
+    update_cache: true
+
+# Stands come and go, so the logs of their containers must not fill the disk
+- name: Configure the Docker daemon
+  ansible.builtin.copy:
+    dest: /etc/docker/daemon.json
+    mode: "0644"
+    content: |
+      {
+        "log-driver": "json-file",
+        "log-opts": { "max-size": "10m", "max-file": "3" }
+      }
+  notify: Restart Docker
+
+- name: Start Docker
+  ansible.builtin.systemd_service:
+    name: docker
+    enabled: true
+    state: started
+
+- name: Remove unused images daily
+  ansible.builtin.copy:
+    dest: /etc/cron.daily/docker-image-prune
+    mode: "0755"
+    content: |
+      #!/bin/sh
+      # Installed by ansible/roles/docker
+      docker image prune --all --force --filter "until={{ docker_prune_until }}" > /dev/null

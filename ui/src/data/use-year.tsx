@@ -1,9 +1,11 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   addAssessmentApiV1AdminAssessmentAddPost,
+  confirmAssignmentApiV1YearYearIdDaysDayIdConfirmationPost,
   deleteAssessmentApiV1AdminAssessmentAssessmentIdDelete,
   editAssessmentApiV1AdminAssessmentAssessmentIdEditPost,
   getAllAttendanceApiV1AttendanceYearIdAllGet,
+  getAssignmentConfirmationApiV1YearYearIdDaysDayIdConfirmationGet,
   getDayAssignmentsApiV1YearYearIdDaysDayIdAssignmentsGet,
   getFormYearApiV1YearYearIdGet,
   saveDayAttendanceApiV1AttendanceSavePost,
@@ -119,6 +121,51 @@ export const useUserDayAssignments = (
   dayId: string | number,
 ) => {
   return useQuery(dayAssignmentsQueryOptions(yearId, dayId));
+};
+
+// Assignment confirmation of the current user
+export const useAssignmentConfirmation = (
+  yearId: string | number,
+  dayId: string | number,
+) => {
+  return useQuery({
+    queryKey: queryKeys.year.dayConfirmation(yearId, dayId),
+    queryFn: async () => {
+      const response =
+        await getAssignmentConfirmationApiV1YearYearIdDaysDayIdConfirmationGet({
+          path: { year_id: Number(yearId), day_id: Number(dayId) },
+          throwOnError: true,
+        });
+      return response.data;
+    },
+  });
+};
+
+export const useConfirmAssignment = (
+  yearId: string | number,
+  dayId: string | number,
+) => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async () => {
+      const response =
+        await confirmAssignmentApiV1YearYearIdDaysDayIdConfirmationPost({
+          path: { year_id: Number(yearId), day_id: Number(dayId) },
+          throwOnError: true,
+        });
+      return response.data;
+    },
+    onSuccess: (data) => {
+      queryClient.setQueryData(
+        queryKeys.year.dayConfirmation(yearId, dayId),
+        data,
+      );
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.year.dayAssignments(yearId, dayId),
+      });
+    },
+  });
 };
 
 // Attendance query options

@@ -17,6 +17,7 @@ import {
   exportDayDataApiV1AdminUserDayDayDayIdExportGet,
   getAllUsersApiV1AdminUserGet,
   getDayAssignmentsApiV1AdminUserDayDayDayIdAssignmentsGet,
+  getMergePreviewApiV1AdminUserUserIdMergeOtherUserIdGet,
   getRegistrationFormsApiV1AdminYearYearIdRegistrationFormsGet,
   getUserByIdApiV1AdminUserUserIdGet,
   getUsersListApiV1AdminYearYearIdUsersGet,
@@ -24,6 +25,7 @@ import {
   getYearHallsApiV1AdminHallYearYearIdGet,
   getYearPositionsApiV1AdminYearYearIdPositionsGet,
   getYearResultsApiV1AdminYearYearIdResultsGet,
+  mergeUsersApiV1AdminUserUserIdMergeOtherUserIdPost,
 } from "@/client";
 import type {
   AddDayRequest,
@@ -38,6 +40,7 @@ import type {
   EditUserDayRequest,
   EditUserRequest,
   EditYearRequest,
+  MergeUsersRequest,
 } from "@/client/types.gen";
 import { queryKeys } from "./query-keys";
 
@@ -385,6 +388,59 @@ export const useDeleteUserIdentity = () => {
       queryClient.invalidateQueries({
         queryKey: queryKeys.admin.users.detail(userId),
       });
+    },
+  });
+};
+
+export const useMergePreview = (
+  userId: string | number,
+  otherUserId: number | null,
+) => {
+  return useQuery({
+    queryKey: [
+      ...queryKeys.admin.users.detail(userId),
+      "merge",
+      otherUserId,
+    ] as const,
+    queryFn: async () => {
+      const response =
+        await getMergePreviewApiV1AdminUserUserIdMergeOtherUserIdGet({
+          path: { user_id: Number(userId), other_user_id: Number(otherUserId) },
+          throwOnError: true,
+        });
+      return response.data;
+    },
+    enabled: otherUserId !== null,
+    // The preview must reflect the current state of both users
+    gcTime: 0,
+  });
+};
+
+export const useMergeUsers = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({
+      userId,
+      otherUserId,
+      data,
+    }: {
+      userId: string | number;
+      otherUserId: number;
+      data: MergeUsersRequest;
+    }) => {
+      const response = await mergeUsersApiV1AdminUserUserIdMergeOtherUserIdPost(
+        {
+          path: { user_id: Number(userId), other_user_id: otherUserId },
+          body: data,
+          throwOnError: true,
+        },
+      );
+      return response.data;
+    },
+    onSuccess: () => {
+      // Forms, assignments and identities of both users have moved
+      queryClient.invalidateQueries({ queryKey: queryKeys.admin.all });
     },
   });
 };

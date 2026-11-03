@@ -59,11 +59,16 @@ def config() -> MagicMock:
         client_id: str = "volunteers"
         client_secret: str | None = None
         scope: str = "openid profile email"
+        public_issuer: str | None = None
+
+    class Bootstrap:
+        admins: tuple[str, ...] = ("admin",)
 
     cfg: MagicMock = MagicMock()
     cfg.jwt = Jwt()
     cfg.telegram = Telegram()
     cfg.keycloak = Keycloak()
+    cfg.bootstrap = Bootstrap()
     return cfg
 
 
@@ -231,6 +236,16 @@ async def test_keycloak_config(app: FastAPIWithContainer) -> None:
 
 
 @pytest.mark.asyncio
+async def test_keycloak_config_public_issuer(app: FastAPIWithContainer, config: MagicMock) -> None:
+    config.keycloak.public_issuer = "https://stand.example.com/__mock/realms/e2e"
+    async with client(app) as ac:
+        resp = await ac.get("/api/v1/auth/keycloak/config")
+    assert resp.json()["authorization_endpoint"] == (
+        "https://stand.example.com/__mock/realms/e2e/protocol/openid-connect/auth"
+    )
+
+
+@pytest.mark.asyncio
 async def test_telegram_invalid(
     monkeypatch: pytest.MonkeyPatch, app: FastAPIWithContainer, telegram_request: dict[str, Any]
 ) -> None:
@@ -364,6 +379,29 @@ async def test_register_new_user(
         (IdentityProvider.KEYCLOAK, "kc-sub"),
     }
     assert all(i.user_id == test_user.id for i in identity_service.identities)
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(("username", "is_admin"), [("admin", True), ("dpotekhin", False)])
+async def test_register_bootstrap_admin(
+    app: FastAPIWithContainer,
+    registration_fields: dict[str, Any],
+    username: str,
+    is_admin: bool,
+) -> None:
+    pending = PendingAuth().with_identity(
+        auth_router.VerifiedIdentity(
+            provider=IdentityProvider.KEYCLOAK, subject="kc-sub", display_name=username
+        )
+    )
+    async with client(app) as ac:
+        resp = await ac.post(
+            "/api/v1/auth/register",
+            json={**registration_fields, "pending_token": pending.model_dump_json()},
+        )
+    assert resp.json()["status"] == "success"
+    user_in = app.container.user_service().create_user.await_args.args[0]
+    assert user_in.is_admin is is_admin
 
 
 @pytest.mark.asyncio

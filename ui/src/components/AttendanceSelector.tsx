@@ -1,6 +1,7 @@
 import AccessTimeIcon from "@mui/icons-material/AccessTime";
 import CancelIcon from "@mui/icons-material/Cancel";
 import CheckCircleIcon from "@mui/icons-material/CheckCircle";
+import DoneAllIcon from "@mui/icons-material/DoneAll";
 import HelpOutlineIcon from "@mui/icons-material/HelpOutline";
 import LocalHospitalIcon from "@mui/icons-material/LocalHospital";
 import {
@@ -31,6 +32,8 @@ export function getAttendanceIcon(attendance: Attendance) {
       return <AccessTimeIcon color="warning" fontSize="small" />;
     case "sick":
       return <LocalHospitalIcon color="info" fontSize="small" />;
+    case "confirmed":
+      return <DoneAllIcon color="primary" fontSize="small" />;
     default:
       return <HelpOutlineIcon color="disabled" fontSize="small" />;
   }
@@ -49,10 +52,22 @@ export function getAttendanceLabel(
       return t("Late");
     case "sick":
       return t("Sick");
+    case "confirmed":
+      return t("Confirmed");
     default:
       return t("Unknown");
   }
 }
+
+// Confirmed is set by the volunteer before the day, the others by managers on the day
+const ATTENDANCE_OPTIONS: Attendance[] = [
+  "yes",
+  "no",
+  "late",
+  "sick",
+  "unknown",
+  "confirmed",
+];
 
 export function AttendanceSelector({
   value,
@@ -62,49 +77,28 @@ export function AttendanceSelector({
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down("md"));
 
+  const renderOption = (attendance: Attendance) => (
+    <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
+      {getAttendanceIcon(attendance)}
+      {getAttendanceLabel(attendance, t)}
+    </Box>
+  );
+
   if (isMobile) {
     return (
       <FormControl size="small" sx={{ minWidth: 150 }}>
         <Select
           value={value}
           onChange={(e) => onChange(e.target.value as Attendance)}
-          renderValue={(selectedValue) => (
-            <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
-              {getAttendanceIcon(selectedValue as Attendance)}
-              {getAttendanceLabel(selectedValue as Attendance, t)}
-            </Box>
-          )}
+          renderValue={(selectedValue) =>
+            renderOption(selectedValue as Attendance)
+          }
         >
-          <MenuItem value="yes">
-            <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
-              {getAttendanceIcon("yes")}
-              {t("Yes")}
-            </Box>
-          </MenuItem>
-          <MenuItem value="no">
-            <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
-              {getAttendanceIcon("no")}
-              {t("No")}
-            </Box>
-          </MenuItem>
-          <MenuItem value="late">
-            <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
-              {getAttendanceIcon("late")}
-              {t("Late")}
-            </Box>
-          </MenuItem>
-          <MenuItem value="sick">
-            <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
-              {getAttendanceIcon("sick")}
-              {t("Sick")}
-            </Box>
-          </MenuItem>
-          <MenuItem value="unknown">
-            <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
-              {getAttendanceIcon("unknown")}
-              {t("Unknown")}
-            </Box>
-          </MenuItem>
+          {ATTENDANCE_OPTIONS.map((attendance) => (
+            <MenuItem key={attendance} value={attendance}>
+              {renderOption(attendance)}
+            </MenuItem>
+          ))}
         </Select>
       </FormControl>
     );
@@ -121,36 +115,11 @@ export function AttendanceSelector({
       }}
       size="small"
     >
-      <ToggleButton value="yes">
-        <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
-          {getAttendanceIcon("yes")}
-          {t("Yes")}
-        </Box>
-      </ToggleButton>
-      <ToggleButton value="no">
-        <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
-          {getAttendanceIcon("no")}
-          {t("No")}
-        </Box>
-      </ToggleButton>
-      <ToggleButton value="late">
-        <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
-          {getAttendanceIcon("late")}
-          {t("Late")}
-        </Box>
-      </ToggleButton>
-      <ToggleButton value="sick">
-        <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
-          {getAttendanceIcon("sick")}
-          {t("Sick")}
-        </Box>
-      </ToggleButton>
-      <ToggleButton value="unknown">
-        <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
-          {getAttendanceIcon("unknown")}
-          {t("Unknown")}
-        </Box>
-      </ToggleButton>
+      {ATTENDANCE_OPTIONS.map((attendance) => (
+        <ToggleButton key={attendance} value={attendance}>
+          {renderOption(attendance)}
+        </ToggleButton>
+      ))}
     </ToggleButtonGroup>
   );
 }

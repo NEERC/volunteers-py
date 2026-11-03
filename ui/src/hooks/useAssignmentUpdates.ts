@@ -1,5 +1,6 @@
 import { useQueryClient } from "@tanstack/react-query";
 import { useEffect } from "react";
+import { queryKeys } from "@/data/query-keys";
 import { getSocket } from "@/integrations/socketio/socket";
 
 interface AssignmentUpdateEvent {
@@ -36,38 +37,50 @@ export const useAssignmentUpdates = (
 
     const socket = getSocket();
 
-    // Subscribe to assignment updates for this day
-    socket.emit("subscribe_day_assignments", { day_id: dayId });
-
-    // Handle assignment update events
-    const handleAssignmentUpdate = (event: AssignmentUpdateEvent) => {
-      console.log("Assignment update received:", event);
-
-      if (event.day_id !== dayId) {
-        return;
-      }
-
-      const adminKey = ["admin", "assignments", "day", String(dayId)];
-      const yearKey = [
-        "year",
-        String(yearId),
-        "day",
-        String(dayId),
-        "assignments",
-      ];
-
-      queryClient.invalidateQueries({ queryKey: adminKey });
+    const invalidate = () => {
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.admin.assignments.day(dayId),
+      });
       if (yearId) {
-        queryClient.invalidateQueries({ queryKey: yearKey });
+        queryClient.invalidateQueries({
+          queryKey: queryKeys.year.dayAssignments(yearId, dayId),
+        });
       }
     };
 
+    // Rooms live on the server per connection, so every (re)connect gets a
+    // new sid that has to subscribe again. Updates sent while we were
+    // disconnected are lost, so refetch after a reconnect as well.
+    let wasConnected = socket.connected;
+    const handleConnect = () => {
+      socket.emit("subscribe_day_assignments", { day_id: dayId });
+      if (wasConnected) {
+        invalidate();
+      }
+      wasConnected = true;
+    };
+
+    // Handle assignment update events
+    const handleAssignmentUpdate = (event: AssignmentUpdateEvent) => {
+      if (event.day_id !== dayId) {
+        return;
+      }
+      invalidate();
+    };
+
+    socket.on("connect", handleConnect);
     socket.on("assignment_updated", handleAssignmentUpdate);
+    if (socket.connected) {
+      socket.emit("subscribe_day_assignments", { day_id: dayId });
+    }
 
     // Cleanup on unmount
     return () => {
+      socket.off("connect", handleConnect);
       socket.off("assignment_updated", handleAssignmentUpdate);
-      socket.emit("unsubscribe_day_assignments", { day_id: dayId });
+      if (socket.connected) {
+        socket.emit("unsubscribe_day_assignments", { day_id: dayId });
+      }
     };
   }, [dayId, yearId, enabled, queryClient]);
 };

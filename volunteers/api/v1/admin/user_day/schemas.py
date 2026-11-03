@@ -1,5 +1,6 @@
 from pydantic import BaseModel
 
+from volunteers.models.attendance import Attendance
 from volunteers.schemas.base import BaseSuccessResponse
 
 
@@ -26,6 +27,7 @@ class AssignmentItem(BaseModel):
     application_form_id: int
     position_id: int
     hall_id: int | None
+    attendance: Attendance
 
 
 class AssignmentsResponse(BaseModel):

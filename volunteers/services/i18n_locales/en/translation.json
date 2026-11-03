@@ -27,5 +27,8 @@
   "User is not found": "User is not found",
   "Incorrect password": "Incorrect password",
   "This user is already linked to another {provider} account": "This user is already linked to another {provider} account",
-  "Telegram account must be linked to register": "Telegram account must be linked to register"
+  "Telegram account must be linked to register": "Telegram account must be linked to register",
+  "Day not found": "Day not found",
+  "You are not assigned to this day": "You are not assigned to this day",
+  "Assignments are not published yet": "Assignments are not published yet"
 }

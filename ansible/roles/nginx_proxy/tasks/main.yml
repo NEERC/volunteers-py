@@ -1,0 +1,20 @@
+# nginx-proxy publishes the stands by their VIRTUAL_HOST, acme-companion issues
+# Let's Encrypt certificates for LETSENCRYPT_HOST, see deploy/compose.stand.yaml
+- name: Create the nginx-proxy directory
+  ansible.builtin.file:
+    path: "{{ nginx_proxy_dir }}"
+    state: directory
+    mode: "0755"
+
+- name: Write the compose file
+  ansible.builtin.template:
+    src: compose.yaml.j2
+    dest: "{{ nginx_proxy_dir }}/compose.yaml"
+    mode: "0644"
+
+- name: Start nginx-proxy
+  ansible.builtin.command:
+    cmd: docker compose up --detach --wait --remove-orphans
+    chdir: "{{ nginx_proxy_dir }}"
+  register: nginx_proxy_up
+  changed_when: nginx_proxy_up.stderr is search('Created|Recreated|Started')

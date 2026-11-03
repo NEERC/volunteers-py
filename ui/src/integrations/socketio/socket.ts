@@ -21,31 +21,24 @@ export function getSocket(): Socket {
     return socketInstance;
   }
 
-  // Determine the socket URL
-  // In development, Vite proxies /socket.io to localhost:8000
-  // In production, use the same base URL as the API
-  const baseURL = import.meta.env.BASE_URL || "";
-  const socketURL = import.meta.env.DEV
-    ? "" // Use relative path in dev (Vite proxy handles it)
-    : baseURL.replace(/\/$/, ""); // Remove trailing slash if present
-
-  // Get current auth token
-  const token = authStore.getAccessToken(); // prone to errors. TODO: fix this.
-
-  // Create socket instance with authentication
-  socketInstance = io(socketURL, {
-    path: "/socket.io",
-    transports: ["websocket", "polling"],
+  // Connect to the same origin, the base path (PUBLIC_URL) goes into `path`:
+  // the path of a URL passed to io() is the namespace, not a prefix. In
+  // development Vite proxies /socket.io to the backend.
+  // The default transports (polling, then the upgrade to WebSocket) keep
+  // working behind proxies that don't pass WebSocket upgrades.
+  // `auth` is a callback so every reconnect picks up the current (possibly
+  // refreshed) token.
+  socketInstance = io({
+    path: `${import.meta.env.BASE_URL}socket.io`,
     autoConnect: true,
     reconnection: true,
     reconnectionDelay: 1000,
     reconnectionDelayMax: 5000,
     reconnectionAttempts: Number.POSITIVE_INFINITY,
-    auth: token
-      ? {
-          token: `Bearer ${token}`,
-        }
-      : undefined,
+    auth: (cb) => {
+      const token = authStore.getAccessToken();
+      cb(token ? { token: `Bearer ${token}` } : {});
+    },
   });
 
   // Handle connection errors

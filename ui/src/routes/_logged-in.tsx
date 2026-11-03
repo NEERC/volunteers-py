@@ -34,10 +34,10 @@ const LoggedInLayout = observer(() => {
 
 export const Route = createFileRoute("/_logged-in")({
   component: LoggedInLayout,
-  beforeLoad: async () => {
+  beforeLoad: async ({ location }) => {
     await authStore.waitForHydration();
     if (authStore.user === null) {
-      throw redirect({ to: "/login" });
+      throw redirect({ to: "/login", search: { redirect: location.href } });
     }
     return { user: authStore.user };
   },

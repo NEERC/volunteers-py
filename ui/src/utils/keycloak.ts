@@ -1,4 +1,5 @@
 import { keycloakConfigApiV1AuthKeycloakConfigGet } from "@/client";
+import { safeRedirect } from "./login-redirect";
 
 const STORAGE_KEY = "keycloak-login";
 
@@ -7,6 +8,8 @@ type StoredKeycloakLogin = {
   codeVerifier: string;
   redirectUri: string;
   pendingToken: string | null;
+  // The page to return to after login
+  redirect: string;
 };
 
 export type KeycloakCallback = {
@@ -14,6 +17,7 @@ export type KeycloakCallback = {
   codeVerifier: string;
   redirectUri: string;
   pendingToken: string | null;
+  redirect: string;
 };
 
 const base64Url = (bytes: Uint8Array) =>
@@ -34,9 +38,13 @@ const codeChallenge = async (verifier: string) =>
 
 /**
  * Redirect to the ITMO Keycloak login page (authorization code flow with PKCE).
- * The pending authentication token survives the redirect in session storage.
+ * The pending authentication token and the page to return to survive the redirect
+ * in session storage.
  */
-export async function startKeycloakLogin(pendingToken: string | null) {
+export async function startKeycloakLogin(
+  pendingToken: string | null,
+  redirect: string,
+) {
   const { data: config } = await keycloakConfigApiV1AuthKeycloakConfigGet({
     throwOnError: true,
   });
@@ -49,6 +57,7 @@ export async function startKeycloakLogin(pendingToken: string | null) {
       new URL(import.meta.env.BASE_URL, window.location.origin),
     ).toString(),
     pendingToken,
+    redirect,
   };
   sessionStorage.setItem(STORAGE_KEY, JSON.stringify(stored));
 
@@ -94,5 +103,6 @@ export function consumeKeycloakCallback(): KeycloakCallback | "error" | null {
     codeVerifier: stored.codeVerifier,
     redirectUri: stored.redirectUri,
     pendingToken: stored.pendingToken,
+    redirect: safeRedirect(stored.redirect),
   };
 }

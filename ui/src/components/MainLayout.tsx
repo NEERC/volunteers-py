@@ -1,6 +1,7 @@
 import AssessmentIcon from "@mui/icons-material/Assessment";
 import AssignmentIcon from "@mui/icons-material/Assignment";
 import CalendarMonthIcon from "@mui/icons-material/CalendarMonth";
+import CampaignIcon from "@mui/icons-material/Campaign";
 import CheckCircleIcon from "@mui/icons-material/CheckCircle";
 import ContactsIcon from "@mui/icons-material/Contacts";
 import DescriptionIcon from "@mui/icons-material/Description";
@@ -25,6 +26,7 @@ import {
   ListItemIcon,
   ListItemText,
   MenuItem,
+  Link as MuiLink,
   Select,
   type SelectChangeEvent,
   styled,
@@ -43,6 +45,7 @@ import { observer } from "mobx-react-lite";
 import { useId, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { getFormYearApiV1YearYearIdGet } from "@/client";
+import { COMMIT, REPOSITORY_URL } from "@/const";
 import { queryKeys, useYears } from "@/data";
 import { authStore } from "@/store/auth";
 import LanguageSwitcher from "./LanguageSwitcher";
@@ -133,6 +136,14 @@ const getRoutesConfig = (
           labelKey: "Results",
           icon: AssessmentIcon,
           path: `/${selectedYear}/results`,
+          adminOnly: true,
+        },
+        {
+          id: "mailings",
+          type: "simple",
+          labelKey: "Mailings",
+          icon: CampaignIcon,
+          path: `/${selectedYear}/mailings`,
           adminOnly: true,
         },
         {
@@ -344,7 +355,7 @@ export default observer(function MainLayout({
   const routes = getRoutesConfig(selectedYear, yearData.data || {});
 
   const drawer = (
-    <div>
+    <Box sx={{ display: "flex", flexDirection: "column", flexGrow: 1 }}>
       <Toolbar>
         <FormControl variant="standard" sx={{ minWidth: 120 }} fullWidth>
           <InputLabel id={yearSelectorId}>{t("Year")}</InputLabel>
@@ -403,7 +414,25 @@ export default observer(function MainLayout({
         )}
         <Divider />
       </List>
-    </div>
+      {COMMIT && (
+        <Typography
+          variant="caption"
+          color="text.secondary"
+          sx={{ mt: "auto", px: 2, py: 1 }}
+        >
+          {t("Version")}:{" "}
+          <MuiLink
+            href={`${REPOSITORY_URL}/commit/${COMMIT}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            color="inherit"
+            sx={{ fontFamily: "monospace" }}
+          >
+            {COMMIT.slice(0, 7)}
+          </MuiLink>
+        </Typography>
+      )}
+    </Box>
   );
 
   return (
