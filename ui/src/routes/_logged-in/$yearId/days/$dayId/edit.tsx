@@ -24,12 +24,14 @@ import {
 } from "@mui/icons-material";
 import ContentCopyIcon from "@mui/icons-material/ContentCopy";
 import DownloadIcon from "@mui/icons-material/Download";
+import SearchIcon from "@mui/icons-material/Search";
 import {
   Alert,
   Box,
   Button,
   Card,
   CardContent,
+  Chip,
   CircularProgress,
   Dialog,
   DialogActions,
@@ -39,6 +41,8 @@ import {
   FormControl,
   FormControlLabel,
   IconButton,
+  InputAdornment,
+  InputLabel,
   MenuItem,
   Paper,
   Radio,
@@ -46,6 +50,7 @@ import {
   Select,
   Snackbar,
   Switch,
+  TextField,
   Typography,
   useMediaQuery,
   useTheme,
@@ -214,9 +219,56 @@ function HoverDrawer({
 }) {
   const { t } = useTranslation();
   const [isHovered, setIsHovered] = useState(false);
+  const [nameFilter, setNameFilter] = useState("");
+  const [positionFilter, setPositionFilter] = useState("");
   const { isOver, setNodeRef } = useDroppable({
     id: "hover-drawer-area",
   });
+
+  // Unique desired positions among available volunteers and their counts
+  const positionCounts = React.useMemo(() => {
+    const counts: Record<string, number> = {};
+    unassignedUsers.forEach((user) => {
+      user.desired_positions.forEach((position) => {
+        counts[position.name] = (counts[position.name] || 0) + 1;
+      });
+    });
+    return counts;
+  }, [unassignedUsers]);
+
+  const uniquePositions = React.useMemo(
+    () => Object.keys(positionCounts).sort(),
+    [positionCounts],
+  );
+
+  // Filter available volunteers by name and desired position
+  const filteredUsers = React.useMemo(() => {
+    let filtered = unassignedUsers;
+
+    if (nameFilter.trim()) {
+      const searchTerm = nameFilter.toLowerCase();
+      filtered = filtered.filter((user) => {
+        const fullNameRu =
+          `${user.last_name_ru} ${user.first_name_ru}${user.patronymic_ru ? ` ${user.patronymic_ru}` : ""}`.toLowerCase();
+        const fullNameEn =
+          `${user.first_name_en} ${user.last_name_en}`.toLowerCase();
+
+        return (
+          fullNameRu.includes(searchTerm) || fullNameEn.includes(searchTerm)
+        );
+      });
+    }
+
+    if (positionFilter) {
+      filtered = filtered.filter((user) =>
+        user.desired_positions.some(
+          (position) => position.name === positionFilter,
+        ),
+      );
+    }
+
+    return filtered;
+  }, [unassignedUsers, nameFilter, positionFilter]);
 
   // Don't open drawer when dragging, but show if pinned
   // On mobile, only show if pinned (no hover)
@@ -429,7 +481,61 @@ function HoverDrawer({
           {unassignedUsers.length} {t("volunteers available")}
         </Typography>
 
-        <Divider sx={{ mb: 2 }} />
+        {/* Filters */}
+        <TextField
+          placeholder={t("Search by name...")}
+          value={nameFilter}
+          onChange={(e) => setNameFilter(e.target.value)}
+          fullWidth
+          size="small"
+          InputProps={{
+            startAdornment: (
+              <InputAdornment position="start">
+                <SearchIcon />
+              </InputAdornment>
+            ),
+          }}
+        />
+
+        {uniquePositions.length > 0 && (
+          <FormControl size="small" fullWidth sx={{ mt: 1.5 }}>
+            <InputLabel>{t("Filter by position")}</InputLabel>
+            <Select
+              value={positionFilter}
+              onChange={(e) => setPositionFilter(e.target.value)}
+              label={t("Filter by position")}
+            >
+              <MenuItem value="">
+                <em>{t("All positions")}</em>
+              </MenuItem>
+              {uniquePositions.map((position) => (
+                <MenuItem key={position} value={position}>
+                  {position} ({positionCounts[position]})
+                </MenuItem>
+              ))}
+            </Select>
+          </FormControl>
+        )}
+
+        {uniquePositions.length > 0 && (
+          <Box sx={{ display: "flex", flexWrap: "wrap", gap: 1, mt: 1.5 }}>
+            {uniquePositions.map((position) => (
+              <Chip
+                key={position}
+                label={`${position} (${positionCounts[position]})`}
+                size="small"
+                color={positionFilter === position ? "primary" : "default"}
+                variant={positionFilter === position ? "filled" : "outlined"}
+                onClick={() =>
+                  setPositionFilter(positionFilter === position ? "" : position)
+                }
+                sx={{ cursor: "pointer" }}
+              />
+            ))}
+          </Box>
+        )}
+
+        <Divider sx={{ mt: 2, mb: 2 }} />
 
         {unassignedUsers.length === 0 ? (
           <Typography
@@ -439,8 +545,16 @@ function HoverDrawer({
           >
             {t("All volunteers have been assigned to positions")}
           </Typography>
+        ) : filteredUsers.length === 0 ? (
+          <Typography
+            variant="body2"
+            color="text.secondary"
+            sx={{ textAlign: "center", py: 4 }}
+          >
+            {t("No volunteers found matching your search")}
+          </Typography>
         ) : (
-          unassignedUsers.map((user) => (
+          filteredUsers.map((user) => (
             <DraggableDetailedUserCard
               key={user.user_id}
               user={user}
