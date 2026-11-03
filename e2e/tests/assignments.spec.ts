@@ -42,6 +42,19 @@ class AssignmentBoard {
       this.page.getByRole("heading", { name: `Day Assignments - id=${dayId}` }),
     ).toBeVisible();
     await expect(this.page.getByText("Available Volunteers")).toBeVisible();
+    await expect(
+      this.page.getByRole("textbox", { name: "Search" }),
+    ).toBeInViewport();
+    await expect(
+      this.page.getByRole("combobox", { name: "Filter" }),
+    ).toBeInViewport();
+    await expect(
+      this.page.getByRole("combobox", { name: "Sort" }),
+    ).toBeInViewport();
+    await this.page.getByRole("combobox", { name: "Filter" }).click();
+    await this.page.getByRole("option", { name: "All positions" }).click();
+    await this.page.getByRole("combobox", { name: "Sort" }).click();
+    await this.page.getByRole("option", { name: "Original order" }).click();
   }
 
   /** Volunteer card, wherever it is: in the drawer or in a position. */
