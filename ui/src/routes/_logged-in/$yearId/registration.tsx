@@ -44,6 +44,7 @@ type RegistrationFormValues = {
   itmo_group: string;
   comments: string;
   needs_invitation: boolean;
+  lives_in_vyazma: boolean;
   first_name_ru: string;
   last_name_ru: string;
   first_name_en: string;
@@ -81,6 +82,7 @@ function RouteComponent() {
       itmo_group: year?.itmo_group ?? "",
       comments: year?.comments ?? "",
       needs_invitation: year?.needs_invitation ?? false,
+      lives_in_vyazma: year?.lives_in_vyazma ?? false,
       first_name_ru: user?.first_name_ru ?? "",
       last_name_ru: user?.last_name_ru ?? "",
       first_name_en: user?.first_name_en ?? "",
@@ -101,6 +103,7 @@ function RouteComponent() {
       comments: Yup.string(),
       additional_skills: Yup.string(),
       needs_invitation: Yup.boolean(),
+      lives_in_vyazma: Yup.boolean(),
       first_name_ru: Yup.string().required(t("Required")),
       last_name_ru: Yup.string().required(t("Required")),
       first_name_en: Yup.string().required(t("Required")),
@@ -124,6 +127,7 @@ function RouteComponent() {
             comments: values.comments,
             additional_skills: values.additional_skills,
             needs_invitation: values.needs_invitation,
+            lives_in_vyazma: values.lives_in_vyazma,
           },
           userData: {
             first_name_ru: values.first_name_ru,
@@ -453,6 +457,22 @@ function RouteComponent() {
                 />
                 <Typography>
                   {t("I need an invitation for work/study")}
+                </Typography>
+              </Box>
+            </FormControl>
+          </Box>
+
+          <Box sx={{ mb: 3 }}>
+            <FormControl>
+              <Box sx={{ display: "flex", alignItems: "center" }}>
+                <Checkbox
+                  checked={formik.values.lives_in_vyazma}
+                  onChange={formik.handleChange}
+                  name="lives_in_vyazma"
+                  disabled={!year.open_for_registration}
+                />
+                <Typography>
+                  {t("I live in the dormitory at Vyazemsky Pereulok 5/7")}
                 </Typography>
               </Box>
             </FormControl>

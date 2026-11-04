@@ -94,6 +94,7 @@ export type ApplicationFormYearSaveRequest = {
     comments?: string;
     additional_skills?: string;
     needs_invitation?: boolean;
+    lives_in_vyazma?: boolean;
 };
 
 export type ApplicationFormYearSavedResponse = {
@@ -105,6 +106,7 @@ export type ApplicationFormYearSavedResponse = {
     comments: string;
     additional_skills: string;
     needs_invitation: boolean;
+    lives_in_vyazma: boolean;
     open_for_registration: boolean;
 };
 
@@ -596,6 +598,7 @@ export type RegistrationFormItem = {
     comments: string;
     additional_skills: string;
     needs_invitation: boolean;
+    lives_in_vyazma: boolean;
     desired_positions: Array<PositionOut>;
     experience: Array<ExperienceItem>;
     previous_year_xp: number;

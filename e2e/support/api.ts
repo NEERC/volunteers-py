@@ -238,6 +238,7 @@ export class Api {
       comments?: string;
       additional_skills?: string;
       needs_invitation?: boolean;
+      lives_in_vyazma?: boolean;
     },
   ) {
     return this.post(`/year/${yearId}`, data);

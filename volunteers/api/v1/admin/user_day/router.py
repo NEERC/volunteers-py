@@ -149,7 +149,7 @@ async def export_day_data(
             volunteer.first_name_en,
             volunteer.last_name_en,
             "" if volunteer.isu_id is None else str(volunteer.isu_id),
-            form.itmo_group or "",
+            form.extras.itmo_group or "",
             telegram_handle,
             "☆" * rank_stars_count,
             assignment.position.name,

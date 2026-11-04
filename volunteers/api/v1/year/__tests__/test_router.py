@@ -81,8 +81,7 @@ def test_application_form(test_user: User, test_year: Year) -> ApplicationForm:
         year_id=test_year.id,
         user_id=test_user.id,
         user=test_user,
-        itmo_group="M3238",
-        comments="Test comments",
+        extra_fields={"itmo_group": "M3238", "comments": "Test comments"},
     )
 
 

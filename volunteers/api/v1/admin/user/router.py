@@ -164,8 +164,8 @@ def _form_summary(form: ApplicationForm) -> MergeFormSummary:
     return MergeFormSummary(
         form_id=form.id,
         user_id=form.user_id,
-        itmo_group=form.itmo_group,
-        comments=form.comments,
+        itmo_group=form.extras.itmo_group,
+        comments=form.extras.comments,
         created_at=form.created_at,
         desired_positions=sorted(position.name for position in form.desired_positions),
         days=[

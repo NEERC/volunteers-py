@@ -16,6 +16,7 @@ class ApplicationFormYearSavedResponse(BaseSuccessResponse):
     comments: str = ""
     additional_skills: str = ""
     needs_invitation: bool = False
+    lives_in_vyazma: bool = False
     open_for_registration: bool
 
 
@@ -25,6 +26,7 @@ class ApplicationFormYearSaveRequest(BaseModel):
     comments: str = ""
     additional_skills: str = ""
     needs_invitation: bool = False
+    lives_in_vyazma: bool = False
 
 
 class YearOut(YearIn):

@@ -22,7 +22,7 @@ from volunteers.models import (
     Year,
 )
 from volunteers.models.attendance import Attendance
-from volunteers.schemas.application_form import ApplicationFormIn
+from volunteers.schemas.application_form import ApplicationFormExtraFields, ApplicationFormIn
 from volunteers.schemas.assessment import AssessmentEditIn, AssessmentIn
 from volunteers.schemas.day import DayEditIn, DayIn
 from volunteers.schemas.day_assignment import ConfirmationState
@@ -42,6 +42,16 @@ class ApplicationFormNotFound(DomainError):
 
     def __init__(self) -> None:
         super().__init__("Application form not found")
+
+
+def _extras_from_form_in(form: ApplicationFormIn) -> ApplicationFormExtraFields:
+    return ApplicationFormExtraFields(
+        itmo_group=form.itmo_group,
+        comments=form.comments,
+        additional_skills=form.additional_skills,
+        needs_invitation=form.needs_invitation,
+        lives_in_vyazma=form.lives_in_vyazma,
+    )
 
 
 class YearNotFound(DomainError):
@@ -822,10 +832,7 @@ class YearService(BaseService):
             created_form = ApplicationForm(
                 year_id=form.year_id,
                 user_id=form.user_id,
-                itmo_group=form.itmo_group,
-                comments=form.comments,
-                additional_skills=form.additional_skills,
-                needs_invitation=form.needs_invitation,
+                extra_fields=_extras_from_form_in(form).model_dump(),
             )
             session.add(created_form)
             await session.flush()
@@ -855,10 +862,7 @@ class YearService(BaseService):
             if not updated_form:
                 raise ApplicationFormNotFound()
 
-            updated_form.itmo_group = form.itmo_group
-            updated_form.comments = form.comments
-            updated_form.additional_skills = form.additional_skills
-            updated_form.needs_invitation = form.needs_invitation
+            updated_form.extra_fields = _extras_from_form_in(form).model_dump()
             await session.flush()
 
             # Delete existing associations

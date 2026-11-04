@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from typing import Any
+
 from sqlalchemy import (
     Boolean,
     Double,
@@ -9,7 +11,11 @@ from sqlalchemy import (
     String,
     UniqueConstraint,
 )
+from sqlalchemy.dialects.postgresql import JSONB
+from sqlalchemy.ext.mutable import MutableDict
 from sqlalchemy.orm import Mapped, mapped_column, relationship
+
+from volunteers.schemas.application_form import ApplicationFormExtraFields
 
 from .attendance import Attendance
 from .base import Base, TimestampMixin
@@ -107,10 +113,19 @@ class ApplicationForm(Base, TimestampMixin):
     user_id: Mapped[int] = mapped_column(ForeignKey("users.id"))
     user: Mapped[User] = relationship(back_populates="application_forms")
 
-    itmo_group: Mapped[str | None] = mapped_column(String, default="", nullable=True)
-    comments: Mapped[str] = mapped_column(String, default="")
-    additional_skills: Mapped[str] = mapped_column(String, default="", server_default="")
-    needs_invitation: Mapped[bool] = mapped_column(Boolean, default=False)
+    # Fields that do not participate in business logic (itmo_group, comments,
+    # additional_skills, needs_invitation, lives_in_vyazma, ...).
+    # Use the `extras` property for typed access.
+    extra_fields: Mapped[dict[str, Any]] = mapped_column(
+        MutableDict.as_mutable(JSONB),
+        default=dict,
+        server_default="{}",
+        nullable=False,
+    )
+
+    @property
+    def extras(self) -> ApplicationFormExtraFields:
+        return ApplicationFormExtraFields.model_validate(self.extra_fields or {})
 
     desired_positions: Mapped[set[Position]] = relationship(
         secondary="application_form_position_association",
