@@ -16,6 +16,14 @@ import {
   useNavigate,
   useSearch,
 } from "@tanstack/react-router";
+import {
+  type ColumnDef,
+  flexRender,
+  getCoreRowModel,
+  getSortedRowModel,
+  type SortingState,
+  useReactTable,
+} from "@tanstack/react-table";
 import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import type {
@@ -52,7 +60,7 @@ export const Route = createFileRoute("/_logged-in/$yearId/attendance")({
   },
 });
 
-interface VolunteerAttendance {
+export interface VolunteerAttendance {
   user_id: number;
   user_name: string;
   user_telegram: string | null;
@@ -61,6 +69,48 @@ interface VolunteerAttendance {
   hall_id: number | null;
   hall_name: string | null;
   attendanceByDay: Map<number, AttendanceItem>;
+}
+
+const ATTENDANCE_SORT_RANK: Record<Attendance, number> = {
+  yes: 0,
+  confirmed: 1,
+  late: 2,
+  sick: 3,
+  no: 4,
+  unknown: 5,
+};
+
+export function getAttendanceSortRank(
+  attendance: Attendance | undefined,
+): number {
+  return attendance === undefined ? 6 : ATTENDANCE_SORT_RANK[attendance];
+}
+
+export function flattenVolunteers(
+  attendance: AttendanceItem[],
+): VolunteerAttendance[] {
+  const volunteerMap = new Map<string, VolunteerAttendance>();
+
+  for (const item of attendance) {
+    const key = `${item.user_id}-${item.position_id}`;
+    let volunteer = volunteerMap.get(key);
+    if (!volunteer) {
+      volunteer = {
+        user_id: item.user_id,
+        user_name: item.user_name,
+        user_telegram: item.user_telegram,
+        position_id: item.position_id,
+        position_name: item.position_name,
+        hall_id: item.hall_id,
+        hall_name: item.hall_name,
+        attendanceByDay: new Map(),
+      };
+      volunteerMap.set(key, volunteer);
+    }
+    volunteer.attendanceByDay.set(item.day_id, item);
+  }
+
+  return Array.from(volunteerMap.values());
 }
 
 function RouteComponent() {
@@ -97,68 +147,11 @@ function RouteComponent() {
     return Array.from(dayMap.values()).sort((a, b) => a.day_id - b.day_id);
   }, [attendanceData]);
 
-  // Group volunteers by position, then by volunteer
-  const volunteersByPosition = useMemo(() => {
-    if (!attendanceData?.attendance)
-      return new Map<number, VolunteerAttendance[]>();
-
-    const positionMap = new Map<number, Map<number, VolunteerAttendance>>();
-
-    for (const item of attendanceData.attendance) {
-      // Get or create position group
-      if (!positionMap.has(item.position_id)) {
-        positionMap.set(item.position_id, new Map());
-      }
-      const positionVolunteers = positionMap.get(item.position_id);
-      if (!positionVolunteers) continue;
-
-      // Get or create volunteer
-      if (!positionVolunteers.has(item.user_id)) {
-        positionVolunteers.set(item.user_id, {
-          user_id: item.user_id,
-          user_name: item.user_name,
-          user_telegram: item.user_telegram,
-          position_id: item.position_id,
-          position_name: item.position_name,
-          hall_id: item.hall_id,
-          hall_name: item.hall_name,
-          attendanceByDay: new Map(),
-        });
-      }
-
-      const volunteer = positionVolunteers.get(item.user_id);
-      if (!volunteer) continue;
-      volunteer.attendanceByDay.set(item.day_id, item);
-    }
-
-    // Convert to array format
-    const result = new Map<number, VolunteerAttendance[]>();
-    for (const [positionId, volunteers] of positionMap.entries()) {
-      result.set(positionId, Array.from(volunteers.values()));
-    }
-
-    return result;
-  }, [attendanceData]);
-
-  // Get position names for grouping
-  const positions = useMemo(() => {
-    if (!attendanceData?.attendance) return [];
-    const positionMap = new Map<
-      number,
-      { position_id: number; position_name: string }
-    >();
-    for (const item of attendanceData.attendance) {
-      if (!positionMap.has(item.position_id)) {
-        positionMap.set(item.position_id, {
-          position_id: item.position_id,
-          position_name: item.position_name,
-        });
-      }
-    }
-    return Array.from(positionMap.values()).sort(
-      (a, b) => a.position_id - b.position_id,
-    );
-  }, [attendanceData]);
+  // Flatten attendance data into one row per volunteer+position
+  const volunteers = useMemo(
+    () => flattenVolunteers(attendanceData?.attendance ?? []),
+    [attendanceData],
+  );
 
   // Filter days based on selected day
   const displayedDays = useMemo(() => {
@@ -167,6 +160,38 @@ function RouteComponent() {
     }
     return days;
   }, [days, selectedDayId]);
+
+  const columns = useMemo<ColumnDef<VolunteerAttendance>[]>(
+    () => [
+      { accessorKey: "position_name", header: t("Position") },
+      {
+        id: "hall_name",
+        accessorFn: (volunteer) => volunteer.hall_name ?? "",
+        header: t("Hall"),
+      },
+      { accessorKey: "user_name", header: t("Name") },
+      ...displayedDays.map((day) => ({
+        id: `day-${day.day_id}`,
+        accessorFn: (volunteer: VolunteerAttendance) =>
+          getAttendanceSortRank(
+            volunteer.attendanceByDay.get(day.day_id)?.attendance,
+          ),
+        header: day.day_name,
+      })),
+    ],
+    [t, displayedDays],
+  );
+
+  const [sorting, setSorting] = useState<SortingState>([]);
+
+  const table = useReactTable({
+    data: volunteers,
+    columns,
+    state: { sorting },
+    onSortingChange: setSorting,
+    getCoreRowModel: getCoreRowModel(),
+    getSortedRowModel: getSortedRowModel(),
+  });
 
   const handleDayTabChange = (
     _: React.SyntheticEvent,
@@ -264,37 +289,47 @@ function RouteComponent() {
         <TableContainer component={Paper}>
           <Table stickyHeader size="small">
             <TableHead>
-              <TableRow>
-                <TableCell>{t("Position")}</TableCell>
-                <TableCell>{t("Hall")}</TableCell>
-                <TableCell>{t("Name")}</TableCell>
-                {displayedDays.map((day) => (
-                  <TableCell key={day.day_id} align="center">
-                    {day.day_name}
-                  </TableCell>
-                ))}
-              </TableRow>
+              {table.getHeaderGroups().map((headerGroup) => (
+                <TableRow key={headerGroup.id}>
+                  {headerGroup.headers.map((header) => (
+                    <TableCell
+                      key={header.id}
+                      onClick={header.column.getToggleSortingHandler()}
+                      sx={{
+                        cursor: header.column.getCanSort()
+                          ? "pointer"
+                          : "default",
+                        userSelect: "none",
+                        "&:hover": header.column.getCanSort()
+                          ? { backgroundColor: "action.hover" }
+                          : {},
+                      }}
+                    >
+                      {flexRender(
+                        header.column.columnDef.header,
+                        header.getContext(),
+                      )}
+                      {header.column.getIsSorted() === "asc" && " ↑"}
+                      {header.column.getIsSorted() === "desc" && " ↓"}
+                    </TableCell>
+                  ))}
+                </TableRow>
+              ))}
             </TableHead>
             <TableBody>
-              {positions.map((position) => {
-                const volunteers =
-                  volunteersByPosition.get(position.position_id) || [];
-                return volunteers.map((volunteer, idx) => (
-                  <VolunteerRow
-                    key={`${volunteer.user_id}-${position.position_id}`}
-                    volunteer={volunteer}
-                    positionName={position.position_name}
-                    days={displayedDays}
-                    canEditAttendance={canEditAttendance}
-                    onAttendanceChange={handleAttendanceChange}
-                    onAddAssessment={handleAddAssessment}
-                    onEditAssessment={handleEditAssessment}
-                    onDeleteAssessment={handleDeleteAssessment}
-                    isFirstInPosition={idx === 0}
-                    selectedAttendance={selectedAttendance}
-                  />
-                ));
-              })}
+              {table.getRowModel().rows.map((row) => (
+                <VolunteerRow
+                  key={row.id}
+                  volunteer={row.original}
+                  days={displayedDays}
+                  canEditAttendance={canEditAttendance}
+                  onAttendanceChange={handleAttendanceChange}
+                  onAddAssessment={handleAddAssessment}
+                  onEditAssessment={handleEditAssessment}
+                  onDeleteAssessment={handleDeleteAssessment}
+                  selectedAttendance={selectedAttendance}
+                />
+              ))}
             </TableBody>
           </Table>
         </TableContainer>
@@ -305,7 +340,6 @@ function RouteComponent() {
 
 interface VolunteerRowProps {
   volunteer: VolunteerAttendance;
-  positionName: string;
   days: Array<{ day_id: number; day_name: string }>;
   canEditAttendance: boolean;
   onAttendanceChange: (
@@ -323,20 +357,17 @@ interface VolunteerRowProps {
     comment: string | null,
   ) => Promise<void>;
   onDeleteAssessment: (assessmentId: number) => Promise<void>;
-  isFirstInPosition: boolean;
   selectedAttendance: Attendance;
 }
 
 function VolunteerRow({
   volunteer,
-  positionName,
   days,
   canEditAttendance,
   onAttendanceChange,
   onAddAssessment,
   onEditAssessment,
   onDeleteAssessment,
-  isFirstInPosition,
   selectedAttendance,
 }: VolunteerRowProps) {
   const { t } = useTranslation();
@@ -354,11 +385,9 @@ function VolunteerRow({
   return (
     <TableRow>
       <TableCell sx={{ py: 0.5 }}>
-        {isFirstInPosition && (
-          <Typography variant="body2" fontWeight="medium">
-            {positionName}
-          </Typography>
-        )}
+        <Typography variant="body2" fontWeight="medium">
+          {volunteer.position_name}
+        </Typography>
       </TableCell>
       <TableCell sx={{ py: 0.5 }}>
         <Typography variant="body2">{volunteer.hall_name || "-"}</Typography>

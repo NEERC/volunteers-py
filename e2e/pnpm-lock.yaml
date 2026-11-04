@@ -9,8 +9,8 @@ importers:
   .:
     devDependencies:
       '@playwright/test':
-        specifier: 1.55.1
-        version: 1.55.1
+        specifier: 1.61.1
+        version: 1.61.1
       '@types/node':
         specifier: ^22.15.0
         version: 22.20.5
@@ -26,8 +26,8 @@ importers:
 
 packages:
 
-  '@playwright/test@1.55.1':
-    resolution: {integrity: sha512-IVAh/nOJaw6W9g+RJVlIQJ6gSiER+ae6mKQ5CX1bERzQgbC1VSeBlwdvczT7pxb0GWiyrxH4TGKbMfDb4Sq/ig==}
+  '@playwright/test@1.61.1':
+    resolution: {integrity: sha512-8nKv6+0RJSL9FE4jYOEGXnPeM/Hg12qZpmqzZjRh3qM0Y7c3z1mrOTfFLids72RDQYVh9WpLEfR5WdpNX4fkig==}
     engines: {node: '>=18'}
     hasBin: true
 
@@ -76,13 +76,13 @@ packages:
   pgpass@1.0.5:
     resolution: {integrity: sha512-FdW9r/jQZhSeohs1Z3sI1yxFQNFvMcnmfuj4WBMUTxOrAyLMaTcE1aAMBiTlbMNaXvBCQuVi0R7hd8udDSP7ug==}
 
-  playwright-core@1.55.1:
-    resolution: {integrity: sha512-Z6Mh9mkwX+zxSlHqdr5AOcJnfp+xUWLCt9uKV18fhzA8eyxUd8NUWzAjxUh55RZKSYwDGX0cfaySdhZJGMoJ+w==}
+  playwright-core@1.61.1:
+    resolution: {integrity: sha512-h7Qlt6m4REp25qvIdvbDtVmD4LqVXfpRxhORv9L0jzETM05p4fuPJ3dKyuSXQxDSbXnmS79HAgi9589lGSpLkg==}
     engines: {node: '>=18'}
     hasBin: true
 
-  playwright@1.55.1:
-    resolution: {integrity: sha512-cJW4Xd/G3v5ovXtJJ52MAOclqeac9S/aGGgRzLabuF8TnIb6xHvMzKIa6JmrRzUkeXJgfL1MhukP0NK6l39h3A==}
+  playwright@1.61.1:
+    resolution: {integrity: sha512-DWnY5o3YbLWK4GovuAVwpqL+1VwGNdUGrRr++8j8PtQQzvAVZUIMjKQ90fY689sEJZJBbZVw1rXaOKSTitkzPQ==}
     engines: {node: '>=18'}
     hasBin: true
 
@@ -120,9 +120,9 @@ packages:
 
 snapshots:
 
-  '@playwright/test@1.55.1':
+  '@playwright/test@1.61.1':
     dependencies:
-      playwright: 1.55.1
+      playwright: 1.61.1
 
   '@types/node@22.20.5':
     dependencies:
@@ -172,11 +172,11 @@ snapshots:
     dependencies:
       split2: 4.2.0
 
-  playwright-core@1.55.1: {}
+  playwright-core@1.61.1: {}
 
-  playwright@1.55.1:
+  playwright@1.61.1:
     dependencies:
-      playwright-core: 1.55.1
+      playwright-core: 1.61.1
     optionalDependencies:
       fsevents: 2.3.2
 
