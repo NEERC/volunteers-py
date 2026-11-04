@@ -81,8 +81,13 @@ pnpm --dir e2e stack
 
 Open http://localhost:3001, press "Sign in with ITMO ID" and enter any username on the mock
 login page. Users of the last run (`e2e-admin-<tag>`, `e2e-vol1-<tag>`, ...) are listed in
-`.state/users.json`; a new username registers a new user. Telegram notifications sent by the
-backend are at http://localhost:8099/__mock/telegram/messages (in memory, reset on restart).
+`.state/users.json`; a new username registers a new user.
+
+The mock remembers every account used on its login page in `.state/mock-users.json`
+(path overridable with `E2E_MOCK_USERS_FILE`) and shows a "Sign in as <user>" quick login
+button for each of them under the form — a single click signs in as that account. Telegram
+notifications sent by the backend are at http://localhost:8099/__mock/telegram/messages
+(in memory, reset on restart).
 
 ## Known issues
 

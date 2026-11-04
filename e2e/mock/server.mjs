@@ -3,20 +3,54 @@
 //    (/realms/<realm>/protocol/openid-connect/{auth,token,userinfo})
 //  - Telegram Bot API: notifications sent by the backend (/bot<token>/<method>)
 //
-// The mock is stateless for Keycloak: the authorization code (and the access token)
-// is the base64url-encoded user profile entered on the login page, so any username
-// can be used for manual testing. Telegram calls are recorded in memory and can be
-// read via GET /__mock/telegram/messages.
+// The authorization code (and the access token) is the base64url-encoded user
+// profile entered on the login page, so any username can be used for manual
+// testing. Every user who signs in is remembered in a JSON file and offered a
+// quick login button on the login page. Telegram calls are recorded in memory
+// and can be read via GET /__mock/telegram/messages.
 //
 // On test stands the mock runs in a container behind the stand proxy, which routes
 // /__mock/ to it, so the Keycloak endpoints are also served under /__mock/realms/<realm>.
 import { createHash, randomInt } from "node:crypto";
+import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { createServer } from "node:http";
+import { dirname, resolve } from "node:path";
+import { fileURLToPath } from "node:url";
 
 const PORT = Number(process.env.E2E_MOCK_PORT ?? 8099);
 const HOST = process.env.E2E_MOCK_HOST ?? "127.0.0.1";
+const USERS_FILE =
+  process.env.E2E_MOCK_USERS_FILE ??
+  resolve(dirname(fileURLToPath(import.meta.url)), "../.state/mock-users.json");
 
 const telegramCalls = [];
+
+// Keycloak users seen by the mock, keyed by username (the same username always
+// maps to the same account). Persisted to USERS_FILE on every sign-in.
+const users = (() => {
+  try {
+    const data = JSON.parse(readFileSync(USERS_FILE, "utf8"));
+    return data && typeof data === "object" ? data : {};
+  } catch {
+    return {};
+  }
+})();
+
+const saveUsers = () => {
+  mkdirSync(dirname(USERS_FILE), { recursive: true });
+  writeFileSync(USERS_FILE, `${JSON.stringify(users, null, 2)}\n`);
+};
+
+const rememberUser = ({ username, given_name, family_name, email }) => {
+  users[username] = {
+    username,
+    given_name: given_name || null,
+    family_name: family_name || null,
+    email: email || `${username}@e2e.test`,
+    last_login: new Date().toISOString(),
+  };
+  saveUsers();
+};
 
 const encode = (value) =>
   Buffer.from(JSON.stringify(value)).toString("base64url");
@@ -74,6 +108,39 @@ const escapeHtml = (value) =>
       ],
   );
 
+const AUTH_PARAMS = ["client_id", "redirect_uri", "state", "code_challenge", "code_challenge_method"];
+
+const hiddenInputs = (fields) =>
+  Object.entries(fields)
+    .map(
+      ([k, v]) => `<input type="hidden" name="${escapeHtml(k)}" value="${escapeHtml(v ?? "")}">`,
+    )
+    .join("\n    ");
+
+/** One tiny form per remembered user: submitting it signs in as that user. */
+const quickLogin = (params) => {
+  const known = Object.values(users).sort((a, b) => b.last_login.localeCompare(a.last_login));
+  if (known.length === 0) return "";
+  const authFields = Object.fromEntries(
+    AUTH_PARAMS.map((k) => [k, params[k] ?? ""]),
+  );
+  return `
+  <section id="quick-login">
+    <h2>Quick login</h2>
+    <p class="hint">Previously used accounts from <code>${escapeHtml(USERS_FILE)}</code>:</p>
+    ${known
+      .map((u) => {
+        const name = [u.given_name, u.family_name].filter(Boolean).join(" ");
+        return `
+    <form method="post" action="login">
+      ${hiddenInputs({ ...authFields, ...u, last_login: undefined })}
+      <button type="submit">Sign in as ${escapeHtml(u.username)}${name ? ` (${escapeHtml(name)})` : ""}</button>
+    </form>`;
+      })
+      .join("")}
+  </section>`;
+};
+
 const loginPage = (params, error) => `<!doctype html>
 <html lang="en">
 <head><meta charset="utf-8"><title>Mock ITMO ID</title>
@@ -82,6 +149,7 @@ const loginPage = (params, error) => `<!doctype html>
   label { display: block; margin-top: 12px; font-size: 14px; }
   input { width: 100%; padding: 8px; box-sizing: border-box; }
   button { margin-top: 16px; padding: 10px 16px; }
+  #quick-login button { display: block; width: 100%; margin-top: 8px; text-align: left; }
   .error { color: #b00020; }
   .hint { color: #555; font-size: 13px; }
 </style></head>
@@ -103,6 +171,7 @@ const loginPage = (params, error) => `<!doctype html>
     <label>Email <input name="email" id="email" autocomplete="off"></label>
     <button type="submit" id="kc-login">Sign In</button>
   </form>
+  ${quickLogin(params)}
 </body>
 </html>`;
 
@@ -134,6 +203,12 @@ async function handleKeycloak(req, res, url, action) {
     if (!username) {
       return send(res, 200, loginPage(form, "Username is required"));
     }
+    rememberUser({
+      username,
+      given_name: form.given_name,
+      family_name: form.family_name,
+      email: form.email,
+    });
     const code = encode({
       sub: `kc-${username}`,
       preferred_username: username,
