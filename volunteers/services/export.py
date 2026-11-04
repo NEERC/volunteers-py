@@ -167,6 +167,8 @@ class ExportService(BaseService):
                 [p.name for p in sorted(form.desired_positions, key=lambda x: x.id)]
             )
 
+            extras = form.extras
+
             writer.writerow(
                 [
                     user.id,
@@ -182,9 +184,9 @@ class ExportService(BaseService):
                     user.gender or "",
                     user.isu_id or "",
                     "Yes" if user.is_admin else "No",
-                    form.itmo_group or "",
-                    form.comments or "",
-                    "Yes" if form.needs_invitation else "No",
+                    extras.itmo_group or "",
+                    extras.comments or "",
+                    "Yes" if extras.needs_invitation else "No",
                     desired_positions,
                     form.created_at.isoformat() if hasattr(form, "created_at") else "",
                     form.updated_at.isoformat() if hasattr(form, "updated_at") else "",

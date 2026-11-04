@@ -88,15 +88,13 @@ def sample_application_forms() -> list[ApplicationForm]:
         id=1,
         year_id=1,
         user_id=1,
-        itmo_group="M3234",
-        comments="",
+        extra_fields={"itmo_group": "M3234", "comments": ""},
     )
     form2 = ApplicationForm(
         id=2,
         year_id=2,
         user_id=1,
-        itmo_group="M3235",
-        comments="",
+        extra_fields={"itmo_group": "M3235", "comments": ""},
     )
     return [form1, form2]
 

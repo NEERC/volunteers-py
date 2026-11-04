@@ -43,6 +43,7 @@ export function DetailedUserCard({
     user.additional_skills ||
     user.gender ||
     user.needs_invitation ||
+    user.lives_in_vyazma ||
     (user.experience && user.experience.length > 0);
 
   return (
@@ -191,6 +192,17 @@ export function DetailedUserCard({
           <Box sx={{ mt: 0.5 }}>
             <Typography variant="body2" sx={{ mb: 0.25, fontSize: "0.75rem" }}>
               <strong>{t("I need an invitation for work/study")}</strong> ✓
+            </Typography>
+          </Box>
+        )}
+
+        {user.lives_in_vyazma && (
+          <Box sx={{ mt: 0.5 }}>
+            <Typography variant="body2" sx={{ mb: 0.25, fontSize: "0.75rem" }}>
+              <strong>
+                {t("I live in the dormitory at Vyazemsky Pereulok 5/7")}
+              </strong>{" "}
+              ✓
             </Typography>
           </Box>
         )}

@@ -128,7 +128,7 @@ async def test_update_form_success(year_service: YearService) -> None:
         year_id=1, user_id=2, itmo_group="G2", comments="updated", desired_positions_ids={4, 5}
     )
     dummy_form: ApplicationForm = ApplicationForm(
-        id=100, year_id=1, user_id=2, itmo_group="A", comments="old"
+        id=100, year_id=1, user_id=2, extra_fields={"itmo_group": "A", "comments": "old"}
     )
     mock_result: MagicMock = MagicMock()
     mock_result.scalar_one_or_none.return_value = dummy_form
@@ -139,8 +139,8 @@ async def test_update_form_success(year_service: YearService) -> None:
     mock_session.add = MagicMock()
     with patch.object(year_service, "session_scope", return_value=make_async_cm(mock_session)):
         await year_service.update_form(form_data)
-        assert dummy_form.itmo_group == form_data.itmo_group
-        assert dummy_form.comments == form_data.comments
+        assert dummy_form.extra_fields["itmo_group"] == form_data.itmo_group
+        assert dummy_form.extra_fields["comments"] == form_data.comments
         mock_session.flush.assert_awaited_once()
         mock_session.commit.assert_awaited_once()
         assert mock_session.add.call_count == len(form_data.desired_positions_ids)

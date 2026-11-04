@@ -63,6 +63,7 @@ class RegistrationFormItem(BaseModel):
     comments: str
     additional_skills: str
     needs_invitation: bool
+    lives_in_vyazma: bool
     desired_positions: list[PositionOut]  # TODO: change to list[str]
     experience: list[ExperienceItem]
     previous_year_xp: float

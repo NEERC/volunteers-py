@@ -101,7 +101,7 @@ class UserService(BaseService):
                         break
 
                 is_registered = user.id in registered_user_ids
-                itmo_group = application_form.itmo_group if application_form else None
+                itmo_group = application_form.extras.itmo_group if application_form else None
                 user_data.append((user, is_registered, itmo_group))
 
             return user_data
