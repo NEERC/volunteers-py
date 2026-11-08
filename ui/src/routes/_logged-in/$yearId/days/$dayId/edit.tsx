@@ -19,6 +19,8 @@ import {
 import { CSS } from "@dnd-kit/utilities";
 import ContentCopyIcon from "@mui/icons-material/ContentCopy";
 import DownloadIcon from "@mui/icons-material/Download";
+import FemaleIcon from "@mui/icons-material/Female";
+import MaleIcon from "@mui/icons-material/Male";
 import {
   Alert,
   Box,
@@ -516,11 +518,17 @@ function HallGroupColumn({
   const { t } = useTranslation();
   const [isHovered, setIsHovered] = useState(false);
 
-  // Calculate total volunteer count for this hall (across all positions)
-  const totalCount = hallWithPositions.positions.reduce(
-    (sum, position) => sum + position.assigned_users.length,
-    0,
+  // Calculate volunteer counts for this hall (across all positions)
+  const allAssignedUsers = hallWithPositions.positions.flatMap(
+    (position) => position.assigned_users,
   );
+  const totalCount = allAssignedUsers.length;
+  const maleCount = allAssignedUsers.filter(
+    (user) => user.gender === "male",
+  ).length;
+  const femaleCount = allAssignedUsers.filter(
+    (user) => user.gender === "female",
+  ).length;
 
   return (
     <Paper
@@ -549,9 +557,29 @@ function HallGroupColumn({
         <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>
           {hallWithPositions.name}
         </Typography>
-        <Typography variant="body2" color="text.secondary">
-          {totalCount} {totalCount === 1 ? t("volunteer") : t("volunteers")}
-        </Typography>
+        <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
+          <Box
+            sx={{ display: "flex", alignItems: "center", gap: 0.25 }}
+            title={t("Male")}
+          >
+            <MaleIcon sx={{ fontSize: 18 }} color="primary" />
+            <Typography variant="body2" color="text.secondary">
+              {maleCount}
+            </Typography>
+          </Box>
+          <Box
+            sx={{ display: "flex", alignItems: "center", gap: 0.25 }}
+            title={t("Female")}
+          >
+            <FemaleIcon sx={{ fontSize: 18 }} color="secondary" />
+            <Typography variant="body2" color="text.secondary">
+              {femaleCount}
+            </Typography>
+          </Box>
+          <Typography variant="body2" color="text.secondary">
+            {totalCount} {totalCount === 1 ? t("volunteer") : t("volunteers")}
+          </Typography>
+        </Box>
       </Box>
       <Divider sx={{ mb: 2 }} />
 
