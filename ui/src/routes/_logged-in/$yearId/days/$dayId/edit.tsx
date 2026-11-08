@@ -329,7 +329,7 @@ function PositionColumn({
           {position.name}
         </Typography>
         <Typography variant="body2" color="text.secondary">
-          {totalCount} {totalCount === 1 ? t("volunteer") : t("volunteers")}
+          {t("volunteer", { count: totalCount })}
         </Typography>
       </Box>
       <Divider sx={{ mb: 1 }} />
@@ -456,10 +456,7 @@ function PositionInHallColumn({
           {position.name}
         </Typography>
         <Typography variant="caption" color="text.secondary">
-          {position.assigned_users.length}{" "}
-          {position.assigned_users.length === 1
-            ? t("volunteer")
-            : t("volunteers")}
+          {t("volunteer", { count: position.assigned_users.length })}
         </Typography>
       </Box>
       <Divider sx={{ mb: 1 }} />
@@ -577,7 +574,7 @@ function HallGroupColumn({
             </Typography>
           </Box>
           <Typography variant="body2" color="text.secondary">
-            {totalCount} {totalCount === 1 ? t("volunteer") : t("volunteers")}
+            {t("volunteer", { count: totalCount })}
           </Typography>
         </Box>
       </Box>
