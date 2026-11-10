@@ -37,6 +37,7 @@ import {
   Typography,
 } from "@mui/material";
 import { useNavigate } from "@tanstack/react-router";
+import { AxiosError } from "axios";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import type {
@@ -61,6 +62,7 @@ import {
 } from "@/data/use-mailings";
 import { useDebouncedValue } from "@/hooks/useDebouncedValue";
 import { apiErrorMessage } from "@/utils/apiErrorHandling";
+import { ExpressionEditor } from "./ExpressionEditor";
 import { ATTENDANCE_LABELS, MailingStatusChip } from "./status";
 import { TelegramMessage } from "./TelegramMessage";
 import { TemplateEditor } from "./TemplateEditor";
@@ -89,6 +91,25 @@ const isFilterEmpty = (filter: MailingFilter) =>
   !filter.hall_ids?.length &&
   !filter.no_hall &&
   !filter.attendance?.length;
+
+type FilterErrorDetail = { message?: string; line?: number | null };
+
+/** The {message, line} detail of a rejected recipients request, for editor markers. */
+function filterErrorFrom(
+  error: unknown,
+): { message: string; line: number | null } | null {
+  if (!(error instanceof AxiosError)) return null;
+  const detail = error.response?.data?.detail as
+    | string
+    | FilterErrorDetail
+    | undefined;
+  if (typeof detail !== "object" || detail === null || !detail.message)
+    return null;
+  return {
+    message: detail.message,
+    line: typeof detail.line === "number" ? detail.line : null,
+  };
+}
 
 function errorText(
   t: (key: string, options?: Record<string, unknown>) => string,
@@ -134,6 +155,8 @@ export function MailingDraftEditor({ mailing }: { mailing: MailingResponse }) {
   const { data: halls } = useYearHalls(yearId);
   const recipients = useMailingRecipients(yearId, debouncedDraft);
   const recipientList = recipients.data?.recipients ?? [];
+  const filterError = filterErrorFrom(recipients.error);
+  const expressionErrors = filterError ? [{ ...filterError }] : [];
 
   // Recipient of the preview: the chosen one while it's in the mailing
   const [chosen, setChosen] = useState<Selection | null>(null);
@@ -378,6 +401,25 @@ export function MailingDraftEditor({ mailing }: { mailing: MailingResponse }) {
             />
           </Box>
 
+          <Box sx={{ mb: 2 }}>
+            <Typography variant="subtitle1" gutterBottom>
+              {t("Expression filter")}
+            </Typography>
+            <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+              {t(
+                "An optional Python expression over the same variables as the message template. It is applied to every application form, or to every assignment if it mentions the assignment variables (assignment, day, position, hall). Empty means no filter.",
+              )}
+            </Typography>
+            <ExpressionEditor
+              value={filter.expression ?? ""}
+              onChange={(expression) =>
+                updateFilter({ expression: expression || null })
+              }
+              errors={expressionErrors}
+              testId="mailing-filter-expression"
+            />
+          </Box>
+
           {usesAssignment && !filterEmpty && (
             <Box sx={{ display: "flex", alignItems: "center", gap: 2, mb: 2 }}>
               <Typography variant="body2">
@@ -416,10 +458,11 @@ export function MailingDraftEditor({ mailing }: { mailing: MailingResponse }) {
           )}
           {recipients.error && (
             <Alert severity="error" sx={{ mb: 2 }}>
-              {apiErrorMessage(
-                recipients.error,
-                t("Failed to load recipients"),
-              )}
+              {filterError?.message ??
+                apiErrorMessage(
+                  recipients.error,
+                  t("Failed to load recipients"),
+                )}
             </Alert>
           )}
 

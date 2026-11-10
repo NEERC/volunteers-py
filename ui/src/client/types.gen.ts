@@ -402,6 +402,7 @@ export type MailingFilter = {
     hall_ids?: Array<number>;
     no_hall?: boolean;
     attendance?: Array<Attendance>;
+    expression?: string | null;
 };
 
 export type MailingListResponse = {
@@ -2575,5 +2576,5 @@ export type ProxyPathGetResponses = {
 };
 
 export type ClientOptions = {
-    baseURL: 'http://localhost:8000' | (string & {});
+    baseURL: `${string}://${string}` | (string & {});
 };

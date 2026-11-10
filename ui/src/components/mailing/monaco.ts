@@ -15,12 +15,30 @@ export { monaco };
 
 export const LANGUAGE = "jinja-telegram-html";
 export const THEME = "jinja-telegram-html";
+export const EXPRESSION_LANGUAGE = "mailing-expression";
 
 /** Variables and translation used by the completion provider, set by the editors. */
 export const completionContext: {
   variables: TemplateVariable[];
   describe: (variable: TemplateVariable) => string;
 } = { variables: [], describe: (variable) => variable.description };
+
+// Pure helpers available in recipient filter expressions, in addition to the variables
+const EXPRESSION_HELPERS = [
+  "len",
+  "any",
+  "all",
+  "min",
+  "max",
+  "sum",
+  "abs",
+  "round",
+  "sorted",
+  "str",
+  "int",
+  "float",
+  "bool",
+];
 
 const expression: monaco.languages.IMonarchLanguageRule[] = [
   [/"([^"\\]|\\.)*"/, "string"],
@@ -43,6 +61,7 @@ export function registerLanguage(m: typeof monaco) {
   registered = true;
 
   m.languages.register({ id: LANGUAGE });
+  m.languages.register({ id: EXPRESSION_LANGUAGE });
   m.languages.setMonarchTokensProvider(LANGUAGE, {
     tokenizer: {
       root: [
@@ -73,6 +92,20 @@ export function registerLanguage(m: typeof monaco) {
         [/"[^"]*"/, "attribute.value"],
         [/'[^']*'/, "attribute.value"],
         [/\{\{-?/, { token: "delimiter.jinja", next: "@expression" }],
+        [/\s+/, ""],
+      ],
+    },
+  });
+
+  m.languages.setMonarchTokensProvider(EXPRESSION_LANGUAGE, {
+    tokenizer: {
+      root: [
+        [/"([^"\\]|\\.)*"/, "string"],
+        [/'([^'\\]|\\.)*'/, "string"],
+        [/\d+(\.\d+)?/, "number"],
+        [/\b(and|or|not|in|is|if|else|True|False|None)\b/, "keyword"],
+        [/[a-zA-Z_]\w*/, "variable"],
+        [/[.()[\],:+\-*/%<>=!~]/, "delimiter"],
         [/\s+/, ""],
       ],
     },
@@ -136,6 +169,75 @@ export function registerLanguage(m: typeof monaco) {
         position.lineNumber,
         position.column,
       );
+      return {
+        suggestions: candidates.map((variable) => ({
+          label: variable.name,
+          kind:
+            variable.type === "object"
+              ? m.languages.CompletionItemKind.Module
+              : m.languages.CompletionItemKind.Field,
+          detail: `${variable.type}${variable.nullable ? " | None" : ""}`,
+          documentation: completionContext.describe(variable),
+          insertText: variable.name,
+          range,
+        })),
+      };
+    },
+  });
+
+  m.languages.registerCompletionItemProvider(EXPRESSION_LANGUAGE, {
+    triggerCharacters: ["."],
+    provideCompletionItems(model, position) {
+      const before = model.getValueInRange({
+        startLineNumber: 1,
+        startColumn: 1,
+        endLineNumber: position.lineNumber,
+        endColumn: position.column,
+      });
+      const match = /([a-zA-Z_]\w*(?:\.[a-zA-Z_]\w*)*\.)?([a-zA-Z_]\w*)?$/.exec(
+        before,
+      );
+      const path = (match?.[1] ?? "").split(".").filter(Boolean);
+      const word = match?.[2] ?? "";
+
+      const range = new m.Range(
+        position.lineNumber,
+        position.column - word.length,
+        position.lineNumber,
+        position.column,
+      );
+      if (path.length === 0) {
+        const helperSuggestions = EXPRESSION_HELPERS.filter((helper) =>
+          helper.startsWith(word),
+        ).map((helper) => ({
+          label: helper,
+          kind: m.languages.CompletionItemKind.Function,
+          detail: "function",
+          insertText: helper,
+          range,
+        }));
+        const variableSuggestions = completionContext.variables.map(
+          (variable) => ({
+            label: variable.name,
+            kind:
+              variable.type === "object"
+                ? m.languages.CompletionItemKind.Module
+                : m.languages.CompletionItemKind.Field,
+            detail: `${variable.type}${variable.nullable ? " | None" : ""}`,
+            documentation: completionContext.describe(variable),
+            insertText: variable.name,
+            range,
+          }),
+        );
+        return { suggestions: [...helperSuggestions, ...variableSuggestions] };
+      }
+
+      let candidates = completionContext.variables;
+      for (const segment of path) {
+        const variable = candidates.find((v) => v.name === segment);
+        if (!variable) return { suggestions: [] };
+        candidates = variable.fields ?? [];
+      }
       return {
         suggestions: candidates.map((variable) => ({
           label: variable.name,

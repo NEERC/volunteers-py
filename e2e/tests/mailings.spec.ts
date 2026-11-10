@@ -166,3 +166,63 @@ test("admin sends a mailing to the volunteers of a day", async ({
     await expect(row).toContainText("1 / 1");
   });
 });
+
+
+// The admin filters recipients with a sandboxed expression over the template variables:
+// a form-level expression narrows the recipients to matching application forms (also
+// without assignments), a broken expression shows an error and keeps the previous
+// recipients, clearing the expression restores them.
+test("admin filters recipients with an expression", async ({
+  adminPage: page,
+  adminApi,
+  apiAs,
+}) => {
+  test.setTimeout(120_000);
+
+  const yearId = await adminApi.createYear(`E2E Expression ${RUN_TAG}`);
+  await adminApi.editYear(yearId, { open_for_registration: true });
+  const positionId = await adminApi.createPosition({
+    year_id: yearId,
+    name: `Helper ${RUN_TAG}`,
+  });
+  for (const key of ["vol1", "vol2", "vol3"] as const) {
+    const api = await apiAs(key);
+    await api.apply(yearId, { desired_positions_ids: [positionId] });
+  }
+
+  await page.goto(`/${yearId}/mailings`);
+  await page.getByRole("button", { name: "New mailing" }).click();
+  await page.getByTestId("mailing-title").fill(`Expression ${RUN_TAG}`);
+
+  const recipients = page.getByTestId("mailing-recipients");
+  await expect(recipients.getByRole("row")).toHaveCount(3);
+
+  const expression = page.getByTestId("mailing-filter-expression");
+  await test.step("a form-level expression filters the recipients", async () => {
+    await expression.click();
+    await page.keyboard.type(`user.last_name_ru == "${users.vol2.lastNameRu}"`);
+    await page.keyboard.press("Escape");
+    await expect(recipients.getByRole("row")).toHaveCount(1);
+    await expect(recipients).toContainText(recipientName("vol2"));
+  });
+
+  await test.step("a broken expression shows an error", async () => {
+    await expression.click();
+    await page.keyboard.press("End");
+    await page.keyboard.type(" and");
+    await page.keyboard.press("Escape");
+    await expect(page.getByRole("alert").last()).toBeVisible();
+    // The previous recipients stay while the expression is broken
+    await expect(recipients.getByRole("row")).toHaveCount(1);
+  });
+
+  await test.step("clearing the expression restores the recipients", async () => {
+    await expression.click();
+    await page.keyboard.press("ControlOrMeta+a");
+    await page.keyboard.press("Backspace");
+    await page.keyboard.press("Escape");
+    await expect(recipients.getByRole("row")).toHaveCount(3);
+  });
+
+  await expect(page.getByTestId("mailing-save-state")).toHaveText("Saved");
+});

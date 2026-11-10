@@ -31,6 +31,7 @@ class UserContext(BaseModel):
 class FormContext(BaseModel):
     itmo_group: str | None = Field(description="ITMO group")
     needs_invitation: bool = Field(description="Needs an invitation")
+    extra_fields: dict[str, Any] = Field(description="Custom application form fields")
 
 
 class YearContext(BaseModel):

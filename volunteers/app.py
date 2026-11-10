@@ -13,6 +13,7 @@ from prometheus_client import Counter, make_asgi_app
 from volunteers.api.router import router as api_router
 from volunteers.core.di import container
 from volunteers.core.socketio import sio, socket_app
+from volunteers.services.mailing_expression import close_pool, init_pool
 from volunteers.sockets.assignments import register_assignment_handlers
 
 logger.remove()
@@ -61,11 +62,15 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None]:
     if c.mailing.worker_enabled:
         mailing_worker_task = asyncio.create_task(run_mailing_worker())
 
+    # Spawn the expression filter workers before serving the first request
+    await asyncio.get_running_loop().run_in_executor(None, init_pool)
+
     yield
     if mailing_worker_task is not None:
         mailing_worker_task.cancel()
         with contextlib.suppress(asyncio.CancelledError):
             await mailing_worker_task
+    close_pool()
     # Shutdown
     shutdown_resources = container.shutdown_resources()
     if shutdown_resources:

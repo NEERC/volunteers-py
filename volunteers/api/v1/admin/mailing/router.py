@@ -14,6 +14,7 @@ from volunteers.schemas.base import BaseSuccessResponse
 from volunteers.schemas.mailing import MailingButton, MailingDraft
 from volunteers.services.mailing import (
     MailingError,
+    MailingFilterError,
     MailingInvalid,
     MailingNoRecipients,
     MailingNotCancellable,
@@ -60,6 +61,8 @@ MailingServiceDep = Annotated[MailingService, Depends(Provide[Container.mailing_
 
 
 def _http_error(error: MailingError) -> HTTPException:
+    if isinstance(error, MailingFilterError):
+        return HTTPException(status_code=400, detail={"message": str(error), "line": error.line})
     if isinstance(error, MailingNotDraft | MailingNotCancellable | MailingNotResendable):
         status_code = 409
     elif isinstance(error, MailingNoRecipients | MailingTestSendFailed):

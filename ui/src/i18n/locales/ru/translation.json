@@ -407,6 +407,8 @@
   "Queued": "В очереди",
   "Recipient": "Получатель",
   "Recipients": "Получатели",
+  "Expression filter": "Фильтр-выражение",
+  "An optional Python expression over the same variables as the message template. It is applied to every application form, or to every assignment if it mentions the assignment variables (assignment, day, position, hall). Empty means no filter.": "Необязательное выражение на Python над теми же переменными, что и шаблон сообщения. Применяется к каждой анкете или к каждому назначению, если упоминает переменные назначения (assignment, day, position, hall). Пустое значение означает отсутствие фильтра.",
   "Recipients with several matching assignments get": "Получатели с несколькими подходящими назначениями получат",
   "Resend": "Отправить ещё раз",
   "Resend messages": "Повторная отправка",

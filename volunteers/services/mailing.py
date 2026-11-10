@@ -1,5 +1,6 @@
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
+from typing import Any
 
 from sqlalchemy import func, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -21,6 +22,7 @@ from volunteers.schemas.mailing import MailingDraft
 
 from .base import BaseService
 from .errors import DomainError
+from .mailing_expression import ExpressionError, evaluate_expression, expression_uses_assignment
 from .mailing_sender import MailingWorker, MessageSender
 from .mailing_template import (
     AssignmentContext,
@@ -75,6 +77,14 @@ class MailingRecipientNotFound(MailingError):
 class MailingNoRecipients(MailingError):
     def __init__(self) -> None:
         super().__init__("The mailing has no recipients with Telegram")
+
+
+class MailingFilterError(MailingError):
+    """The recipient filter expression is invalid."""
+
+    def __init__(self, error: ExpressionError) -> None:
+        super().__init__(str(error))
+        self.line = getattr(error, "line", None)
 
 
 class MailingTestSendFailed(MailingError):
@@ -178,7 +188,9 @@ def template_context(
             email=user.email,
         ),
         form=FormContext(
-            itmo_group=form.extras.itmo_group, needs_invitation=form.extras.needs_invitation
+            itmo_group=form.extras.itmo_group,
+            needs_invitation=form.extras.needs_invitation,
+            extra_fields=dict(form.extra_fields or {}),
         ),
         year=YearContext(id=year.id, year_name=year.year_name),
         assignment=assignment,
@@ -342,13 +354,59 @@ class MailingService(BaseService):
             draft.template, [button.model_dump() for button in draft.buttons]
         )
         excluded = set(draft.excluded_form_ids)
+
+        expression = (draft.filter.expression or "").strip()
+        per_assignment = False
+        # form.id -> result, for an expression without the assignment variables
+        expression_by_form: dict[int, bool] = {}
+        # (form.id, user_day.id) -> result, for an expression with them
+        expression_by_assignment: dict[tuple[int, int], bool] = {}
+        if expression:
+            try:
+                per_assignment = expression_uses_assignment(expression)
+                if per_assignment:
+                    assignment_units: list[tuple[int, int, dict[str, Any]]] = [
+                        (form.id, ud.id, template_context(year, form, ud).variables())
+                        for form in forms
+                        for ud in form.user_days
+                    ]
+                    results = await evaluate_expression(
+                        expression, [variables for _, _, variables in assignment_units]
+                    )
+                    expression_by_assignment = {
+                        (form_id, ud_id): result
+                        for (form_id, ud_id, _), result in zip(
+                            assignment_units, results, strict=False
+                        )
+                    }
+                else:
+                    form_units: list[tuple[int, dict[str, Any]]] = [
+                        (form.id, template_context(year, form, None).variables()) for form in forms
+                    ]
+                    results = await evaluate_expression(
+                        expression, [variables for _, variables in form_units]
+                    )
+                    expression_by_form = {
+                        form_id: result
+                        for (form_id, _), result in zip(form_units, results, strict=False)
+                    }
+            except ExpressionError as e:
+                raise MailingFilterError(e) from e
+
         recipients = []
         for form in forms:
+            if expression and not per_assignment and not expression_by_form[form.id]:
+                continue
             assignments: list[UserDay] = []
             message_assignments: list[UserDay | None] = [None]
-            if not draft.filter.is_empty():
+            if per_assignment or draft.filter.has_conditions():
                 assignments = sorted(
-                    (ud for ud in form.user_days if draft.filter.matches(ud)),
+                    (
+                        ud
+                        for ud in form.user_days
+                        if draft.filter.matches(ud)
+                        and (not per_assignment or expression_by_assignment[(form.id, ud.id)])
+                    ),
                     key=lambda ud: (ud.day_id, ud.id),
                 )
                 if not assignments:
