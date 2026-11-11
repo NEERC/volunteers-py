@@ -22,7 +22,7 @@ from volunteers.schemas.mailing import MailingDraft
 
 from .base import BaseService
 from .errors import DomainError
-from .mailing_expression import ExpressionError, evaluate_expression, expression_uses_assignment
+from .mailing_expression import ExpressionEvaluator, expression_uses_assignment
 from .mailing_sender import MailingWorker, MessageSender
 from .mailing_template import (
     AssignmentContext,
@@ -77,14 +77,6 @@ class MailingRecipientNotFound(MailingError):
 class MailingNoRecipients(MailingError):
     def __init__(self) -> None:
         super().__init__("The mailing has no recipients with Telegram")
-
-
-class MailingFilterError(MailingError):
-    """The recipient filter expression is invalid."""
-
-    def __init__(self, error: ExpressionError) -> None:
-        super().__init__(str(error))
-        self.line = getattr(error, "line", None)
 
 
 class MailingTestSendFailed(MailingError):
@@ -228,10 +220,16 @@ def mailing_draft(mailing: Mailing) -> MailingDraft:
 
 
 class MailingService(BaseService):
-    def __init__(self, sender: MessageSender, worker: MailingWorker) -> None:
+    def __init__(
+        self,
+        sender: MessageSender,
+        worker: MailingWorker,
+        expression_evaluator: ExpressionEvaluator,
+    ) -> None:
         super().__init__()
         self.sender = sender
         self.worker = worker
+        self.expression_evaluator = expression_evaluator
 
     async def get_mailings(self, year_id: int) -> list[Mailing]:
         async with self.session_scope() as session:
@@ -362,36 +360,31 @@ class MailingService(BaseService):
         # (form.id, user_day.id) -> result, for an expression with them
         expression_by_assignment: dict[tuple[int, int], bool] = {}
         if expression:
-            try:
-                per_assignment = expression_uses_assignment(expression)
-                if per_assignment:
-                    assignment_units: list[tuple[int, int, dict[str, Any]]] = [
-                        (form.id, ud.id, template_context(year, form, ud).variables())
-                        for form in forms
-                        for ud in form.user_days
-                    ]
-                    results = await evaluate_expression(
-                        expression, [variables for _, _, variables in assignment_units]
-                    )
-                    expression_by_assignment = {
-                        (form_id, ud_id): result
-                        for (form_id, ud_id, _), result in zip(
-                            assignment_units, results, strict=False
-                        )
-                    }
-                else:
-                    form_units: list[tuple[int, dict[str, Any]]] = [
-                        (form.id, template_context(year, form, None).variables()) for form in forms
-                    ]
-                    results = await evaluate_expression(
-                        expression, [variables for _, variables in form_units]
-                    )
-                    expression_by_form = {
-                        form_id: result
-                        for (form_id, _), result in zip(form_units, results, strict=False)
-                    }
-            except ExpressionError as e:
-                raise MailingFilterError(e) from e
+            per_assignment = expression_uses_assignment(expression)
+            if per_assignment:
+                assignment_units: list[tuple[int, int, dict[str, Any]]] = [
+                    (form.id, ud.id, template_context(year, form, ud).variables())
+                    for form in forms
+                    for ud in form.user_days
+                ]
+                results = await self.expression_evaluator.evaluate(
+                    expression, [variables for _, _, variables in assignment_units]
+                )
+                expression_by_assignment = {
+                    (form_id, ud_id): result
+                    for (form_id, ud_id, _), result in zip(assignment_units, results, strict=False)
+                }
+            else:
+                form_units: list[tuple[int, dict[str, Any]]] = [
+                    (form.id, template_context(year, form, None).variables()) for form in forms
+                ]
+                results = await self.expression_evaluator.evaluate(
+                    expression, [variables for _, variables in form_units]
+                )
+                expression_by_form = {
+                    form_id: result
+                    for (form_id, _), result in zip(form_units, results, strict=False)
+                }
 
         recipients = []
         for form in forms:

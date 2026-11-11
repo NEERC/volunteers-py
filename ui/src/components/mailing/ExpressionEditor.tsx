@@ -10,13 +10,11 @@ import {
   registerLanguage,
   THEME,
 } from "./monaco";
-import type { EditorError } from "./TemplateEditor";
 
 type Props = {
   value: string;
   onChange: (value: string) => void;
   height?: number;
-  errors?: EditorError[];
   testId?: string;
 };
 
@@ -25,12 +23,10 @@ export function ExpressionEditor({
   value,
   onChange,
   height = 100,
-  errors = [],
   testId,
 }: Props) {
   const { t } = useTranslation();
   const { data: variables } = useTemplateVariables();
-  const editorRef = useRef<monaco.editor.IStandaloneCodeEditor | null>(null);
   const monacoRef = useRef<typeof monaco | null>(null);
 
   useEffect(() => {
@@ -44,30 +40,7 @@ export function ExpressionEditor({
         .join(". ");
   }, [variables, t]);
 
-  // Errors with a line number are shown in the editor
-  useEffect(() => {
-    const editor = editorRef.current;
-    const m = monacoRef.current;
-    const model = editor?.getModel();
-    if (!m || !model) return;
-    m.editor.setModelMarkers(
-      model,
-      "mailing",
-      errors
-        .filter((error) => error.line)
-        .map((error) => ({
-          severity: m.MarkerSeverity.Error,
-          message: error.message,
-          startLineNumber: error.line ?? 1,
-          endLineNumber: error.line ?? 1,
-          startColumn: 1,
-          endColumn: model.getLineMaxColumn(error.line ?? 1),
-        })),
-    );
-  }, [errors]);
-
-  const onMount: OnMount = (editor, m) => {
-    editorRef.current = editor;
+  const onMount: OnMount = (_editor, m) => {
     monacoRef.current = m as unknown as typeof monaco;
   };
 
@@ -76,7 +49,7 @@ export function ExpressionEditor({
       data-testid={testId}
       sx={{
         border: 1,
-        borderColor: errors.length ? "error.main" : "divider",
+        borderColor: "divider",
         borderRadius: 1,
         overflow: "hidden",
         height: height + 2,

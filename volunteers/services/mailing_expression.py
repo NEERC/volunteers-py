@@ -2,13 +2,14 @@
 
 An expression is a Python expression evaluated with the same context as the message
 template (``user``, ``form``, ``year`` and, per assignment, ``assignment``, ``day``,
-``position``, ``hall``). It is evaluated in a separate process with no builtins: only a
-whitelist of pure helpers and the template context are available. A batch that runs
-longer than :data:`EVALUATION_TIMEOUT` seconds is killed by terminating the pool.
+``position``, ``hall``). Expressions are evaluated in worker processes with no
+builtins: only a whitelist of pure helpers and the template context are available.
+A batch that runs longer than :data:`EVALUATION_TIMEOUT` seconds is killed by
+terminating the pool.
 
-Errors are raised as :class:`ExpressionSyntaxError` (with a line number),
-:class:`ExpressionEvaluationError` (a name, attribute or type problem) or
-:class:`ExpressionTimeout`.
+Errors are :class:`DomainError` subclasses with a message for the user:
+:class:`ExpressionSyntaxError` (with a line number), :class:`ExpressionEvaluationError`
+(a name, attribute or type problem) and :class:`ExpressionTimeout`.
 """
 
 import ast
@@ -16,10 +17,13 @@ import asyncio
 import atexit
 import multiprocessing.pool
 import threading
-from collections.abc import Mapping, Sequence
+import weakref
+from collections.abc import AsyncGenerator, Mapping, Sequence
 from typing import Any, NamedTuple
 
 from simpleeval import DEFAULT_NAMES, EvalWithCompoundTypes
+
+from .errors import DomainError
 
 # How long the whole batch of one recipients request may take before the pool is killed
 EVALUATION_TIMEOUT = 1.0
@@ -47,16 +51,18 @@ FUNCTIONS: dict[str, Any] = {
 ASSIGNMENT_VARIABLES = frozenset({"assignment", "day", "position", "hall"})
 
 
-class ExpressionError(Exception):
-    """Base class for recipient expression errors."""
+class ExpressionError(DomainError):
+    """Base class for recipient expression errors, with a message for the user."""
 
 
 class ExpressionSyntaxError(ExpressionError):
     """The expression doesn't parse."""
 
     def __init__(self, message: str, line: int | None = None) -> None:
-        super().__init__(message)
         self.line = line
+        if line is not None:
+            message = f"{message} (line {line})"
+        super().__init__(message)
 
 
 class ExpressionEvaluationError(ExpressionError):
@@ -114,79 +120,94 @@ def _evaluate_batch(payload: tuple[str, list[dict[str, Any]]]) -> list[bool] | _
     return results
 
 
-_pool: multiprocessing.pool.Pool | None = None
-_pool_lock = threading.Lock()
+class ExpressionEvaluator:
+    """Evaluates recipient filter expressions in worker processes.
 
-
-def init_pool() -> None:
-    """Create the worker pool in advance, so the first filter evaluation is fast."""
-    _get_pool()
-
-
-def close_pool() -> None:
-    """Terminate the worker pool, e.g. on application shutdown."""
-    global _pool
-    pool = _pool
-    _pool = None
-    if pool is not None:
-        pool.terminate()
-        pool.join()
-
-
-atexit.register(close_pool)
-
-
-def _get_pool() -> multiprocessing.pool.Pool:
-    global _pool
-    if _pool is None:
-        with _pool_lock:
-            if _pool is None:
-                _pool = multiprocessing.Pool(processes=POOL_PROCESSES)
-    return _pool
-
-
-def _kill_pool() -> None:
-    global _pool
-    pool = _pool
-    _pool = None
-    if pool is not None:
-        pool.terminate()
-        pool.join()
-
-
-def _run_batch(expression: str, contexts: list[dict[str, Any]]) -> list[bool]:
-    """Run the batch in the pool with an in-thread timeout, killing the pool on expiry."""
-    result = _get_pool().apply_async(_evaluate_batch, ((expression, contexts),))
-    try:
-        batch = result.get(timeout=EVALUATION_TIMEOUT)
-    except multiprocessing.TimeoutError:
-        _kill_pool()
-        raise ExpressionTimeout(EVALUATION_TIMEOUT) from None
-    if isinstance(batch, _BatchFailure):
-        raise ExpressionEvaluationError(batch.message)
-    return batch
-
-
-async def evaluate_expression(expression: str, contexts: Sequence[Mapping[str, Any]]) -> list[bool]:
-    """Evaluate ``expression`` over ``contexts``, one result per context.
-
-    Raises :class:`ExpressionSyntaxError`, :class:`ExpressionEvaluationError` or
-    :class:`ExpressionTimeout`.
+    Create through the DI container (``providers.Resource`` over
+    :func:`create_expression_evaluator`), so the pool is warmed up at startup and
+    terminated on shutdown.
     """
-    parse_expression(expression)  # Fail fast, before touching the pool
-    if not contexts:
-        return []
-    context_list = [dict(context) for context in contexts]
-    loop = asyncio.get_running_loop()
+
+    def __init__(self) -> None:
+        self._pool: multiprocessing.pool.Pool | None = None
+        self._lock = threading.Lock()
+        _evaluators.add(self)
+
+    async def initialize(self) -> None:
+        """Create the worker pool in advance, so the first evaluation is fast."""
+        await asyncio.get_running_loop().run_in_executor(None, self._get_pool)
+
+    def shutdown(self) -> None:
+        """Terminate the worker pool, e.g. on application shutdown."""
+        self._terminate_pool()
+
+    async def evaluate(self, expression: str, contexts: Sequence[Mapping[str, Any]]) -> list[bool]:
+        """Evaluate ``expression`` over ``contexts``, one result per context.
+
+        Raises :class:`ExpressionSyntaxError`, :class:`ExpressionEvaluationError` or
+        :class:`ExpressionTimeout`.
+        """
+        parse_expression(expression)  # Fail fast, before touching the pool
+        if not contexts:
+            return []
+        context_list = [dict(context) for context in contexts]
+        loop = asyncio.get_running_loop()
+        try:
+            return await asyncio.wait_for(
+                loop.run_in_executor(None, self._run_batch, expression, context_list),
+                timeout=THREAD_TIMEOUT,
+            )
+        except TimeoutError:
+            self._terminate_pool()
+            raise ExpressionTimeout(EVALUATION_TIMEOUT) from None
+        except ExpressionError:
+            raise
+        except Exception as e:
+            raise ExpressionEvaluationError(str(e)) from e
+
+    def _get_pool(self) -> multiprocessing.pool.Pool:
+        if self._pool is None:
+            with self._lock:
+                if self._pool is None:
+                    self._pool = multiprocessing.Pool(processes=POOL_PROCESSES)
+        return self._pool
+
+    def _terminate_pool(self) -> None:
+        pool = self._pool
+        self._pool = None
+        if pool is not None:
+            pool.terminate()
+            pool.join()
+
+    def _run_batch(self, expression: str, contexts: list[dict[str, Any]]) -> list[bool]:
+        """Run the batch in the pool with an in-thread timeout, killing the pool on expiry."""
+        result = self._get_pool().apply_async(_evaluate_batch, ((expression, contexts),))
+        try:
+            batch = result.get(timeout=EVALUATION_TIMEOUT)
+        except multiprocessing.TimeoutError:
+            self._terminate_pool()
+            raise ExpressionTimeout(EVALUATION_TIMEOUT) from None
+        if isinstance(batch, _BatchFailure):
+            raise ExpressionEvaluationError(batch.message)
+        return batch
+
+
+_evaluators: weakref.WeakSet[ExpressionEvaluator] = weakref.WeakSet()
+
+
+def _shutdown_evaluators() -> None:
+    for evaluator in list(_evaluators):
+        evaluator.shutdown()
+
+
+atexit.register(_shutdown_evaluators)
+
+
+async def create_expression_evaluator() -> AsyncGenerator[ExpressionEvaluator]:
+    """DI resource: an initialized evaluator that is shut down with the container."""
+    evaluator = ExpressionEvaluator()
+    await evaluator.initialize()
     try:
-        return await asyncio.wait_for(
-            loop.run_in_executor(None, _run_batch, expression, context_list),
-            timeout=THREAD_TIMEOUT,
-        )
-    except TimeoutError:
-        _kill_pool()
-        raise ExpressionTimeout(EVALUATION_TIMEOUT) from None
-    except ExpressionError:
-        raise
-    except Exception as e:
-        raise ExpressionEvaluationError(str(e)) from e
+        yield evaluator
+    finally:
+        evaluator.shutdown()

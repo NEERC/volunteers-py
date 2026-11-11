@@ -39,13 +39,13 @@ from volunteers.models.mailing import AssignmentMode
 from volunteers.schemas.mailing import MailingButton, MailingDraft, MailingFilter
 from volunteers.services.mailing import (
     MailingAdminWithoutTelegram,
-    MailingFilterError,
     MailingInvalid,
     MailingNoRecipients,
     MailingNotCancellable,
     MailingNotDraft,
     MailingService,
 )
+from volunteers.services.mailing_expression import ExpressionError, ExpressionEvaluator
 from volunteers.services.mailing_sender import SENDER_LOCK_KEY, MailingWorker
 
 # Admin URL of a Postgres server, e.g. postgresql+asyncpg://postgres:postgres@localhost:5432/postgres.
@@ -122,9 +122,21 @@ def worker(engine: AsyncEngine, sender: FakeSender, notifier: FakeNotifier) -> M
     return worker
 
 
+@pytest.fixture(scope="module")
+def expression_evaluator() -> ExpressionEvaluator:
+    evaluator = ExpressionEvaluator()
+    yield evaluator
+    evaluator.shutdown()
+
+
 @pytest.fixture
-def service(engine: AsyncEngine, sender: FakeSender, worker: MailingWorker) -> MailingService:
-    service = MailingService(sender, worker)
+def service(
+    engine: AsyncEngine,
+    sender: FakeSender,
+    worker: MailingWorker,
+    expression_evaluator: ExpressionEvaluator,
+) -> MailingService:
+    service = MailingService(sender, worker, expression_evaluator)
     service.db = engine
     return service
 
@@ -776,11 +788,11 @@ async def test_expression_combines_with_classic_conditions(
 
 
 async def test_invalid_expression_raises_filter_error(service: MailingService, seed: Seed) -> None:
-    with pytest.raises(MailingFilterError):
+    with pytest.raises(ExpressionError):
         await service.get_recipients(
             seed.year_id, draft(filter=MailingFilter(expression="user.phone and"))
         )
-    with pytest.raises(MailingFilterError):
+    with pytest.raises(ExpressionError):
         await service.get_recipients(
             seed.year_id, draft(filter=MailingFilter(expression="foo == 1"))
         )
@@ -792,7 +804,7 @@ async def test_start_is_blocked_by_an_invalid_expression(
     mailing = await service.create_draft(seed.year_id, seed.admin_id)
     await service.update_draft(mailing.id, draft(filter=MailingFilter(expression="user.phone and")))
 
-    with pytest.raises(MailingFilterError):
+    with pytest.raises(ExpressionError):
         await service.start(mailing.id, seed.admin_id)
     assert (await service.get_mailing(mailing.id)).status == MailingStatus.DRAFT
 

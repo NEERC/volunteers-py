@@ -12,9 +12,9 @@ from volunteers.core.di import Container
 from volunteers.models import Mailing, MailingMessage, MailingMessageStatus, MailingStatus, User
 from volunteers.schemas.base import BaseSuccessResponse
 from volunteers.schemas.mailing import MailingButton, MailingDraft
+from volunteers.services.errors import DomainError
 from volunteers.services.mailing import (
     MailingError,
-    MailingFilterError,
     MailingInvalid,
     MailingNoRecipients,
     MailingNotCancellable,
@@ -60,15 +60,16 @@ FINISHED_STATUSES = (MailingStatus.DRAFT, MailingStatus.DONE, MailingStatus.CANC
 MailingServiceDep = Annotated[MailingService, Depends(Provide[Container.mailing_service])]
 
 
-def _http_error(error: MailingError) -> HTTPException:
-    if isinstance(error, MailingFilterError):
-        return HTTPException(status_code=400, detail={"message": str(error), "line": error.line})
+def _http_error(error: DomainError) -> HTTPException:
     if isinstance(error, MailingNotDraft | MailingNotCancellable | MailingNotResendable):
         status_code = 409
     elif isinstance(error, MailingNoRecipients | MailingTestSendFailed):
         status_code = 400
-    else:
+    elif isinstance(error, MailingError):
         status_code = 404
+    else:
+        # Other domain errors, e.g. a recipient filter expression problem
+        status_code = 400
     return HTTPException(status_code=status_code, detail=str(error))
 
 
@@ -103,7 +104,7 @@ def _mailing_response(mailing: Mailing, counts: dict[MailingMessageStatus, int])
 async def _get_mailing_response(service: MailingService, mailing_id: int) -> MailingResponse:
     try:
         mailing = await service.get_mailing(mailing_id)
-    except MailingError as e:
+    except DomainError as e:
         raise _http_error(e) from e
     counts = await service.get_message_counts([mailing_id])
     return _mailing_response(mailing, counts[mailing_id])
@@ -159,7 +160,7 @@ async def create_mailing(
 ) -> MailingResponse:
     try:
         mailing = await mailing_service.create_draft(year_id, user.id, request.source_mailing_id)
-    except MailingError as e:
+    except DomainError as e:
         raise _http_error(e) from e
     return await _get_mailing_response(mailing_service, mailing.id)
 
@@ -173,7 +174,7 @@ async def get_recipients(
 ) -> MailingRecipientsResponse:
     try:
         plan = await mailing_service.get_recipients(year_id, draft)
-    except MailingError as e:
+    except DomainError as e:
         raise _http_error(e) from e
     return MailingRecipientsResponse(
         recipients=[
@@ -220,7 +221,7 @@ async def preview_message(
         message = await mailing_service.preview(
             year_id, request.draft, request.form_id, request.user_day_id
         )
-    except MailingError as e:
+    except DomainError as e:
         raise _http_error(e) from e
     return MailingPreviewResponse(
         text=message.text,
@@ -244,7 +245,7 @@ async def test_send_message(
         await mailing_service.test_send(
             year_id, request.draft, request.form_id, request.user_day_id, user.id
         )
-    except MailingError as e:
+    except DomainError as e:
         raise _http_error(e) from e
     return BaseSuccessResponse()
 
@@ -267,7 +268,7 @@ async def edit_mailing(
 ) -> MailingResponse:
     try:
         await mailing_service.update_draft(mailing_id, draft)
-    except MailingError as e:
+    except DomainError as e:
         raise _http_error(e) from e
     return await _get_mailing_response(mailing_service, mailing_id)
 
@@ -280,7 +281,7 @@ async def delete_mailing(
 ) -> BaseSuccessResponse:
     try:
         await mailing_service.delete_draft(mailing_id)
-    except MailingError as e:
+    except DomainError as e:
         raise _http_error(e) from e
     return BaseSuccessResponse()
 
@@ -320,7 +321,7 @@ async def start_mailing(
             mailing=await _get_mailing_response(mailing_service, mailing_id),
             description=str(e),
         )
-    except MailingError as e:
+    except DomainError as e:
         raise _http_error(e) from e
     return StartMailingResponse(
         started=True, mailing=await _get_mailing_response(mailing_service, mailing_id)
@@ -337,7 +338,7 @@ async def cancel_mailing(
 ) -> MailingResponse:
     try:
         await mailing_service.cancel(mailing_id)
-    except MailingError as e:
+    except DomainError as e:
         raise _http_error(e) from e
     return await _get_mailing_response(mailing_service, mailing_id)
 
@@ -351,7 +352,7 @@ async def resend_messages(
 ) -> MailingResponse:
     try:
         await mailing_service.resend(mailing_id, request.message_ids)
-    except MailingError as e:
+    except DomainError as e:
         raise _http_error(e) from e
     return await _get_mailing_response(mailing_service, mailing_id)
 

@@ -37,7 +37,6 @@ import {
   Typography,
 } from "@mui/material";
 import { useNavigate } from "@tanstack/react-router";
-import { AxiosError } from "axios";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import type {
@@ -92,25 +91,6 @@ const isFilterEmpty = (filter: MailingFilter) =>
   !filter.no_hall &&
   !filter.attendance?.length;
 
-type FilterErrorDetail = { message?: string; line?: number | null };
-
-/** The {message, line} detail of a rejected recipients request, for editor markers. */
-function filterErrorFrom(
-  error: unknown,
-): { message: string; line: number | null } | null {
-  if (!(error instanceof AxiosError)) return null;
-  const detail = error.response?.data?.detail as
-    | string
-    | FilterErrorDetail
-    | undefined;
-  if (typeof detail !== "object" || detail === null || !detail.message)
-    return null;
-  return {
-    message: detail.message,
-    line: typeof detail.line === "number" ? detail.line : null,
-  };
-}
-
 function errorText(
   t: (key: string, options?: Record<string, unknown>) => string,
   error: MailingRenderError,
@@ -155,8 +135,6 @@ export function MailingDraftEditor({ mailing }: { mailing: MailingResponse }) {
   const { data: halls } = useYearHalls(yearId);
   const recipients = useMailingRecipients(yearId, debouncedDraft);
   const recipientList = recipients.data?.recipients ?? [];
-  const filterError = filterErrorFrom(recipients.error);
-  const expressionErrors = filterError ? [{ ...filterError }] : [];
 
   // Recipient of the preview: the chosen one while it's in the mailing
   const [chosen, setChosen] = useState<Selection | null>(null);
@@ -415,7 +393,6 @@ export function MailingDraftEditor({ mailing }: { mailing: MailingResponse }) {
               onChange={(expression) =>
                 updateFilter({ expression: expression || null })
               }
-              errors={expressionErrors}
               testId="mailing-filter-expression"
             />
           </Box>
@@ -462,11 +439,10 @@ export function MailingDraftEditor({ mailing }: { mailing: MailingResponse }) {
               sx={{ mb: 2 }}
               data-testid="mailing-filter-error"
             >
-              {filterError?.message ??
-                apiErrorMessage(
-                  recipients.error,
-                  t("Failed to load recipients"),
-                )}
+              {apiErrorMessage(
+                recipients.error,
+                t("Failed to load recipients"),
+              )}
             </Alert>
           )}
 
