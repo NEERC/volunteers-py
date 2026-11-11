@@ -291,6 +291,41 @@ async function handleTelegram(req, res, method) {
       },
     });
   }
+  if (method === "sendDocument") {
+    return send(res, 200, {
+      ok: true,
+      result: {
+        message_id: randomInt(1, 2 ** 31),
+        date: Math.floor(Date.now() / 1000),
+        chat: { id: Number(params.chat_id) || 0, type: "supergroup" },
+        caption: params.caption ?? "",
+        document: { file_name: "mock", file_id: "mock" },
+      },
+    });
+  }
+  if (method === "sendMediaGroup") {
+    const media = Array.isArray(params.media) ? params.media : [];
+    return send(res, 200, {
+      ok: true,
+      result: media.map((item) => ({
+        message_id: randomInt(1, 2 ** 31),
+        date: Math.floor(Date.now() / 1000),
+        chat: { id: Number(params.chat_id) || 0, type: "supergroup" },
+        caption: item.caption ?? "",
+        document: { file_name: "mock", file_id: "mock" },
+      })),
+    });
+  }
+  if (method === "editMessageReplyMarkup") {
+    return send(res, 200, {
+      ok: true,
+      result: {
+        message_id: Number(params.message_id) || 0,
+        date: Math.floor(Date.now() / 1000),
+        chat: { id: Number(params.chat_id) || 0, type: "supergroup" },
+      },
+    });
+  }
   return send(res, 200, { ok: true, result: true });
 }
 

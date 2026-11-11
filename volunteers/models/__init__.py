@@ -10,6 +10,7 @@ __all__ = [
     "Hall",
     "IdentityProvider",
     "Mailing",
+    "MailingAttachment",
     "MailingMessage",
     "MailingMessageStatus",
     "MailingStatus",
@@ -23,7 +24,14 @@ __all__ = [
 from .attendance import Attendance
 from .gender import Gender
 from .identity_provider import IdentityProvider
-from .mailing import AssignmentMode, Mailing, MailingMessage, MailingMessageStatus, MailingStatus
+from .mailing import (
+    AssignmentMode,
+    Mailing,
+    MailingAttachment,
+    MailingMessage,
+    MailingMessageStatus,
+    MailingStatus,
+)
 from .models import (
     ApplicationForm,
     Assessment,

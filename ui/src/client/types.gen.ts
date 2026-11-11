@@ -190,6 +190,13 @@ export type BaseSuccessResponse = {
     success: true;
 };
 
+export type BodyUploadAttachmentApiV1AdminMailingMailingIdAttachmentsPost = {
+    /**
+     * The file to attach
+     */
+    file: Blob | File;
+};
+
 /**
  * Whether the user can confirm their assignment on a day
  */
@@ -363,6 +370,12 @@ export type LegacyAuthRequest = {
     password: string;
 };
 
+export type MailingAttachmentMeta = {
+    attachment_id: number;
+    file_name: string;
+    size: number;
+};
+
 export type MailingButton = {
     text?: string;
     url?: string;
@@ -419,6 +432,7 @@ export type MailingMessageResponse = {
     assignment_label: string | null;
     text: string;
     buttons: Array<MailingButton>;
+    attachments: Array<MailingAttachmentMeta>;
     status: MailingMessageStatus;
     error: string | null;
     sent_at: string | null;
@@ -432,6 +446,7 @@ export type MailingMessagesResponse = {
 };
 
 export type MailingPreviewRequest = {
+    mailing_id: number;
     draft: MailingDraft;
     form_id: number;
     user_day_id?: number | null;
@@ -441,6 +456,7 @@ export type MailingPreviewResponse = {
     text: string;
     buttons: Array<MailingButton>;
     errors: Array<MailingRenderError>;
+    attachments: Array<MailingAttachmentMeta>;
 };
 
 export type MailingRecipient = {
@@ -489,6 +505,7 @@ export type MailingResponse = {
     filter: MailingFilter;
     excluded_form_ids: Array<number>;
     assignment_mode: AssignmentMode;
+    attachments: Array<MailingAttachmentMeta>;
     created_by: MailingUser | null;
     started_by: MailingUser | null;
     created_at: string;
@@ -1354,6 +1371,61 @@ export type EditMailingApiV1AdminMailingMailingIdEditPostResponses = {
 };
 
 export type EditMailingApiV1AdminMailingMailingIdEditPostResponse = EditMailingApiV1AdminMailingMailingIdEditPostResponses[keyof EditMailingApiV1AdminMailingMailingIdEditPostResponses];
+
+export type UploadAttachmentApiV1AdminMailingMailingIdAttachmentsPostData = {
+    body: BodyUploadAttachmentApiV1AdminMailingMailingIdAttachmentsPost;
+    path: {
+        mailing_id: number;
+    };
+    query?: never;
+    url: '/api/v1/admin/mailing/{mailing_id}/attachments';
+};
+
+export type UploadAttachmentApiV1AdminMailingMailingIdAttachmentsPostErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type UploadAttachmentApiV1AdminMailingMailingIdAttachmentsPostError = UploadAttachmentApiV1AdminMailingMailingIdAttachmentsPostErrors[keyof UploadAttachmentApiV1AdminMailingMailingIdAttachmentsPostErrors];
+
+export type UploadAttachmentApiV1AdminMailingMailingIdAttachmentsPostResponses = {
+    /**
+     * Successful Response
+     */
+    200: MailingAttachmentMeta;
+};
+
+export type UploadAttachmentApiV1AdminMailingMailingIdAttachmentsPostResponse = UploadAttachmentApiV1AdminMailingMailingIdAttachmentsPostResponses[keyof UploadAttachmentApiV1AdminMailingMailingIdAttachmentsPostResponses];
+
+export type DeleteAttachmentApiV1AdminMailingMailingIdAttachmentsAttachmentIdDeleteData = {
+    body?: never;
+    path: {
+        mailing_id: number;
+        attachment_id: number;
+    };
+    query?: never;
+    url: '/api/v1/admin/mailing/{mailing_id}/attachments/{attachment_id}';
+};
+
+export type DeleteAttachmentApiV1AdminMailingMailingIdAttachmentsAttachmentIdDeleteErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type DeleteAttachmentApiV1AdminMailingMailingIdAttachmentsAttachmentIdDeleteError = DeleteAttachmentApiV1AdminMailingMailingIdAttachmentsAttachmentIdDeleteErrors[keyof DeleteAttachmentApiV1AdminMailingMailingIdAttachmentsAttachmentIdDeleteErrors];
+
+export type DeleteAttachmentApiV1AdminMailingMailingIdAttachmentsAttachmentIdDeleteResponses = {
+    /**
+     * Successful Response
+     */
+    200: BaseSuccessResponse;
+};
+
+export type DeleteAttachmentApiV1AdminMailingMailingIdAttachmentsAttachmentIdDeleteResponse = DeleteAttachmentApiV1AdminMailingMailingIdAttachmentsAttachmentIdDeleteResponses[keyof DeleteAttachmentApiV1AdminMailingMailingIdAttachmentsAttachmentIdDeleteResponses];
 
 export type StartMailingApiV1AdminMailingMailingIdStartPostData = {
     body: MailingDraft;

@@ -26,12 +26,21 @@ echo "Backup file: $BACKUP_FILE"
 # Set PGPASSWORD environment variable for pg_dump
 export PGPASSWORD="$DB_PASSWORD"
 
-# Create the backup
+# Create the backup: roles first, then the database with the mailing attachment
+# blobs excluded (they are large binary files, the metadata stays in the dump)
 pg_dumpall -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USER" \
     --verbose \
     --no-password \
-    -c \
+    --globals-only \
     > "$BACKUP_FILE"
+
+pg_dump -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USER" \
+    --verbose \
+    --no-password \
+    -d "$DB_NAME" \
+    --exclude-table-data=public.mailing_attachments \
+    -c \
+    >> "$BACKUP_FILE"
 
 # Check if backup was successful
 if [ $? -eq 0 ]; then

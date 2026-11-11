@@ -1,8 +1,9 @@
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
+from pathlib import Path
 from typing import Any
 
-from sqlalchemy import func, select, update
+from sqlalchemy import delete, func, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
@@ -10,6 +11,7 @@ from volunteers.models import (
     ApplicationForm,
     IdentityProvider,
     Mailing,
+    MailingAttachment,
     MailingMessage,
     MailingMessageStatus,
     MailingStatus,
@@ -17,14 +19,20 @@ from volunteers.models import (
     UserDay,
     Year,
 )
-from volunteers.models.mailing import AssignmentMode
+from volunteers.models.mailing import MAX_ATTACHMENT_SIZE, MAX_ATTACHMENTS, AssignmentMode
 from volunteers.schemas.mailing import MailingDraft
 
 from .base import BaseService
 from .errors import DomainError
-from .mailing_expression import ExpressionEvaluator, expression_uses_assignment
-from .mailing_sender import MailingWorker, MessageSender
+from .mailing_expression import (
+    ExpressionError,
+    ExpressionEvaluator,
+    expression_uses_assignment,
+)
+from .mailing_sender import MailingWorker, MessageSender, OutgoingAttachment
 from .mailing_template import (
+    MAX_CAPTION_LENGTH,
+    MAX_TEXT_LENGTH,
     AssignmentContext,
     DayContext,
     FormContext,
@@ -77,6 +85,34 @@ class MailingRecipientNotFound(MailingError):
 class MailingNoRecipients(MailingError):
     def __init__(self) -> None:
         super().__init__("The mailing has no recipients with Telegram")
+
+
+class MailingAttachmentNotFound(MailingError):
+    def __init__(self) -> None:
+        super().__init__("The attachment is not in the mailing")
+
+
+class MailingAttachmentEmpty(MailingError):
+    def __init__(self) -> None:
+        super().__init__("The file is empty")
+
+
+class MailingAttachmentTooLarge(MailingError):
+    def __init__(self) -> None:
+        super().__init__(f"The file is too large: at most {MAX_ATTACHMENT_SIZE // 1024 // 1024} MB")
+
+
+class MailingTooManyAttachments(MailingError):
+    def __init__(self) -> None:
+        super().__init__(f"A mailing can have at most {MAX_ATTACHMENTS} attachments")
+
+
+class MailingFilterError(MailingError):
+    """The recipient filter expression is invalid."""
+
+    def __init__(self, error: ExpressionError) -> None:
+        super().__init__(str(error))
+        self.line = getattr(error, "line", None)
 
 
 class MailingTestSendFailed(MailingError):
@@ -219,6 +255,23 @@ def mailing_draft(mailing: Mailing) -> MailingDraft:
     )
 
 
+def attachment_snapshot(attachments: list[MailingAttachment]) -> list[dict[str, Any]]:
+    """Metadata of attachments for the message history: [{attachment_id, file_name, size}]."""
+    return [
+        {"attachment_id": attachment.id, "file_name": attachment.file_name, "size": attachment.size}
+        for attachment in attachments
+    ]
+
+
+async def _attachments_in_order(session: AsyncSession, ids: list[int]) -> list[MailingAttachment]:
+    """Attachment rows for the IDs, in the order of the IDs."""
+    if not ids:
+        return []
+    result = await session.execute(select(MailingAttachment).where(MailingAttachment.id.in_(ids)))
+    by_id = {attachment.id: attachment for attachment in result.scalars()}
+    return [by_id[i] for i in ids if i in by_id]
+
+
 class MailingService(BaseService):
     def __init__(
         self,
@@ -294,6 +347,8 @@ class MailingService(BaseService):
                 if source is None:
                     raise MailingNotFound
                 _apply_draft(mailing, mailing_draft(source))
+                # A copy references the same attachment blobs
+                mailing.attachment_ids = list(source.attachment_ids)
                 # Forms of another year can't be excluded here
                 if source.year_id != year_id:
                     mailing.excluded_form_ids = []
@@ -322,8 +377,80 @@ class MailingService(BaseService):
                 raise MailingNotFound
             if mailing.status != MailingStatus.DRAFT:
                 raise MailingNotDraft
+            attachment_ids = list(mailing.attachment_ids)
             await session.delete(mailing)
+            await self._delete_unreferenced_attachments(session, attachment_ids)
             await session.commit()
+
+    async def get_attachments(self, mailing_ids: list[int]) -> dict[int, list[MailingAttachment]]:
+        """Attachments of the mailings, in the order of each mailing's `attachment_ids`."""
+        async with self.session_scope() as session:
+            result = await session.execute(
+                select(Mailing.id, Mailing.attachment_ids).where(Mailing.id.in_(mailing_ids))
+            )
+            ids_by_mailing = {row[0]: row[1] for row in result.all()}
+            return {
+                mailing_id: await _attachments_in_order(
+                    session, list(ids_by_mailing.get(mailing_id) or [])
+                )
+                for mailing_id in mailing_ids
+            }
+
+    async def upload_attachment(
+        self, mailing_id: int, file_name: str, data: bytes, author_id: int
+    ) -> MailingAttachment:
+        """Attach a file to a draft: store the blob and reference it from the mailing."""
+        file_name = Path(file_name).name or "attachment"
+        async with self.session_scope() as session:
+            mailing = await session.get(Mailing, mailing_id, with_for_update=True)
+            if mailing is None:
+                raise MailingNotFound
+            if mailing.status != MailingStatus.DRAFT:
+                raise MailingNotDraft
+            if len(mailing.attachment_ids) >= MAX_ATTACHMENTS:
+                raise MailingTooManyAttachments
+            if not data:
+                raise MailingAttachmentEmpty
+            if len(data) > MAX_ATTACHMENT_SIZE:
+                raise MailingAttachmentTooLarge
+            attachment = MailingAttachment(
+                file_name=file_name,
+                size=len(data),
+                data=data,
+                created_by_id=author_id,
+            )
+            session.add(attachment)
+            await session.flush()
+            mailing.attachment_ids = [*mailing.attachment_ids, attachment.id]
+            await session.commit()
+            return attachment
+
+    async def delete_attachment(self, mailing_id: int, attachment_id: int) -> None:
+        """Detach a file from a draft, deleting the blob if no other mailing references it."""
+        async with self.session_scope() as session:
+            mailing = await session.get(Mailing, mailing_id, with_for_update=True)
+            if mailing is None:
+                raise MailingNotFound
+            if mailing.status != MailingStatus.DRAFT:
+                raise MailingNotDraft
+            if attachment_id not in mailing.attachment_ids:
+                raise MailingAttachmentNotFound
+            mailing.attachment_ids = [i for i in mailing.attachment_ids if i != attachment_id]
+            await self._delete_unreferenced_attachments(session, [attachment_id])
+            await session.commit()
+
+    async def _delete_unreferenced_attachments(self, session: AsyncSession, ids: list[int]) -> None:
+        """Delete attachment blobs no mailing references anymore (the last reference was removed)."""
+        if not ids:
+            return
+        result = await session.execute(select(Mailing.attachment_ids))
+        referenced = {i for (attachment_ids,) in result for i in (attachment_ids or [])}
+        orphans = [i for i in ids if i not in referenced]
+        if orphans:
+            await session.execute(
+                delete(MailingAttachment).where(MailingAttachment.id.in_(orphans))
+            )
+            self.logger.info(f"Deleted unreferenced attachments: {orphans}")
 
     async def _plan(
         self, session: AsyncSession, year_id: int, draft: MailingDraft
@@ -433,11 +560,24 @@ class MailingService(BaseService):
             return await self._plan(session, year_id, draft)
 
     async def preview(
-        self, year_id: int, draft: MailingDraft, form_id: int, user_day_id: int | None
+        self,
+        year_id: int,
+        draft: MailingDraft,
+        form_id: int,
+        user_day_id: int | None,
+        mailing_id: int | None = None,
     ) -> RenderedMessage:
         """Render the message for one of the recipients of the draft."""
+        max_text_length = MAX_TEXT_LENGTH
         async with self.session_scope() as session:
             plan = await self._plan(session, year_id, draft)
+            if mailing_id is not None:
+                mailing = await session.get(Mailing, mailing_id)
+                if mailing is None:
+                    raise MailingNotFound
+                # With attachments the text goes to a caption, which has a lower limit
+                if mailing.attachment_ids:
+                    max_text_length = MAX_CAPTION_LENGTH
         for recipient in plan.recipients:
             if recipient.form.id != form_id:
                 continue
@@ -447,6 +587,7 @@ class MailingService(BaseService):
                         draft.template,
                         [button.model_dump() for button in draft.buttons],
                         template_context(plan.year, recipient.form, user_day),
+                        max_text_length=max_text_length,
                     )
         raise MailingRecipientNotFound
 
@@ -457,15 +598,19 @@ class MailingService(BaseService):
         form_id: int,
         user_day_id: int | None,
         admin_id: int,
+        mailing_id: int,
     ) -> None:
         """Send the message rendered for a recipient to the admin, nothing is recorded."""
-        message = await self.preview(year_id, draft, form_id, user_day_id)
+        message = await self.preview(year_id, draft, form_id, user_day_id, mailing_id)
         if message.errors:
             raise MailingTestSendFailed(message.errors[0].message)
         async with self.session_scope() as session:
             admin = await session.scalar(
                 select(User).where(User.id == admin_id).options(selectinload(User.identities))
             )
+            mailing = await session.get(Mailing, mailing_id)
+            attachment_ids = list(mailing.attachment_ids) if mailing is not None else []
+            attachments = await _attachments_in_order(session, attachment_ids)
         chat_id = _chat_id(admin) if admin else None
         if chat_id is None:
             raise MailingAdminWithoutTelegram
@@ -474,6 +619,7 @@ class MailingService(BaseService):
                 chat_id,
                 message.text,
                 [{"text": b.text, "url": b.url} for b in message.buttons],
+                [OutgoingAttachment(a.file_name, bytes(a.data)) for a in attachments],
             )
         except Exception as e:
             raise MailingTestSendFailed(str(e)) from e
@@ -489,6 +635,9 @@ class MailingService(BaseService):
             draft = mailing_draft(mailing)
             plan = await self._plan(session, mailing.year_id, draft)
             buttons = [button.model_dump() for button in draft.buttons]
+            attachments = await _attachments_in_order(session, list(mailing.attachment_ids))
+            # With attachments the text goes to a caption, which has a lower limit
+            max_text_length = MAX_CAPTION_LENGTH if attachments else MAX_TEXT_LENGTH
 
             messages: list[MailingMessage] = []
             errors: list[RecipientRenderError] = []
@@ -500,6 +649,7 @@ class MailingService(BaseService):
                         draft.template,
                         buttons,
                         template_context(plan.year, recipient.form, user_day),
+                        max_text_length=max_text_length,
                     )
                     # Messages that won't be sent don't have to be valid
                     if recipient.chat_id is not None:
@@ -524,6 +674,7 @@ class MailingService(BaseService):
                             chat_id=recipient.chat_id,
                             text=rendered.text,
                             buttons=[{"text": b.text, "url": b.url} for b in rendered.buttons],
+                            attachments=attachment_snapshot(attachments),
                             status=MailingMessageStatus.PENDING
                             if recipient.chat_id is not None
                             else MailingMessageStatus.SKIPPED,

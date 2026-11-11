@@ -12,6 +12,8 @@ from pydantic import BaseModel, ConfigDict, Field
 
 # Limit of the message text after parsing the markup, in UTF-16 code units
 MAX_TEXT_LENGTH = 4096
+# The text of a message with attachments goes to a document caption
+MAX_CAPTION_LENGTH = 1024
 
 # Variables that exist only when the mailing has an assignment filter
 ASSIGNMENT_VARIABLES = frozenset({"assignment", "day", "position", "hall"})
@@ -200,7 +202,10 @@ def _render(
 
 
 def render_message(
-    template: str, buttons: list[dict[str, str]], context: TemplateContext
+    template: str,
+    buttons: list[dict[str, str]],
+    context: TemplateContext,
+    max_text_length: int = MAX_TEXT_LENGTH,
 ) -> RenderedMessage:
     """Render the message for a recipient and validate it against the limits of Telegram."""
     variables = context.variables()
@@ -208,7 +213,9 @@ def render_message(
 
     text = _render(_html_env, template, variables, "text", None, errors)
     if not errors:
-        errors.extend(RenderError("text", message) for message in validate_html(text))
+        errors.extend(
+            RenderError("text", message) for message in validate_html(text, max_text_length)
+        )
 
     rendered_buttons = []
     for i, button in enumerate(buttons):
@@ -314,7 +321,7 @@ class _TelegramHTMLValidator(HTMLParser):
         self.errors.append("HTML declarations are not supported")
 
 
-def validate_html(text: str) -> list[str]:
+def validate_html(text: str, max_length: int = MAX_TEXT_LENGTH) -> list[str]:
     """Problems of the Telegram HTML message, empty if Telegram will accept it."""
     parser = _TelegramHTMLValidator()
     parser.feed(text)
@@ -329,7 +336,7 @@ def validate_html(text: str) -> list[str]:
     if not plain.strip():
         errors.append("Message text is empty")
     length = len(plain.encode("utf-16-le")) // 2
-    if length > MAX_TEXT_LENGTH:
-        errors.append(f"Message is too long: {length} characters, at most {MAX_TEXT_LENGTH}")
+    if length > max_length:
+        errors.append(f"Message is too long: {length} characters, at most {max_length}")
     # Same error reported for every occurrence is noise
     return list(dict.fromkeys(errors))

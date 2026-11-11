@@ -326,7 +326,11 @@ export function MailingProgress({ mailing }: { mailing: MailingResponse }) {
                 )}
               </Box>
               {opened.error && <Alert severity="error">{opened.error}</Alert>}
-              <TelegramMessage text={opened.text} buttons={opened.buttons} />
+              <TelegramMessage
+                text={opened.text}
+                buttons={opened.buttons}
+                attachments={opened.attachments}
+              />
             </Stack>
           )}
         </DialogContent>
