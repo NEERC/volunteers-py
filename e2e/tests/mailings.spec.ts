@@ -208,10 +208,10 @@ test("admin filters recipients with an expression", async ({
 
   await test.step("a broken expression shows an error", async () => {
     await expression.click();
-    await page.keyboard.press("End");
-    await page.keyboard.type(" and");
+    await page.keyboard.press("ControlOrMeta+a");
+    await page.keyboard.type(`user.last_name_ru == "${users.vol2.lastNameRu}" and`);
     await page.keyboard.press("Escape");
-    await expect(page.getByRole("alert").last()).toBeVisible();
+    await expect(page.getByTestId("mailing-filter-error")).toBeVisible();
     // The previous recipients stay while the expression is broken
     await expect(recipients.getByRole("row")).toHaveCount(1);
   });

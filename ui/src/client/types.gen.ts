@@ -2576,5 +2576,5 @@ export type ProxyPathGetResponses = {
 };
 
 export type ClientOptions = {
-    baseURL: `${string}://${string}` | (string & {});
+    baseURL: 'http://localhost:8000' | (string & {});
 };

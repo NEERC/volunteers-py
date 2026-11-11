@@ -457,7 +457,11 @@ export function MailingDraftEditor({ mailing }: { mailing: MailingResponse }) {
             </Alert>
           )}
           {recipients.error && (
-            <Alert severity="error" sx={{ mb: 2 }}>
+            <Alert
+              severity="error"
+              sx={{ mb: 2 }}
+              data-testid="mailing-filter-error"
+            >
               {filterError?.message ??
                 apiErrorMessage(
                   recipients.error,
