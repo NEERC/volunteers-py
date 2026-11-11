@@ -4,16 +4,35 @@ from datetime import UTC, datetime, timedelta
 from typing import Annotated
 
 from dependency_injector.wiring import Provide, inject
-from fastapi import APIRouter, Depends, Header, HTTPException, Path, Query, Request
+from fastapi import (
+    APIRouter,
+    Depends,
+    File,
+    Header,
+    HTTPException,
+    Path,
+    Query,
+    Request,
+    UploadFile,
+)
 from fastapi.responses import StreamingResponse
 
 from volunteers.auth.deps import with_admin
 from volunteers.core.di import Container
-from volunteers.models import Mailing, MailingMessage, MailingMessageStatus, MailingStatus, User
+from volunteers.models import (
+    Mailing,
+    MailingAttachment,
+    MailingMessage,
+    MailingMessageStatus,
+    MailingStatus,
+    User,
+)
 from volunteers.schemas.base import BaseSuccessResponse
 from volunteers.schemas.mailing import MailingButton, MailingDraft
 from volunteers.services.errors import DomainError
 from volunteers.services.mailing import (
+    MailingAttachmentEmpty,
+    MailingAttachmentTooLarge,
     MailingError,
     MailingInvalid,
     MailingNoRecipients,
@@ -22,12 +41,14 @@ from volunteers.services.mailing import (
     MailingNotResendable,
     MailingService,
     MailingTestSendFailed,
+    MailingTooManyAttachments,
     mailing_draft,
 )
 from volunteers.services.mailing_template import RenderError, template_variables
 
 from .schemas import (
     CreateMailingRequest,
+    MailingAttachmentMeta,
     MailingCounts,
     MailingEvent,
     MailingListResponse,
@@ -63,7 +84,14 @@ MailingServiceDep = Annotated[MailingService, Depends(Provide[Container.mailing_
 def _http_error(error: DomainError) -> HTTPException:
     if isinstance(error, MailingNotDraft | MailingNotCancellable | MailingNotResendable):
         status_code = 409
-    elif isinstance(error, MailingNoRecipients | MailingTestSendFailed):
+    elif isinstance(
+        error,
+        MailingNoRecipients
+        | MailingTestSendFailed
+        | MailingAttachmentEmpty
+        | MailingAttachmentTooLarge
+        | MailingTooManyAttachments,
+    ):
         status_code = 400
     elif isinstance(error, MailingError):
         status_code = 404
@@ -79,7 +107,17 @@ def _mailing_user(user: User | None) -> MailingUser | None:
     return MailingUser(user_id=user.id, name=f"{user.first_name_ru} {user.last_name_ru}")
 
 
-def _mailing_response(mailing: Mailing, counts: dict[MailingMessageStatus, int]) -> MailingResponse:
+def _attachment_meta(attachment: MailingAttachment) -> MailingAttachmentMeta:
+    return MailingAttachmentMeta(
+        attachment_id=attachment.id, file_name=attachment.file_name, size=attachment.size
+    )
+
+
+def _mailing_response(
+    mailing: Mailing,
+    counts: dict[MailingMessageStatus, int],
+    attachments: list[MailingAttachment],
+) -> MailingResponse:
     draft = mailing_draft(mailing)
     return MailingResponse(
         mailing_id=mailing.id,
@@ -91,6 +129,7 @@ def _mailing_response(mailing: Mailing, counts: dict[MailingMessageStatus, int])
         filter=draft.filter,
         excluded_form_ids=draft.excluded_form_ids,
         assignment_mode=draft.assignment_mode,
+        attachments=[_attachment_meta(attachment) for attachment in attachments],
         created_by=_mailing_user(mailing.created_by),
         started_by=_mailing_user(mailing.started_by),
         created_at=mailing.created_at,
@@ -107,7 +146,8 @@ async def _get_mailing_response(service: MailingService, mailing_id: int) -> Mai
     except DomainError as e:
         raise _http_error(e) from e
     counts = await service.get_message_counts([mailing_id])
-    return _mailing_response(mailing, counts[mailing_id])
+    attachments = await service.get_attachments([mailing_id])
+    return _mailing_response(mailing, counts[mailing_id], attachments[mailing_id])
 
 
 def _message_response(message: MailingMessage) -> MailingMessageResponse:
@@ -121,6 +161,7 @@ def _message_response(message: MailingMessage) -> MailingMessageResponse:
         assignment_label=message.assignment_label,
         text=message.text,
         buttons=[MailingButton.model_validate(button) for button in message.buttons],
+        attachments=[MailingAttachmentMeta.model_validate(a) for a in message.attachments],
         status=message.status,
         error=message.error,
         sent_at=message.sent_at,
@@ -147,7 +188,10 @@ async def get_mailings(
 ) -> MailingListResponse:
     mailings = await mailing_service.get_mailings(year_id)
     counts = await mailing_service.get_message_counts([m.id for m in mailings])
-    return MailingListResponse(mailings=[_mailing_response(m, counts[m.id]) for m in mailings])
+    attachments = await mailing_service.get_attachments([m.id for m in mailings])
+    return MailingListResponse(
+        mailings=[_mailing_response(m, counts[m.id], attachments[m.id]) for m in mailings]
+    )
 
 
 @router.post("/year/{year_id}", description="Create a draft mailing, empty or a copy of another")
@@ -219,14 +263,20 @@ async def preview_message(
 ) -> MailingPreviewResponse:
     try:
         message = await mailing_service.preview(
-            year_id, request.draft, request.form_id, request.user_day_id
+            year_id,
+            request.draft,
+            request.form_id,
+            request.user_day_id,
+            request.mailing_id,
         )
     except DomainError as e:
         raise _http_error(e) from e
+    attachments = await mailing_service.get_attachments([request.mailing_id])
     return MailingPreviewResponse(
         text=message.text,
         buttons=[MailingButton(text=b.text, url=b.url) for b in message.buttons],
         errors=[_render_error(error) for error in message.errors],
+        attachments=[_attachment_meta(a) for a in attachments[request.mailing_id]],
     )
 
 
@@ -243,7 +293,12 @@ async def test_send_message(
 ) -> BaseSuccessResponse:
     try:
         await mailing_service.test_send(
-            year_id, request.draft, request.form_id, request.user_day_id, user.id
+            year_id,
+            request.draft,
+            request.form_id,
+            request.user_day_id,
+            user.id,
+            request.mailing_id,
         )
     except DomainError as e:
         raise _http_error(e) from e
@@ -282,6 +337,44 @@ async def delete_mailing(
     try:
         await mailing_service.delete_draft(mailing_id)
     except DomainError as e:
+        raise _http_error(e) from e
+    return BaseSuccessResponse()
+
+
+@router.post(
+    "/{mailing_id}/attachments",
+    description="Attach a file to a draft mailing, at most 10 MB",
+)
+@inject
+async def upload_attachment(
+    mailing_id: Annotated[int, Path(title="The ID of the mailing")],
+    file: Annotated[UploadFile, File(description="The file to attach")],
+    user: Annotated[User, Depends(with_admin)],
+    mailing_service: MailingServiceDep,
+) -> MailingAttachmentMeta:
+    data = await file.read()
+    try:
+        attachment = await mailing_service.upload_attachment(
+            mailing_id, file.filename or "", data, user.id
+        )
+    except MailingError as e:
+        raise _http_error(e) from e
+    return _attachment_meta(attachment)
+
+
+@router.delete(
+    "/{mailing_id}/attachments/{attachment_id}",
+    description="Detach a file from a draft mailing",
+)
+@inject
+async def delete_attachment(
+    mailing_id: Annotated[int, Path(title="The ID of the mailing")],
+    attachment_id: Annotated[int, Path(title="The ID of the attachment")],
+    mailing_service: MailingServiceDep,
+) -> BaseSuccessResponse:
+    try:
+        await mailing_service.delete_attachment(mailing_id, attachment_id)
+    except MailingError as e:
         raise _http_error(e) from e
     return BaseSuccessResponse()
 

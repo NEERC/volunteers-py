@@ -8,6 +8,7 @@ import { useCallback, useEffect, useState } from "react";
 import {
   cancelMailingApiV1AdminMailingMailingIdCancelPost,
   createMailingApiV1AdminMailingYearYearIdPost,
+  deleteAttachmentApiV1AdminMailingMailingIdAttachmentsAttachmentIdDelete,
   deleteMailingApiV1AdminMailingMailingIdDelete,
   editMailingApiV1AdminMailingMailingIdEditPost,
   getMailingApiV1AdminMailingMailingIdGet,
@@ -18,8 +19,10 @@ import {
   resendMessagesApiV1AdminMailingMailingIdResendPost,
   startMailingApiV1AdminMailingMailingIdStartPost,
   testSendMessageApiV1AdminMailingYearYearIdTestSendPost,
+  uploadAttachmentApiV1AdminMailingMailingIdAttachmentsPost,
 } from "@/client";
 import type {
+  MailingAttachmentMeta,
   MailingDraft,
   MailingMessageResponse,
   MailingPreviewRequest,
@@ -172,6 +175,75 @@ export const useDeleteMailing = () => {
       queryClient.invalidateQueries({
         queryKey: queryKeys.admin.mailings.year(mailing.year_id),
       });
+    },
+  });
+};
+
+/** Update the cached detail of a mailing, creating it if the cache is empty. */
+const useUpdateMailingCache = () => {
+  const queryClient = useQueryClient();
+  return (
+    mailingId: number,
+    update: (mailing: MailingResponse) => MailingResponse,
+  ) => {
+    queryClient.setQueryData<MailingResponse>(
+      queryKeys.admin.mailings.detail(mailingId),
+      (previous) => previous && update(previous),
+    );
+  };
+};
+
+export const useUploadAttachment = () => {
+  const updateMailing = useUpdateMailingCache();
+  return useMutation({
+    mutationFn: async ({
+      mailingId,
+      file,
+    }: {
+      mailingId: number;
+      file: File;
+    }) => {
+      const response =
+        await uploadAttachmentApiV1AdminMailingMailingIdAttachmentsPost({
+          path: { mailing_id: mailingId },
+          body: { file },
+          throwOnError: true,
+        });
+      return response.data as MailingAttachmentMeta;
+    },
+    onSuccess: (meta, { mailingId }) => {
+      updateMailing(mailingId, (mailing) => ({
+        ...mailing,
+        attachments: [...mailing.attachments, meta],
+      }));
+    },
+  });
+};
+
+export const useDeleteAttachment = () => {
+  const updateMailing = useUpdateMailingCache();
+  return useMutation({
+    mutationFn: async ({
+      mailingId,
+      attachmentId,
+    }: {
+      mailingId: number;
+      attachmentId: number;
+    }) => {
+      await deleteAttachmentApiV1AdminMailingMailingIdAttachmentsAttachmentIdDelete(
+        {
+          path: { mailing_id: mailingId, attachment_id: attachmentId },
+          throwOnError: true,
+        },
+      );
+    },
+    onSuccess: (_data, { mailingId, attachmentId }) => {
+      updateMailing(mailingId, (mailing) => ({
+        ...mailing,
+        attachments: mailing.attachments.filter(
+          (attachment) => attachment.attachment_id !== attachmentId,
+        ),
+      }));
     },
   });
 };
