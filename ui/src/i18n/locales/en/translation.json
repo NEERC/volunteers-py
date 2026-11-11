@@ -403,6 +403,8 @@
   "Queued": "Queued",
   "Recipient": "Recipient",
   "Recipients": "Recipients",
+  "Expression filter": "Expression filter",
+  "An optional Python expression over the same variables as the message template. It is applied to every application form, or to every assignment if it mentions the assignment variables (assignment, day, position, hall). Empty means no filter.": "An optional Python expression over the same variables as the message template. It is applied to every application form, or to every assignment if it mentions the assignment variables (assignment, day, position, hall). Empty means no filter.",
   "Recipients with several matching assignments get": "Recipients with several matching assignments get",
   "Resend": "Resend",
   "Resend messages": "Resend messages",

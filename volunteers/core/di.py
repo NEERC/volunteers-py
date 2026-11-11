@@ -11,6 +11,7 @@ from volunteers.services.export import ExportService
 from volunteers.services.i18n import I18nService
 from volunteers.services.identity import IdentityService
 from volunteers.services.mailing import MailingService
+from volunteers.services.mailing_expression import create_expression_evaluator
 from volunteers.services.mailing_sender import MailingWorker, TelegramSender
 from volunteers.services.user import UserService
 from volunteers.services.user_merge import UserMergeService
@@ -59,8 +60,12 @@ class Container(containers.DeclarativeContainer):
         messages_per_second=config.provided.mailing.messages_per_second,
         poll_interval=config.provided.mailing.poll_interval,
     )
+    expression_evaluator = providers.Resource(create_expression_evaluator)
     mailing_service = providers.Singleton(
-        MailingService, sender=telegram_sender, worker=mailing_worker
+        MailingService,
+        sender=telegram_sender,
+        worker=mailing_worker,
+        expression_evaluator=expression_evaluator,
     )
 
 

@@ -17,11 +17,19 @@ class MailingFilter(BaseModel):
     # Assignments without a hall, together with `hall_ids`
     no_hall: bool = False
     attendance: list[Attendance] = []
+    # Sandboxed Python expression over the template context; empty = no restriction.
+    # Evaluated once per application form, or per assignment if it mentions the
+    # assignment variables (assignment, day, position, hall).
+    expression: str | None = None
 
-    def is_empty(self) -> bool:
-        return not (
+    def has_conditions(self) -> bool:
+        """The classic per-assignment conditions."""
+        return bool(
             self.day_ids or self.position_ids or self.hall_ids or self.no_hall or self.attendance
         )
+
+    def is_empty(self) -> bool:
+        return not self.has_conditions() and not (self.expression or "").strip()
 
     def matches(self, user_day: UserDay) -> bool:
         if self.day_ids and user_day.day_id not in self.day_ids:

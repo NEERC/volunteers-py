@@ -45,6 +45,7 @@ from volunteers.services.mailing import (
     MailingNotDraft,
     MailingService,
 )
+from volunteers.services.mailing_expression import ExpressionError, ExpressionEvaluator
 from volunteers.services.mailing_sender import SENDER_LOCK_KEY, MailingWorker
 
 # Admin URL of a Postgres server, e.g. postgresql+asyncpg://postgres:postgres@localhost:5432/postgres.
@@ -121,9 +122,21 @@ def worker(engine: AsyncEngine, sender: FakeSender, notifier: FakeNotifier) -> M
     return worker
 
 
+@pytest.fixture(scope="module")
+def expression_evaluator() -> ExpressionEvaluator:
+    evaluator = ExpressionEvaluator()
+    yield evaluator
+    evaluator.shutdown()
+
+
 @pytest.fixture
-def service(engine: AsyncEngine, sender: FakeSender, worker: MailingWorker) -> MailingService:
-    service = MailingService(sender, worker)
+def service(
+    engine: AsyncEngine,
+    sender: FakeSender,
+    worker: MailingWorker,
+    expression_evaluator: ExpressionEvaluator,
+) -> MailingService:
+    service = MailingService(sender, worker, expression_evaluator)
     service.db = engine
     return service
 
@@ -199,7 +212,9 @@ async def seed(engine: AsyncEngine) -> Seed:
         )
 
         forms = {
-            name: ApplicationForm(year_id=year.id, user_id=user.id, itmo_group="M3100")
+            name: ApplicationForm(
+                year_id=year.id, user_id=user.id, extra_fields={"itmo_group": "M3100"}
+            )
             for name, user in (("alice", alice), ("bob", bob), ("carol", carol), ("dave", dave))
         }
         session.add_all([*forms.values(), ApplicationForm(year_id=other_year.id, user_id=eve.id)])
@@ -719,3 +734,82 @@ async def test_test_message_goes_to_the_admin_only(
         )
     with pytest.raises(MailingAdminWithoutTelegram):
         await service.test_send(seed.year_id, draft(), seed.alice_form_id, None, seed.admin_id)
+
+
+# --- Recipient expression filter ---
+
+
+async def test_form_level_expression_reaches_forms_without_assignments(
+    service: MailingService, seed: Seed
+) -> None:
+    d = draft(filter=MailingFilter(expression='user.telegram_username in ("alice", "dave")'))
+
+    assert set(await recipients(service, seed, d)) == {seed.alice_form_id, seed.dave_form_id}
+
+
+async def test_expression_over_extra_fields(
+    engine: AsyncEngine, service: MailingService, seed: Seed
+) -> None:
+    async with async_sessionmaker(engine, expire_on_commit=False)() as session:
+        dave = await session.get(ApplicationForm, seed.dave_form_id)
+        assert dave is not None
+        dave.extra_fields = {"lives_in_vyazma": True}
+        await session.commit()
+
+    d = draft(filter=MailingFilter(expression='form.extra_fields.get("lives_in_vyazma") == True'))
+
+    assert set(await recipients(service, seed, d)) == {seed.dave_form_id}
+
+
+async def test_expression_with_assignment_variables_filters_assignments(
+    service: MailingService, seed: Seed
+) -> None:
+    d = draft(filter=MailingFilter(expression="day.name == 'Day 1'"))
+
+    plan = await service.get_recipients(seed.year_id, d)
+    by_form = {r.form.id: r for r in plan.recipients}
+
+    # Carol (day 2 only) and Dave (no assignments) drop out; Alice keeps day 1 only
+    assert set(by_form) == {seed.alice_form_id, seed.bob_form_id}
+    assert [ud.id for ud in by_form[seed.alice_form_id].assignments] == [seed.alice_day1_id]
+    assert [ud.day_id for ud in by_form[seed.bob_form_id].assignments] == [seed.day1_id]
+
+
+async def test_expression_combines_with_classic_conditions(
+    service: MailingService, seed: Seed
+) -> None:
+    d = draft(
+        template="Day: {{ day.name }}",
+        filter=MailingFilter(expression="day.name == 'Day 1'", position_ids=[seed.registration_id]),
+    )
+
+    # Only Alice's day 1 registration matches both the expression and the position
+    assert await recipients(service, seed, d) == {seed.alice_form_id: [seed.alice_day1_id]}
+
+
+async def test_invalid_expression_raises_filter_error(service: MailingService, seed: Seed) -> None:
+    with pytest.raises(ExpressionError):
+        await service.get_recipients(
+            seed.year_id, draft(filter=MailingFilter(expression="user.phone and"))
+        )
+    with pytest.raises(ExpressionError):
+        await service.get_recipients(
+            seed.year_id, draft(filter=MailingFilter(expression="foo == 1"))
+        )
+
+
+async def test_start_is_blocked_by_an_invalid_expression(
+    service: MailingService, seed: Seed
+) -> None:
+    mailing = await service.create_draft(seed.year_id, seed.admin_id)
+    await service.update_draft(mailing.id, draft(filter=MailingFilter(expression="user.phone and")))
+
+    with pytest.raises(ExpressionError):
+        await service.start(mailing.id, seed.admin_id)
+    assert (await service.get_mailing(mailing.id)).status == MailingStatus.DRAFT
+
+
+async def test_whitespace_only_expression_is_no_filter(service: MailingService, seed: Seed) -> None:
+    plan = await service.get_recipients(seed.year_id, draft(filter=MailingFilter(expression="  ")))
+
+    assert len(plan.recipients) == 4

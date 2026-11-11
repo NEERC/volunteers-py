@@ -61,6 +61,7 @@ import {
 } from "@/data/use-mailings";
 import { useDebouncedValue } from "@/hooks/useDebouncedValue";
 import { apiErrorMessage } from "@/utils/apiErrorHandling";
+import { ExpressionEditor } from "./ExpressionEditor";
 import { ATTENDANCE_LABELS, MailingStatusChip } from "./status";
 import { TelegramMessage } from "./TelegramMessage";
 import { TemplateEditor } from "./TemplateEditor";
@@ -378,6 +379,24 @@ export function MailingDraftEditor({ mailing }: { mailing: MailingResponse }) {
             />
           </Box>
 
+          <Box sx={{ mb: 2 }}>
+            <Typography variant="subtitle1" gutterBottom>
+              {t("Expression filter")}
+            </Typography>
+            <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+              {t(
+                "An optional Python expression over the same variables as the message template. It is applied to every application form, or to every assignment if it mentions the assignment variables (assignment, day, position, hall). Empty means no filter.",
+              )}
+            </Typography>
+            <ExpressionEditor
+              value={filter.expression ?? ""}
+              onChange={(expression) =>
+                updateFilter({ expression: expression || null })
+              }
+              testId="mailing-filter-expression"
+            />
+          </Box>
+
           {usesAssignment && !filterEmpty && (
             <Box sx={{ display: "flex", alignItems: "center", gap: 2, mb: 2 }}>
               <Typography variant="body2">
@@ -415,7 +434,11 @@ export function MailingDraftEditor({ mailing }: { mailing: MailingResponse }) {
             </Alert>
           )}
           {recipients.error && (
-            <Alert severity="error" sx={{ mb: 2 }}>
+            <Alert
+              severity="error"
+              sx={{ mb: 2 }}
+              data-testid="mailing-filter-error"
+            >
               {apiErrorMessage(
                 recipients.error,
                 t("Failed to load recipients"),

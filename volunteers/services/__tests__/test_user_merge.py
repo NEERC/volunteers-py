@@ -144,9 +144,15 @@ async def seed(engine: AsyncEngine) -> Seed:
         session.add_all([old_user, new_user, other_user])
         await session.flush()
 
-        old_form1 = ApplicationForm(year_id=year1.id, user_id=old_user.id, comments="old")
-        new_form1 = ApplicationForm(year_id=year1.id, user_id=new_user.id, comments="new")
-        new_form2 = ApplicationForm(year_id=year2.id, user_id=new_user.id, comments="new 2")
+        old_form1 = ApplicationForm(
+            year_id=year1.id, user_id=old_user.id, extra_fields={"comments": "old"}
+        )
+        new_form1 = ApplicationForm(
+            year_id=year1.id, user_id=new_user.id, extra_fields={"comments": "new"}
+        )
+        new_form2 = ApplicationForm(
+            year_id=year2.id, user_id=new_user.id, extra_fields={"comments": "new 2"}
+        )
         session.add_all([old_form1, new_form1, new_form2])
         await session.flush()
         session.add_all(

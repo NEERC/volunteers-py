@@ -402,6 +402,7 @@ export type MailingFilter = {
     hall_ids?: Array<number>;
     no_hall?: boolean;
     attendance?: Array<Attendance>;
+    expression?: string | null;
 };
 
 export type MailingListResponse = {
