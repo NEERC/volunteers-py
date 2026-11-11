@@ -212,8 +212,8 @@ test("admin filters recipients with an expression", async ({
     await page.keyboard.type(`user.last_name_ru == "${users.vol2.lastNameRu}" and`);
     await page.keyboard.press("Escape");
     await expect(page.getByTestId("mailing-filter-error")).toBeVisible();
-    // The previous recipients stay while the expression is broken
-    await expect(recipients.getByRole("row")).toHaveCount(1);
+    // The recipients can't be computed while the expression is broken
+    await expect(recipients.getByRole("row")).toHaveCount(0);
   });
 
   await test.step("clearing the expression restores the recipients", async () => {
