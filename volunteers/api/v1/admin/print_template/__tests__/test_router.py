@@ -52,7 +52,12 @@ async def test_template_crud(client: AsyncClient, seed: Seed) -> None:  # noqa: 
     assert created.status_code == 200
     template = created.json()
     assert "render-each" in template["source"]
-    assert "std.typ" in [asset["file_name"] for asset in template["assets"]]
+    assert 'font: "Helvetica-ICPC"' in template["source"]
+    assert {asset["file_name"] for asset in template["assets"]} == {
+        "std.typ",
+        "Helvetica-ICPCPlain-20251211.ttf",
+        "Helvetica-ICPCBold-20251211.ttf",
+    }
     template_url = f"{url}/{template['template_id']}"
     assert (await client.get(template_url)).json() == template
     assert (await client.get(url)).json()["templates"][0]["title"] == "Volunteer badge"

@@ -16,14 +16,15 @@ def starter_source() -> str:
 
 
 def default_assets() -> list[tuple[str, str, bytes]]:
-    return [
-        ("std.typ", "text/plain", (_ASSETS / "std.typ").read_bytes()),
+    fonts = [
         (
-            "NotoSans-Regular.ttf",
+            name,
             "font/ttf",
-            gzip.decompress((_ASSETS / "NotoSans-Regular.ttf.gz").read_bytes()),
-        ),
+            gzip.decompress((_ASSETS / f"{name}.gz").read_bytes()),
+        )
+        for name in ("Helvetica-ICPCPlain-20251211.ttf", "Helvetica-ICPCBold-20251211.ttf")
     ]
+    return [("std.typ", "text/plain", (_ASSETS / "std.typ").read_bytes()), *fonts]
 
 
 class PrintCompilationError(Exception):
