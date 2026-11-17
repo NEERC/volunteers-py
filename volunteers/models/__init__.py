@@ -15,6 +15,8 @@ __all__ = [
     "MailingMessageStatus",
     "MailingStatus",
     "Position",
+    "PrintTemplate",
+    "PrintTemplateAsset",
     "User",
     "UserDay",
     "UserIdentity",
@@ -45,3 +47,4 @@ from .models import (
     UserIdentity,
     Year,
 )
+from .print_template import PrintTemplate, PrintTemplateAsset
