@@ -26,7 +26,9 @@ import { Route as LoggedInYearIdRegistrationFormsImport } from './routes/_logged
 import { Route as LoggedInYearIdRegistrationImport } from './routes/_logged-in/$yearId/registration'
 import { Route as LoggedInYearIdContactsImport } from './routes/_logged-in/$yearId/contacts'
 import { Route as LoggedInYearIdAttendanceImport } from './routes/_logged-in/$yearId/attendance'
+import { Route as LoggedInYearIdTemplatesIndexImport } from './routes/_logged-in/$yearId/templates/index'
 import { Route as LoggedInYearIdMailingsIndexImport } from './routes/_logged-in/$yearId/mailings/index'
+import { Route as LoggedInYearIdTemplatesTemplateIdImport } from './routes/_logged-in/$yearId/templates/$templateId'
 import { Route as LoggedInYearIdMailingsMailingIdImport } from './routes/_logged-in/$yearId/mailings/$mailingId'
 import { Route as LoggedInYearIdDaysDayIdIndexImport } from './routes/_logged-in/$yearId/days/$dayId/index'
 import { Route as LoggedInYearIdDaysDayIdEditImport } from './routes/_logged-in/$yearId/days/$dayId/edit'
@@ -126,10 +128,24 @@ const LoggedInYearIdAttendanceRoute = LoggedInYearIdAttendanceImport.update({
   getParentRoute: () => LoggedInYearIdRoute,
 } as any)
 
+const LoggedInYearIdTemplatesIndexRoute =
+  LoggedInYearIdTemplatesIndexImport.update({
+    id: '/templates/',
+    path: '/templates/',
+    getParentRoute: () => LoggedInYearIdRoute,
+  } as any)
+
 const LoggedInYearIdMailingsIndexRoute =
   LoggedInYearIdMailingsIndexImport.update({
     id: '/mailings/',
     path: '/mailings/',
+    getParentRoute: () => LoggedInYearIdRoute,
+  } as any)
+
+const LoggedInYearIdTemplatesTemplateIdRoute =
+  LoggedInYearIdTemplatesTemplateIdImport.update({
+    id: '/templates/$templateId',
+    path: '/templates/$templateId',
     getParentRoute: () => LoggedInYearIdRoute,
   } as any)
 
@@ -277,11 +293,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LoggedInYearIdMailingsMailingIdImport
       parentRoute: typeof LoggedInYearIdImport
     }
+    '/_logged-in/$yearId/templates/$templateId': {
+      id: '/_logged-in/$yearId/templates/$templateId'
+      path: '/templates/$templateId'
+      fullPath: '/$yearId/templates/$templateId'
+      preLoaderRoute: typeof LoggedInYearIdTemplatesTemplateIdImport
+      parentRoute: typeof LoggedInYearIdImport
+    }
     '/_logged-in/$yearId/mailings/': {
       id: '/_logged-in/$yearId/mailings/'
       path: '/mailings'
       fullPath: '/$yearId/mailings'
       preLoaderRoute: typeof LoggedInYearIdMailingsIndexImport
+      parentRoute: typeof LoggedInYearIdImport
+    }
+    '/_logged-in/$yearId/templates/': {
+      id: '/_logged-in/$yearId/templates/'
+      path: '/templates'
+      fullPath: '/$yearId/templates'
+      preLoaderRoute: typeof LoggedInYearIdTemplatesIndexImport
       parentRoute: typeof LoggedInYearIdImport
     }
     '/_logged-in/$yearId/days/$dayId/confirm': {
@@ -319,7 +349,9 @@ interface LoggedInYearIdRouteChildren {
   LoggedInYearIdSettingsRoute: typeof LoggedInYearIdSettingsRoute
   LoggedInYearIdIndexRoute: typeof LoggedInYearIdIndexRoute
   LoggedInYearIdMailingsMailingIdRoute: typeof LoggedInYearIdMailingsMailingIdRoute
+  LoggedInYearIdTemplatesTemplateIdRoute: typeof LoggedInYearIdTemplatesTemplateIdRoute
   LoggedInYearIdMailingsIndexRoute: typeof LoggedInYearIdMailingsIndexRoute
+  LoggedInYearIdTemplatesIndexRoute: typeof LoggedInYearIdTemplatesIndexRoute
   LoggedInYearIdDaysDayIdConfirmRoute: typeof LoggedInYearIdDaysDayIdConfirmRoute
   LoggedInYearIdDaysDayIdEditRoute: typeof LoggedInYearIdDaysDayIdEditRoute
   LoggedInYearIdDaysDayIdIndexRoute: typeof LoggedInYearIdDaysDayIdIndexRoute
@@ -334,7 +366,10 @@ const LoggedInYearIdRouteChildren: LoggedInYearIdRouteChildren = {
   LoggedInYearIdSettingsRoute: LoggedInYearIdSettingsRoute,
   LoggedInYearIdIndexRoute: LoggedInYearIdIndexRoute,
   LoggedInYearIdMailingsMailingIdRoute: LoggedInYearIdMailingsMailingIdRoute,
+  LoggedInYearIdTemplatesTemplateIdRoute:
+    LoggedInYearIdTemplatesTemplateIdRoute,
   LoggedInYearIdMailingsIndexRoute: LoggedInYearIdMailingsIndexRoute,
+  LoggedInYearIdTemplatesIndexRoute: LoggedInYearIdTemplatesIndexRoute,
   LoggedInYearIdDaysDayIdConfirmRoute: LoggedInYearIdDaysDayIdConfirmRoute,
   LoggedInYearIdDaysDayIdEditRoute: LoggedInYearIdDaysDayIdEditRoute,
   LoggedInYearIdDaysDayIdIndexRoute: LoggedInYearIdDaysDayIdIndexRoute,
@@ -383,7 +418,9 @@ export interface FileRoutesByFullPath {
   '/$yearId/': typeof LoggedInYearIdIndexRoute
   '/users': typeof LoggedInUsersIndexRoute
   '/$yearId/mailings/$mailingId': typeof LoggedInYearIdMailingsMailingIdRoute
+  '/$yearId/templates/$templateId': typeof LoggedInYearIdTemplatesTemplateIdRoute
   '/$yearId/mailings': typeof LoggedInYearIdMailingsIndexRoute
+  '/$yearId/templates': typeof LoggedInYearIdTemplatesIndexRoute
   '/$yearId/days/$dayId/confirm': typeof LoggedInYearIdDaysDayIdConfirmRoute
   '/$yearId/days/$dayId/edit': typeof LoggedInYearIdDaysDayIdEditRoute
   '/$yearId/days/$dayId': typeof LoggedInYearIdDaysDayIdIndexRoute
@@ -404,7 +441,9 @@ export interface FileRoutesByTo {
   '/$yearId': typeof LoggedInYearIdIndexRoute
   '/users': typeof LoggedInUsersIndexRoute
   '/$yearId/mailings/$mailingId': typeof LoggedInYearIdMailingsMailingIdRoute
+  '/$yearId/templates/$templateId': typeof LoggedInYearIdTemplatesTemplateIdRoute
   '/$yearId/mailings': typeof LoggedInYearIdMailingsIndexRoute
+  '/$yearId/templates': typeof LoggedInYearIdTemplatesIndexRoute
   '/$yearId/days/$dayId/confirm': typeof LoggedInYearIdDaysDayIdConfirmRoute
   '/$yearId/days/$dayId/edit': typeof LoggedInYearIdDaysDayIdEditRoute
   '/$yearId/days/$dayId': typeof LoggedInYearIdDaysDayIdIndexRoute
@@ -428,7 +467,9 @@ export interface FileRoutesById {
   '/_logged-in/$yearId/': typeof LoggedInYearIdIndexRoute
   '/_logged-in/users/': typeof LoggedInUsersIndexRoute
   '/_logged-in/$yearId/mailings/$mailingId': typeof LoggedInYearIdMailingsMailingIdRoute
+  '/_logged-in/$yearId/templates/$templateId': typeof LoggedInYearIdTemplatesTemplateIdRoute
   '/_logged-in/$yearId/mailings/': typeof LoggedInYearIdMailingsIndexRoute
+  '/_logged-in/$yearId/templates/': typeof LoggedInYearIdTemplatesIndexRoute
   '/_logged-in/$yearId/days/$dayId/confirm': typeof LoggedInYearIdDaysDayIdConfirmRoute
   '/_logged-in/$yearId/days/$dayId/edit': typeof LoggedInYearIdDaysDayIdEditRoute
   '/_logged-in/$yearId/days/$dayId/': typeof LoggedInYearIdDaysDayIdIndexRoute
@@ -453,7 +494,9 @@ export interface FileRouteTypes {
     | '/$yearId/'
     | '/users'
     | '/$yearId/mailings/$mailingId'
+    | '/$yearId/templates/$templateId'
     | '/$yearId/mailings'
+    | '/$yearId/templates'
     | '/$yearId/days/$dayId/confirm'
     | '/$yearId/days/$dayId/edit'
     | '/$yearId/days/$dayId'
@@ -473,7 +516,9 @@ export interface FileRouteTypes {
     | '/$yearId'
     | '/users'
     | '/$yearId/mailings/$mailingId'
+    | '/$yearId/templates/$templateId'
     | '/$yearId/mailings'
+    | '/$yearId/templates'
     | '/$yearId/days/$dayId/confirm'
     | '/$yearId/days/$dayId/edit'
     | '/$yearId/days/$dayId'
@@ -495,7 +540,9 @@ export interface FileRouteTypes {
     | '/_logged-in/$yearId/'
     | '/_logged-in/users/'
     | '/_logged-in/$yearId/mailings/$mailingId'
+    | '/_logged-in/$yearId/templates/$templateId'
     | '/_logged-in/$yearId/mailings/'
+    | '/_logged-in/$yearId/templates/'
     | '/_logged-in/$yearId/days/$dayId/confirm'
     | '/_logged-in/$yearId/days/$dayId/edit'
     | '/_logged-in/$yearId/days/$dayId/'
@@ -552,7 +599,9 @@ export const routeTree = rootRoute
         "/_logged-in/$yearId/settings",
         "/_logged-in/$yearId/",
         "/_logged-in/$yearId/mailings/$mailingId",
+        "/_logged-in/$yearId/templates/$templateId",
         "/_logged-in/$yearId/mailings/",
+        "/_logged-in/$yearId/templates/",
         "/_logged-in/$yearId/days/$dayId/confirm",
         "/_logged-in/$yearId/days/$dayId/edit",
         "/_logged-in/$yearId/days/$dayId/"
@@ -610,8 +659,16 @@ export const routeTree = rootRoute
       "filePath": "_logged-in/$yearId/mailings/$mailingId.tsx",
       "parent": "/_logged-in/$yearId"
     },
+    "/_logged-in/$yearId/templates/$templateId": {
+      "filePath": "_logged-in/$yearId/templates/$templateId.tsx",
+      "parent": "/_logged-in/$yearId"
+    },
     "/_logged-in/$yearId/mailings/": {
       "filePath": "_logged-in/$yearId/mailings/index.tsx",
+      "parent": "/_logged-in/$yearId"
+    },
+    "/_logged-in/$yearId/templates/": {
+      "filePath": "_logged-in/$yearId/templates/index.tsx",
       "parent": "/_logged-in/$yearId"
     },
     "/_logged-in/$yearId/days/$dayId/confirm": {
