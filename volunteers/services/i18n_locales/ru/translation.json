@@ -28,5 +28,14 @@
     "Telegram account must be linked to register": "Для регистрации необходимо привязать Telegram",
     "Day not found": "День не найден",
     "You are not assigned to this day": "Вы не назначены на этот день",
-    "Assignments are not published yet": "Распределение ещё не опубликовано"
+    "Assignments are not published yet": "Распределение ещё не опубликовано",
+  "Print template not found": "Шаблон печати не найден",
+  "Unsupported print asset name or file type": "Имя или тип файла не поддерживается",
+  "Print assets must be at most 5 MB": "Размер файла не должен превышать 5 МБ",
+  "Print asset is empty": "Файл пуст",
+  "std.typ must be UTF-8": "Файл std.typ должен быть в кодировке UTF-8",
+  "Print asset not found": "Файл шаблона не найден",
+  "std.typ can be edited": "Файл std.typ доступен для редактирования",
+  "Print template compilation timed out": "Превышено время компиляции шаблона",
+  "Print template compilation failed": "Не удалось скомпилировать шаблон"
 }
