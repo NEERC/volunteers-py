@@ -11,12 +11,10 @@ import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
-  jsonBody,
-  type PrintTemplate,
-  type PrintTemplateSummary,
-  printJson,
-  templatesPath,
-} from "@/data/print-templates";
+  createPrintTemplateApiV1AdminPrintTemplateYearYearIdPost as createPrintTemplate,
+  listPrintTemplatesApiV1AdminPrintTemplateYearYearIdGet as listPrintTemplates,
+} from "@/client";
+import { printTemplateKeys } from "@/data/print-templates";
 import { apiErrorMessage } from "@/utils/apiErrorHandling";
 import { shouldBeAdmin } from "@/utils/should-be-logged-in";
 
@@ -31,25 +29,32 @@ export const Route = createFileRoute("/_logged-in/$yearId/templates/")({
 function TemplatesPage() {
   const { t } = useTranslation();
   const { yearId } = Route.useParams();
-  const path = templatesPath(yearId);
+  const queryKey = printTemplateKeys.year(yearId);
+  const path = { year_id: Number(yearId) };
   const queryClient = useQueryClient();
   const navigate = useNavigate();
   const [title, setTitle] = useState("");
   const templates = useQuery({
-    queryKey: [path],
+    queryKey,
     queryFn: ({ signal }) =>
-      printJson<{ templates: PrintTemplateSummary[] }>(path, { signal }),
+      listPrintTemplates({ path, signal, throwOnError: true }).then(
+        ({ data }) => data,
+      ),
   });
   const create = useMutation({
     mutationFn: () =>
-      printJson<PrintTemplate>(path, {
-        method: "POST",
-        ...jsonBody({ title: title.trim() }),
-      }),
+      createPrintTemplate({
+        path,
+        body: { title: title.trim() },
+        throwOnError: true,
+      }).then(({ data }) => data),
     onSuccess: async (template) => {
       const templateId = String(template.template_id);
-      queryClient.setQueryData([`${path}/${templateId}`], template);
-      void queryClient.invalidateQueries({ queryKey: [path] });
+      queryClient.setQueryData(
+        printTemplateKeys.detail(yearId, templateId),
+        template,
+      );
+      void queryClient.invalidateQueries({ queryKey, exact: true });
       await navigate({
         to: "/$yearId/templates/$templateId",
         params: { yearId, templateId },

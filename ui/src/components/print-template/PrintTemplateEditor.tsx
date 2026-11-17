@@ -21,18 +21,22 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
-import type { AssignmentMode } from "@/client/types.gen";
-import { ExpressionEditor } from "@/components/mailing/ExpressionEditor";
 import {
-  jsonBody,
-  type PrintAsset,
-  type PrintContext,
-  type PrintRecipient,
-  type PrintTemplate,
-  printJson,
-  printRequest,
-  templatesPath,
-} from "@/data/print-templates";
+  deletePrintTemplateApiV1AdminPrintTemplateYearYearIdTemplateIdDelete as deletePrintTemplate,
+  editPrintTemplateApiV1AdminPrintTemplateYearYearIdTemplateIdPatch as editPrintTemplate,
+  generatePrintTemplateApiV1AdminPrintTemplateYearYearIdTemplateIdGeneratePost as generatePrintTemplate,
+  listPrintRecipientsApiV1AdminPrintTemplateYearYearIdTemplateIdRecipientsPost as listPrintRecipients,
+  previewPrintTemplateApiV1AdminPrintTemplateYearYearIdTemplateIdPreviewPost as previewPrintTemplate,
+} from "@/client";
+import type {
+  AssignmentMode,
+  PrintAsset,
+  PrintContext,
+  PrintRecipient,
+  PrintTemplateDetail,
+} from "@/client/types.gen";
+import { ExpressionEditor } from "@/components/mailing/ExpressionEditor";
+import { printPdfResponse, printTemplateKeys } from "@/data/print-templates";
 import { useYearDays } from "@/data/use-admin";
 import { useDebouncedValue } from "@/hooks/useDebouncedValue";
 import { apiErrorMessage } from "@/utils/apiErrorHandling";
@@ -60,10 +64,15 @@ function PdfFrame({ pdf }: { pdf: Blob }) {
   );
 }
 
-type Props = { template: PrintTemplate; yearId: string; path: string };
-export function PrintTemplateEditor({ template, yearId, path }: Props) {
+type Props = { template: PrintTemplateDetail; yearId: string };
+export function PrintTemplateEditor({ template, yearId }: Props) {
   const { t } = useTranslation();
   const queryClient = useQueryClient();
+  const path = { year_id: Number(yearId), template_id: template.template_id };
+  const queryKey = printTemplateKeys.detail(
+    yearId,
+    String(template.template_id),
+  );
   const navigate = useNavigate();
   const [title, setTitle] = useState(template.title);
   const [source, setSource] = useState(template.source);
@@ -93,19 +102,20 @@ export function PrintTemplateEditor({ template, yearId, path }: Props) {
   );
   const debouncedCandidates = useDebouncedValue(candidateContext, 400);
   const recipients = useQuery({
-    queryKey: [path, "recipients", debouncedCandidates],
+    queryKey: [...queryKey, "recipients", debouncedCandidates],
     queryFn: ({ signal }) =>
-      printJson<{ recipients: PrintRecipient[] }>(`${path}/recipients`, {
-        method: "POST",
-        ...jsonBody(debouncedCandidates),
+      listPrintRecipients({
+        path,
+        body: debouncedCandidates,
         signal,
-      }),
+        throwOnError: true,
+      }).then(({ data }) => data),
     enabled: Boolean(day) && debouncedCandidates === candidateContext,
     retry: false,
   });
   const candidates = recipients.data?.recipients ?? [];
   const included = candidates.filter(
-    (recipient) => !context.excluded_form_ids.includes(recipient.form_id),
+    (recipient) => !context.excluded_form_ids?.includes(recipient.form_id),
   );
   const activeRecipient = included.find(
     (recipient) => recipientKey(recipient) === selectedRecipient,
@@ -121,14 +131,17 @@ export function PrintTemplateEditor({ template, yearId, path }: Props) {
   );
   const debouncedPreview = useDebouncedValue(previewRequest, 450);
   const preview = useQuery({
-    queryKey: [path, "preview", assetsVersion, debouncedPreview],
+    queryKey: [...queryKey, "preview", assetsVersion, debouncedPreview],
     queryFn: async ({ signal }) => {
-      const response = await printRequest(`${path}/preview`, {
-        method: "POST",
-        ...jsonBody(debouncedPreview),
-        signal,
-      });
-      return response.status === 204 ? null : response.blob();
+      const response = await printPdfResponse(
+        previewPrintTemplate({
+          path,
+          body: debouncedPreview,
+          signal,
+          throwOnError: true,
+        }),
+      );
+      return response.data instanceof Blob ? response.data : null;
     },
     enabled:
       Boolean(day) &&
@@ -138,26 +151,27 @@ export function PrintTemplateEditor({ template, yearId, path }: Props) {
   });
   const save = useMutation({
     mutationFn: () =>
-      printJson<PrintTemplate>(path, {
-        method: "PATCH",
-        ...jsonBody({ title: title.trim(), source }),
-      }),
+      editPrintTemplate({
+        path,
+        body: { title: title.trim(), source },
+        throwOnError: true,
+      }).then(({ data }) => data),
     onSuccess: (saved) => {
-      queryClient.setQueryData<PrintTemplate>([path], (current) => ({
+      queryClient.setQueryData<PrintTemplateDetail>(queryKey, (current) => ({
         ...saved,
         assets: current?.assets ?? saved.assets,
       }));
       void queryClient.invalidateQueries({
-        queryKey: [templatesPath(yearId)],
+        queryKey: printTemplateKeys.year(yearId),
         exact: true,
       });
     },
   });
   const remove = useMutation({
-    mutationFn: () => printRequest(path, { method: "DELETE" }),
+    mutationFn: () => deletePrintTemplate({ path, throwOnError: true }),
     onSuccess: async () => {
       void queryClient.invalidateQueries({
-        queryKey: [templatesPath(yearId)],
+        queryKey: printTemplateKeys.year(yearId),
         exact: true,
       });
       await navigate({ to: "/$yearId/templates", params: { yearId } });
@@ -165,18 +179,23 @@ export function PrintTemplateEditor({ template, yearId, path }: Props) {
   });
   const generate = useMutation({
     mutationFn: async () => {
-      const response = await printRequest(`${path}/generate`, {
-        method: "POST",
-        ...jsonBody({ ...context, source }),
-      });
-      if (response.status === 204) return false;
-      const url = URL.createObjectURL(await response.blob());
+      const response = await printPdfResponse(
+        generatePrintTemplate({
+          path,
+          body: { ...context, source },
+          throwOnError: true,
+        }),
+      );
+      if (response.status === 204 || !response.data) return false;
+      const url = URL.createObjectURL(response.data);
       const link = document.createElement("a");
       link.href = url;
+      const disposition = response.headers["content-disposition"];
       link.download =
-        response.headers
-          .get("Content-Disposition")
-          ?.match(/filename="?([^";]+)"?/i)?.[1] ?? `badges-${day}.pdf`;
+        typeof disposition === "string"
+          ? (disposition.match(/filename="([^"]+)"/i)?.[1] ??
+            `badges-${day}.pdf`)
+          : `badges-${day}.pdf`;
       link.click();
       setTimeout(() => URL.revokeObjectURL(url), 1000);
       return true;
@@ -184,13 +203,13 @@ export function PrintTemplateEditor({ template, yearId, path }: Props) {
   });
 
   const updateAssets = (assets: PrintAsset[]) => {
-    queryClient.setQueryData<PrintTemplate>([path], (current) => ({
+    queryClient.setQueryData<PrintTemplateDetail>(queryKey, (current) => ({
       ...(current ?? template),
       assets,
     }));
     setAssetsVersion((current) => current + 1);
   };
-  const error = save.error || remove.error || generate.error || daysError;
+  const error = save.error || generate.error || daysError;
   const noRecipients = t("No recipients match the filters.");
   const requestFailed = t("Template request failed");
   const excludedOptions = Array.from(

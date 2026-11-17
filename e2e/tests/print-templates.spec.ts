@@ -1,3 +1,4 @@
+import { readFile } from "node:fs/promises";
 import { expect, test } from "../support/fixtures";
 import { RUN_TAG } from "../support/users";
 
@@ -37,5 +38,9 @@ test("admin creates a template, previews a badge and downloads the print PDF", a
   await expect(page.locator('iframe[title="PDF preview"]')).toBeVisible();
   const download = page.waitForEvent("download");
   await page.getByRole("button", { name: "Generate", exact: true }).click();
-  expect((await download).suggestedFilename()).toMatch(/^badges-.+\.pdf$/);
+  const pdf = await download;
+  expect(pdf.suggestedFilename()).toBe(`badges-${dayId}.pdf`);
+  expect((await readFile(await pdf.path())).subarray(0, 5).toString()).toBe(
+    "%PDF-",
+  );
 });
