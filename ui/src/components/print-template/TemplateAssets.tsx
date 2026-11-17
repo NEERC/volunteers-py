@@ -12,15 +12,16 @@ import { useMutation } from "@tanstack/react-query";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
-  type PrintAsset,
-  printJson,
-  printRequest,
-} from "@/data/print-templates";
+  deletePrintAssetApiV1AdminPrintTemplateYearYearIdTemplateIdAssetsAssetIdDelete as deletePrintAsset,
+  getPrintAssetApiV1AdminPrintTemplateYearYearIdTemplateIdAssetsAssetIdGet as getPrintAsset,
+  uploadPrintAssetApiV1AdminPrintTemplateYearYearIdTemplateIdAssetsPost as uploadPrintAsset,
+} from "@/client";
+import type { PrintAsset } from "@/client/types.gen";
 import { apiErrorMessage } from "@/utils/apiErrorHandling";
 import { TypstEditor } from "./TypstEditor";
 
 type Props = {
-  path: string;
+  path: { year_id: number; template_id: number };
   assets: PrintAsset[];
   onChange: (assets: PrintAsset[]) => void;
 };
@@ -30,9 +31,12 @@ export function TemplateAssets({ path, assets, onChange }: Props) {
   const [standardSource, setStandardSource] = useState<string | null>(null);
   const upload = useMutation({
     mutationFn: async (file: File) => {
-      const body = new FormData();
-      body.append("file", file);
-      return printJson<PrintAsset>(`${path}/assets`, { method: "POST", body });
+      const { data } = await uploadPrintAsset({
+        path,
+        body: { file },
+        throwOnError: true,
+      });
+      return data;
     },
     onSuccess: (saved) => {
       onChange([
@@ -44,13 +48,24 @@ export function TemplateAssets({ path, assets, onChange }: Props) {
   });
   const remove = useMutation({
     mutationFn: (asset: PrintAsset) =>
-      printRequest(`${path}/assets/${asset.asset_id}`, { method: "DELETE" }),
+      deletePrintAsset({
+        path: { ...path, asset_id: asset.asset_id },
+        throwOnError: true,
+      }),
     onSuccess: (_, removed) =>
       onChange(assets.filter((asset) => asset.asset_id !== removed.asset_id)),
   });
   const edit = useMutation({
-    mutationFn: async (asset: PrintAsset) =>
-      (await printRequest(`${path}/assets/${asset.asset_id}`)).text(),
+    mutationFn: async (asset: PrintAsset) => {
+      const { data } = await getPrintAsset({
+        path: { ...path, asset_id: asset.asset_id },
+        responseType: "text",
+        throwOnError: true,
+      });
+      if (typeof data !== "string")
+        throw new Error(t("Template request failed"));
+      return data;
+    },
     onSuccess: setStandardSource,
   });
   const pending = upload.isPending || remove.isPending || edit.isPending;
