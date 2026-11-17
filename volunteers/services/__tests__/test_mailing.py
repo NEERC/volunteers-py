@@ -2,6 +2,8 @@ import os
 import uuid
 from collections.abc import AsyncGenerator
 from dataclasses import dataclass
+from types import SimpleNamespace
+from unittest.mock import AsyncMock
 
 import pytest
 from aiogram.exceptions import (
@@ -11,7 +13,7 @@ from aiogram.exceptions import (
     TelegramServerError,
 )
 from aiogram.methods import SendMessage
-from sqlalchemy import select, text, update
+from sqlalchemy import func, select, text, update
 from sqlalchemy.ext.asyncio import (
     AsyncEngine,
     async_sessionmaker,
@@ -25,6 +27,7 @@ from volunteers.models import (
     Hall,
     IdentityProvider,
     Mailing,
+    MailingAttachment,
     MailingMessage,
     MailingMessageStatus,
     MailingStatus,
@@ -35,18 +38,31 @@ from volunteers.models import (
     Year,
 )
 from volunteers.models.base import metadata
-from volunteers.models.mailing import AssignmentMode
+from volunteers.models.mailing import (
+    MAX_ATTACHMENT_SIZE,
+    MAX_ATTACHMENTS,
+    AssignmentMode,
+)
 from volunteers.schemas.mailing import MailingButton, MailingDraft, MailingFilter
 from volunteers.services.mailing import (
     MailingAdminWithoutTelegram,
+    MailingAttachmentEmpty,
+    MailingAttachmentNotFound,
+    MailingAttachmentTooLarge,
     MailingInvalid,
     MailingNoRecipients,
     MailingNotCancellable,
     MailingNotDraft,
     MailingService,
+    MailingTooManyAttachments,
 )
 from volunteers.services.mailing_expression import ExpressionError, ExpressionEvaluator
-from volunteers.services.mailing_sender import SENDER_LOCK_KEY, MailingWorker
+from volunteers.services.mailing_sender import (
+    SENDER_LOCK_KEY,
+    MailingWorker,
+    OutgoingAttachment,
+    TelegramSender,
+)
 
 # Admin URL of a Postgres server, e.g. postgresql+asyncpg://postgres:postgres@localhost:5432/postgres.
 # A temporary database is created on it for every test.
@@ -59,17 +75,23 @@ class FakeSender:
     """Records sent messages, raises the errors queued for a chat instead of sending."""
 
     def __init__(self) -> None:
-        self.sent: list[tuple[int, str, list[dict[str, str]]]] = []
+        self.sent: list[tuple[int, str, list[dict[str, str]], list[OutgoingAttachment]]] = []
         self.errors: dict[int, list[Exception]] = {}
 
-    async def send(self, chat_id: int, text: str, buttons: list[dict[str, str]]) -> int:
+    async def send(
+        self,
+        chat_id: int,
+        text: str,
+        buttons: list[dict[str, str]],
+        attachments: list[OutgoingAttachment],
+    ) -> int:
         if self.errors.get(chat_id):
             raise self.errors[chat_id].pop(0)
-        self.sent.append((chat_id, text, buttons))
+        self.sent.append((chat_id, text, buttons, attachments))
         return len(self.sent)
 
     def chats(self) -> list[int]:
-        return [chat_id for chat_id, _, _ in self.sent]
+        return [chat_id for chat_id, _, _, _ in self.sent]
 
 
 class FakeNotifier:
@@ -520,7 +542,7 @@ async def test_started_mailing_is_frozen(
         )
     await worker.run_once()
 
-    assert (ALICE, "Registration", []) in sender.sent
+    assert (ALICE, "Registration", [], []) in sender.sent
 
 
 # --- Delivery ---
@@ -539,7 +561,12 @@ async def test_messages_are_sent_and_the_admins_are_notified(
     assert await worker.run_once()
 
     assert sorted(sender.chats()) == [ALICE, BOB, DAVE]
-    assert (ALICE, "Hello, Alice!", [{"text": "Open", "url": "https://x.example/"}]) in sender.sent
+    assert (
+        ALICE,
+        "Hello, Alice!",
+        [{"text": "Open", "url": "https://x.example/"}],
+        [],
+    ) in sender.sent
     by_form = await messages(service, mailing_id)
     assert by_form[seed.alice_form_id].status == MailingMessageStatus.SENT
     assert by_form[seed.alice_form_id].telegram_message_id is not None
@@ -687,7 +714,7 @@ async def test_mailings_are_sent_in_the_order_they_were_started(
 
     await worker.run_once()
 
-    assert [text for _, text, _ in sender.sent] == ["first"] * 3 + ["second"] * 3
+    assert [text for _, text, _, _ in sender.sent] == ["first"] * 3 + ["second"] * 3
 
 
 # --- Drafts and test messages ---
@@ -722,9 +749,12 @@ async def test_draft_can_be_deleted(service: MailingService, seed: Seed) -> None
 async def test_test_message_goes_to_the_admin_only(
     engine: AsyncEngine, service: MailingService, sender: FakeSender, seed: Seed
 ) -> None:
-    await service.test_send(seed.year_id, draft(), seed.alice_form_id, None, seed.admin_id)
+    mailing = await service.create_draft(seed.year_id, seed.admin_id)
+    await service.test_send(
+        seed.year_id, draft(), seed.alice_form_id, None, seed.admin_id, mailing.id
+    )
 
-    assert sender.sent == [(ADMIN, "Hello, Alice!", [])]
+    assert sender.sent == [(ADMIN, "Hello, Alice!", [], [])]
     async with engine.connect() as conn:
         assert (await conn.execute(select(MailingMessage))).first() is None
 
@@ -733,7 +763,9 @@ async def test_test_message_goes_to_the_admin_only(
             text("DELETE FROM user_identities WHERE subject = :s"), {"s": str(ADMIN)}
         )
     with pytest.raises(MailingAdminWithoutTelegram):
-        await service.test_send(seed.year_id, draft(), seed.alice_form_id, None, seed.admin_id)
+        await service.test_send(
+            seed.year_id, draft(), seed.alice_form_id, None, seed.admin_id, mailing.id
+        )
 
 
 # --- Recipient expression filter ---
@@ -813,3 +845,211 @@ async def test_whitespace_only_expression_is_no_filter(service: MailingService, 
     plan = await service.get_recipients(seed.year_id, draft(filter=MailingFilter(expression="  ")))
 
     assert len(plan.recipients) == 4
+
+
+# --- Attachments ---
+
+
+async def blob_count(engine: AsyncEngine) -> int:
+    async with async_sessionmaker(engine)() as session:
+        return (await session.scalar(select(func.count()).select_from(MailingAttachment))) or 0
+
+
+async def test_upload_and_delete_attachment(service: MailingService, seed: Seed) -> None:
+    mailing = await service.create_draft(seed.year_id, seed.admin_id)
+    attachment = await service.upload_attachment(mailing.id, "poster.pdf", b"pdf", seed.admin_id)
+
+    assert attachment.file_name == "poster.pdf"
+    assert attachment.size == 3
+    assert [a.id for a in (await service.get_attachments([mailing.id]))[mailing.id]] == [
+        attachment.id
+    ]
+
+    await service.delete_attachment(mailing.id, attachment.id)
+    assert (await service.get_attachments([mailing.id]))[mailing.id] == []
+
+
+async def test_upload_to_a_started_mailing_is_rejected(service: MailingService, seed: Seed) -> None:
+    mailing_id = await start(service, seed, draft())
+    with pytest.raises(MailingNotDraft):
+        await service.upload_attachment(mailing_id, "a.pdf", b"x", seed.admin_id)
+    with pytest.raises(MailingNotDraft):
+        await service.delete_attachment(mailing_id, 1)
+
+
+async def test_upload_limits(service: MailingService, seed: Seed) -> None:
+    mailing = await service.create_draft(seed.year_id, seed.admin_id)
+    with pytest.raises(MailingAttachmentEmpty):
+        await service.upload_attachment(mailing.id, "empty.pdf", b"", seed.admin_id)
+    with pytest.raises(MailingAttachmentTooLarge):
+        await service.upload_attachment(
+            mailing.id, "big.pdf", b"x" * (MAX_ATTACHMENT_SIZE + 1), seed.admin_id
+        )
+
+    for i in range(MAX_ATTACHMENTS):
+        await service.upload_attachment(mailing.id, f"{i}.pdf", b"x", seed.admin_id)
+    with pytest.raises(MailingTooManyAttachments):
+        await service.upload_attachment(mailing.id, "extra.pdf", b"x", seed.admin_id)
+
+
+async def test_detaching_a_foreign_attachment_is_rejected(
+    service: MailingService, seed: Seed
+) -> None:
+    mailing = await service.create_draft(seed.year_id, seed.admin_id)
+    with pytest.raises(MailingAttachmentNotFound):
+        await service.delete_attachment(mailing.id, 999)
+
+
+async def test_a_copy_shares_the_attachment_blobs(
+    engine: AsyncEngine, service: MailingService, seed: Seed
+) -> None:
+    original = await service.create_draft(seed.year_id, seed.admin_id)
+    attachment = await service.upload_attachment(original.id, "a.pdf", b"data", seed.admin_id)
+
+    clone = await service.create_draft(seed.year_id, seed.admin_id, original.id)
+    assert clone.attachment_ids == [attachment.id]
+
+    # Detaching from the copy keeps the blob while the original references it
+    await service.delete_attachment(clone.id, attachment.id)
+    assert await blob_count(engine) == 1
+    assert [a.file_name for a in (await service.get_attachments([original.id]))[original.id]] == [
+        "a.pdf"
+    ]
+
+    # Deleting the last referencing draft removes the blob
+    await service.delete_draft(original.id)
+    assert await blob_count(engine) == 0
+
+
+async def test_start_sends_attachments_and_snapshots_the_metadata(
+    service: MailingService, worker: MailingWorker, sender: FakeSender, seed: Seed
+) -> None:
+    mailing = await service.create_draft(seed.year_id, seed.admin_id)
+    plan = await service.upload_attachment(mailing.id, "plan.pdf", b"plan", seed.admin_id)
+    map_ = await service.upload_attachment(mailing.id, "map.pdf", b"map", seed.admin_id)
+    await service.update_draft(mailing.id, draft("Read"))
+    await service.start(mailing.id, seed.admin_id)
+
+    await worker.run_once()
+
+    attachments = [OutgoingAttachment("plan.pdf", b"plan"), OutgoingAttachment("map.pdf", b"map")]
+    assert (ALICE, "Read", [], attachments) in sender.sent
+    by_form = await messages(service, mailing.id)
+    assert by_form[seed.alice_form_id].attachments == [
+        {"attachment_id": plan.id, "file_name": "plan.pdf", "size": 4},
+        {"attachment_id": map_.id, "file_name": "map.pdf", "size": 3},
+    ]
+
+
+async def test_with_attachments_the_text_limit_is_the_caption_limit(
+    service: MailingService, seed: Seed
+) -> None:
+    mailing = await service.create_draft(seed.year_id, seed.admin_id)
+    await service.upload_attachment(mailing.id, "a.pdf", b"data", seed.admin_id)
+
+    long_text = "x" * 1030
+    with_attachment = await service.preview(
+        seed.year_id, draft(long_text), seed.alice_form_id, None, mailing.id
+    )
+    assert any("at most 1024" in error.message for error in with_attachment.errors)
+
+    without_attachment = await service.preview(
+        seed.year_id, draft(long_text), seed.alice_form_id, None
+    )
+    assert without_attachment.errors == []
+
+    await service.update_draft(mailing.id, draft(long_text))
+    with pytest.raises(MailingInvalid):
+        await service.start(mailing.id, seed.admin_id)
+
+
+async def test_test_message_includes_attachments(
+    service: MailingService, sender: FakeSender, seed: Seed
+) -> None:
+    mailing = await service.create_draft(seed.year_id, seed.admin_id)
+    await service.upload_attachment(mailing.id, "a.pdf", b"data", seed.admin_id)
+
+    await service.test_send(
+        seed.year_id, draft(), seed.alice_form_id, None, seed.admin_id, mailing.id
+    )
+
+    assert sender.sent == [(ADMIN, "Hello, Alice!", [], [OutgoingAttachment("a.pdf", b"data")])]
+
+
+async def test_telegram_sender_sends_a_document_with_caption_and_buttons() -> None:
+    bot = SimpleNamespace(
+        send_message=AsyncMock(),
+        send_document=AsyncMock(return_value=SimpleNamespace(message_id=7)),
+        send_media_group=AsyncMock(),
+        edit_message_reply_markup=AsyncMock(),
+    )
+    sender = TelegramSender(bot)  # type: ignore[arg-type]
+
+    message_id = await sender.send(
+        ALICE,
+        "Hi",
+        [{"text": "Open", "url": "https://x.example/"}],
+        [OutgoingAttachment("a.pdf", b"data")],
+    )
+
+    assert message_id == 7
+    assert not bot.send_message.called
+    assert not bot.send_media_group.called
+    assert not bot.edit_message_reply_markup.called
+    kwargs = bot.send_document.call_args.kwargs
+    assert kwargs["chat_id"] == ALICE
+    assert kwargs["caption"] == "Hi"
+    assert kwargs["parse_mode"] == "HTML"
+    assert kwargs["reply_markup"] is not None
+    assert kwargs["document"].filename == "a.pdf"
+    assert kwargs["document"].data == b"data"
+
+
+async def test_telegram_sender_sends_an_album_and_attaches_buttons_to_it() -> None:
+    bot = SimpleNamespace(
+        send_message=AsyncMock(),
+        send_document=AsyncMock(),
+        send_media_group=AsyncMock(
+            return_value=[SimpleNamespace(message_id=11), SimpleNamespace(message_id=12)]
+        ),
+        edit_message_reply_markup=AsyncMock(),
+    )
+    sender = TelegramSender(bot)  # type: ignore[arg-type]
+
+    message_id = await sender.send(
+        ALICE,
+        "Hi",
+        [{"text": "Open", "url": "https://x.example/"}],
+        [OutgoingAttachment("a.pdf", b"a"), OutgoingAttachment("b.pdf", b"b")],
+    )
+
+    assert message_id == 11
+    assert not bot.send_document.called
+    media = bot.send_media_group.call_args.kwargs["media"]
+    assert [item.caption for item in media] == ["Hi", None]
+    assert [item.parse_mode for item in media] == ["HTML", None]
+    assert [item.media.filename for item in media] == ["a.pdf", "b.pdf"]
+    edit_kwargs = bot.edit_message_reply_markup.call_args.kwargs
+    assert edit_kwargs["chat_id"] == ALICE
+    assert edit_kwargs["message_id"] == 11
+    assert edit_kwargs["reply_markup"] is not None
+
+
+async def test_telegram_sender_sends_an_album_without_buttons() -> None:
+    bot = SimpleNamespace(
+        send_message=AsyncMock(),
+        send_document=AsyncMock(),
+        send_media_group=AsyncMock(
+            return_value=[SimpleNamespace(message_id=11), SimpleNamespace(message_id=12)]
+        ),
+        edit_message_reply_markup=AsyncMock(),
+    )
+    sender = TelegramSender(bot)  # type: ignore[arg-type]
+
+    message_id = await sender.send(
+        ALICE, "Hi", [], [OutgoingAttachment("a.pdf", b"a"), OutgoingAttachment("b.pdf", b"b")]
+    )
+
+    assert message_id == 11
+    assert not bot.edit_message_reply_markup.called
+    assert bot.send_media_group.call_args.kwargs["media"][0].caption == "Hi"

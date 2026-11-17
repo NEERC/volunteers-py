@@ -9,6 +9,7 @@ not have been delivered, so they become `unknown` and are resent only by an admi
 
 import asyncio
 import contextlib
+from dataclasses import dataclass
 from datetime import UTC, datetime
 from typing import Protocol
 
@@ -19,13 +20,22 @@ from aiogram.exceptions import (
     TelegramRetryAfter,
     TelegramServerError,
 )
-from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup
+from aiogram.types import (
+    BufferedInputFile,
+    InlineKeyboardButton,
+    InlineKeyboardMarkup,
+    InputMediaAudio,
+    InputMediaDocument,
+    InputMediaPhoto,
+    InputMediaVideo,
+)
 from sqlalchemy import func, select, update
 from sqlalchemy.ext.asyncio import AsyncConnection
 
 from volunteers.bot.notify import Notifier
 from volunteers.models import (
     Mailing,
+    MailingAttachment,
     MailingMessage,
     MailingMessageStatus,
     MailingStatus,
@@ -38,9 +48,23 @@ from .base import BaseService
 SENDER_LOCK_KEY = 0x6D61696C696E67
 
 
+@dataclass
+class OutgoingAttachment:
+    """A constant file attached to every message of a mailing."""
+
+    file_name: str
+    data: bytes
+
+
 class MessageSender(Protocol):
-    async def send(self, chat_id: int, text: str, buttons: list[dict[str, str]]) -> int:
-        """Send a Telegram HTML message with link buttons, returns the id of the message."""
+    async def send(
+        self,
+        chat_id: int,
+        text: str,
+        buttons: list[dict[str, str]],
+        attachments: list[OutgoingAttachment],
+    ) -> int:
+        """Send a Telegram HTML message with link buttons and attachments, returns the message id."""
         ...
 
 
@@ -48,7 +72,13 @@ class TelegramSender:
     def __init__(self, bot: aiogram.Bot) -> None:
         self.bot = bot
 
-    async def send(self, chat_id: int, text: str, buttons: list[dict[str, str]]) -> int:
+    async def send(
+        self,
+        chat_id: int,
+        text: str,
+        buttons: list[dict[str, str]],
+        attachments: list[OutgoingAttachment],
+    ) -> int:
         markup = (
             InlineKeyboardMarkup(
                 inline_keyboard=[
@@ -59,10 +89,38 @@ class TelegramSender:
             if buttons
             else None
         )
-        message = await self.bot.send_message(
-            chat_id=chat_id, text=text, parse_mode="HTML", reply_markup=markup
-        )
-        return message.message_id
+        if not attachments:
+            message = await self.bot.send_message(
+                chat_id=chat_id, text=text, parse_mode="HTML", reply_markup=markup
+            )
+            return message.message_id
+        if len(attachments) == 1:
+            attachment = attachments[0]
+            message = await self.bot.send_document(
+                chat_id=chat_id,
+                document=BufferedInputFile(attachment.data, filename=attachment.file_name),
+                caption=text,
+                parse_mode="HTML",
+                reply_markup=markup,
+            )
+            return message.message_id
+        # A media group has no inline keyboard: send the album, then attach the buttons
+        # to its first message
+        media: list[InputMediaAudio | InputMediaDocument | InputMediaPhoto | InputMediaVideo] = [
+            InputMediaDocument(
+                media=BufferedInputFile(attachment.data, filename=attachment.file_name),
+                caption=text if index == 0 else None,
+                parse_mode="HTML" if index == 0 else None,
+            )
+            for index, attachment in enumerate(attachments)
+        ]
+        messages = await self.bot.send_media_group(chat_id=chat_id, media=media)
+        first = messages[0]
+        if markup is not None:
+            await self.bot.edit_message_reply_markup(
+                chat_id=chat_id, message_id=first.message_id, reply_markup=markup
+            )
+        return first.message_id
 
 
 def mailing_url(public_url: str | None, mailing: Mailing) -> str | None:
@@ -158,6 +216,7 @@ class MailingWorker(BaseService):
             )
             await session.commit()
         self.logger.info(f"Sending mailing {mailing_id}")
+        attachments = await self._load_attachments(mailing_id)
 
         while True:
             # Fails when the connection holding the lock is lost: another sender may take over
@@ -199,13 +258,32 @@ class MailingWorker(BaseService):
             if claimed is None:  # cancelled meanwhile
                 continue
 
-            await self._deliver(message)
+            await self._deliver(message, attachments)
             await asyncio.sleep(self.send_interval)
 
         await self._notify_finished(mailing_id)
 
+    async def _load_attachments(self, mailing_id: int) -> list[OutgoingAttachment]:
+        """The blobs of the mailing attachments, in the order of the mailing, loaded once."""
+        async with self.session_scope() as session:
+            mailing = await session.get(Mailing, mailing_id)
+            ids = list(mailing.attachment_ids) if mailing is not None else []
+            if not ids:
+                return []
+            result = await session.execute(
+                select(MailingAttachment).where(MailingAttachment.id.in_(ids))
+            )
+            by_id = {attachment.id: attachment for attachment in result.scalars()}
+        return [
+            OutgoingAttachment(by_id[i].file_name, bytes(by_id[i].data)) for i in ids if i in by_id
+        ]
+
     async def _send(
-        self, chat_id: int, text: str, buttons: list[dict[str, str]]
+        self,
+        chat_id: int,
+        text: str,
+        buttons: list[dict[str, str]],
+        attachments: list[OutgoingAttachment],
     ) -> tuple[MailingMessageStatus, str | None, int | None]:
         """Send the message, returns its status, the error and the Telegram message id."""
         while True:
@@ -213,7 +291,7 @@ class MailingWorker(BaseService):
                 return (
                     MailingMessageStatus.SENT,
                     None,
-                    await self.sender.send(chat_id, text, buttons),
+                    await self.sender.send(chat_id, text, buttons, attachments),
                 )
             except TelegramRetryAfter as e:
                 # Not delivered for sure, safe to repeat
@@ -227,12 +305,14 @@ class MailingWorker(BaseService):
             except Exception as e:
                 return MailingMessageStatus.UNKNOWN, str(e) or e.__class__.__name__, None
 
-    async def _deliver(self, message: MailingMessage) -> None:
+    async def _deliver(
+        self, message: MailingMessage, attachments: list[OutgoingAttachment]
+    ) -> None:
         result: tuple[MailingMessageStatus, str | None, int | None]
         if message.chat_id is None:  # never pending: skipped on start
             result = MailingMessageStatus.FAILED, "The recipient has no Telegram account", None
         else:
-            result = await self._send(message.chat_id, message.text, message.buttons)
+            result = await self._send(message.chat_id, message.text, message.buttons, attachments)
         status, error, telegram_message_id = result
 
         async with self.session_scope() as session:

@@ -4,7 +4,7 @@ import enum
 from datetime import datetime
 from typing import TYPE_CHECKING, Any
 
-from sqlalchemy import BigInteger, DateTime, Enum, ForeignKey, Index, Integer, String
+from sqlalchemy import BigInteger, DateTime, Enum, ForeignKey, Index, Integer, LargeBinary, String
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -12,6 +12,11 @@ from .base import Base, TimestampMixin
 
 if TYPE_CHECKING:
     from .models import User
+
+# Limits of a mailing attachment, enforced on upload
+MAX_ATTACHMENT_SIZE = 10 * 1024 * 1024
+# Telegram accepts at most 10 items in a media group
+MAX_ATTACHMENTS = 10
 
 
 class MailingStatus(str, enum.Enum):
@@ -65,6 +70,8 @@ class Mailing(Base, TimestampMixin):
     # Assignment filter, see `MailingFilter`
     filter: Mapped[dict[str, Any]] = mapped_column(JSONB, default=dict)
     excluded_form_ids: Mapped[list[int]] = mapped_column(JSONB, default=list)
+    # IDs of `MailingAttachment`, shared between mailings (a copy references the same rows)
+    attachment_ids: Mapped[list[int]] = mapped_column(JSONB, default=list, server_default="[]")
     assignment_mode: Mapped[AssignmentMode] = mapped_column(
         Enum(
             AssignmentMode,
@@ -113,6 +120,11 @@ class MailingMessage(Base, TimestampMixin):
     chat_id: Mapped[int | None] = mapped_column(BigInteger, nullable=True)
     text: Mapped[str] = mapped_column(String)
     buttons: Mapped[list[dict[str, str]]] = mapped_column(JSONB, default=list)
+    # Snapshot of the attachment metadata sent with the message:
+    # [{attachment_id, file_name, size}]
+    attachments: Mapped[list[dict[str, Any]]] = mapped_column(
+        JSONB, default=list, server_default="[]"
+    )
 
     status: Mapped[MailingMessageStatus] = mapped_column(
         Enum(
@@ -130,3 +142,20 @@ class MailingMessage(Base, TimestampMixin):
         Index("ix_mailing_messages_mailing_id_status", "mailing_id", "status"),
         Index("ix_mailing_messages_mailing_id_updated_at", "mailing_id", "updated_at"),
     )
+
+
+class MailingAttachment(Base, TimestampMixin):
+    """A file attached to mailings: the blob is shared between mailings by ID references and
+    deleted once no mailing references it anymore."""
+
+    __tablename__ = "mailing_attachments"
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+
+    file_name: Mapped[str] = mapped_column(String)
+    size: Mapped[int] = mapped_column(Integer)
+    data: Mapped[bytes] = mapped_column(LargeBinary)
+
+    created_by_id: Mapped[int | None] = mapped_column(
+        ForeignKey("users.id", ondelete="SET NULL"), nullable=True
+    )
+    created_by: Mapped[User | None] = relationship(foreign_keys=[created_by_id])

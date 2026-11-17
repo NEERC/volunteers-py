@@ -13,6 +13,13 @@ class MailingUser(BaseModel):
     name: str
 
 
+class MailingAttachmentMeta(BaseModel):
+    attachment_id: int
+    file_name: str
+    # Size in bytes, at most 10 MB
+    size: int
+
+
 class MailingCounts(BaseModel):
     model_config = ConfigDict(json_schema_serialization_defaults_required=True)
 
@@ -35,6 +42,7 @@ class MailingResponse(BaseModel):
     filter: MailingFilter
     excluded_form_ids: list[int]
     assignment_mode: AssignmentMode
+    attachments: list[MailingAttachmentMeta]
     created_by: MailingUser | None
     started_by: MailingUser | None
     created_at: datetime
@@ -90,6 +98,8 @@ class MailingRecipientsResponse(BaseModel):
 
 
 class MailingPreviewRequest(BaseModel):
+    # Attachments are taken from the saved mailing
+    mailing_id: int
     draft: MailingDraft
     form_id: int
     user_day_id: int | None = None
@@ -107,6 +117,7 @@ class MailingPreviewResponse(BaseModel):
     text: str
     buttons: list[MailingButton]
     errors: list[MailingRenderError]
+    attachments: list[MailingAttachmentMeta]
 
 
 class MailingRecipientError(MailingRenderError):
@@ -139,6 +150,8 @@ class MailingMessageResponse(BaseModel):
     assignment_label: str | None
     text: str
     buttons: list[MailingButton]
+    # Metadata of the attachments sent with the message
+    attachments: list[MailingAttachmentMeta]
     status: MailingMessageStatus
     error: str | None
     sent_at: datetime | None

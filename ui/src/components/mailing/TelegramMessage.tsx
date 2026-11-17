@@ -1,8 +1,16 @@
+import AttachFileIcon from "@mui/icons-material/AttachFile";
 import { Box, Button, Stack } from "@mui/material";
 import { Fragment, type ReactNode } from "react";
-import type { MailingButton } from "@/client/types.gen";
+import type { MailingAttachmentMeta, MailingButton } from "@/client/types.gen";
 
 const SAFE_URL = /^(https?|tg):/i;
+
+/** Human-readable file size: 830 B, 12.4 KB, 10 MB. */
+export function formatSize(size: number): string {
+  if (size < 1024) return `${size} B`;
+  if (size < 1024 * 1024) return `${Math.round(size / 102.4) / 10} KB`;
+  return `${Math.round(size / 1024 / 102.4) / 10} MB`;
+}
 
 const SIMPLE_TAGS: Record<string, string> = {
   b: "b",
@@ -69,9 +77,11 @@ function renderNode(node: Node, key: number): ReactNode {
 export function TelegramMessage({
   text,
   buttons,
+  attachments = [],
 }: {
   text: string;
   buttons: MailingButton[];
+  attachments?: MailingAttachmentMeta[];
 }) {
   const body = new DOMParser().parseFromString(
     `<body>${text}</body>`,
@@ -80,6 +90,44 @@ export function TelegramMessage({
 
   return (
     <Box sx={{ maxWidth: 420 }}>
+      {attachments.length > 0 && (
+        <Stack spacing={0.5} sx={{ mb: 0.5 }}>
+          {attachments.map((attachment) => (
+            <Box
+              key={attachment.attachment_id}
+              data-testid="telegram-attachment"
+              sx={{
+                display: "flex",
+                alignItems: "center",
+                gap: 1,
+                px: 1.5,
+                py: 1,
+                border: 1,
+                borderColor: "#c8e6b0",
+                borderRadius: 2,
+                bgcolor: "#eeffde",
+                fontSize: 14,
+              }}
+            >
+              <AttachFileIcon fontSize="small" color="action" />
+              <Box sx={{ minWidth: 0 }}>
+                <Box
+                  sx={{
+                    overflow: "hidden",
+                    textOverflow: "ellipsis",
+                    whiteSpace: "nowrap",
+                  }}
+                >
+                  {attachment.file_name}
+                </Box>
+                <Box sx={{ color: "text.secondary", fontSize: 12 }}>
+                  {formatSize(attachment.size)}
+                </Box>
+              </Box>
+            </Box>
+          ))}
+        </Stack>
+      )}
       <Box
         data-testid="telegram-message"
         sx={{

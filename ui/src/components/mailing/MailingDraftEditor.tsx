@@ -1,6 +1,7 @@
 import AddIcon from "@mui/icons-material/Add";
 import ArrowDownwardIcon from "@mui/icons-material/ArrowDownward";
 import ArrowUpwardIcon from "@mui/icons-material/ArrowUpward";
+import AttachFileIcon from "@mui/icons-material/AttachFile";
 import DeleteIcon from "@mui/icons-material/Delete";
 import SendIcon from "@mui/icons-material/Send";
 import {
@@ -52,23 +53,27 @@ import type {
 } from "@/client/types.gen";
 import { useYearDays, useYearHalls, useYearPositions } from "@/data/use-admin";
 import {
+  useDeleteAttachment,
   useDeleteMailing,
   useEditMailing,
   useMailingPreview,
   useMailingRecipients,
   useStartMailing,
   useTestSendMessage,
+  useUploadAttachment,
 } from "@/data/use-mailings";
 import { useDebouncedValue } from "@/hooks/useDebouncedValue";
 import { apiErrorMessage } from "@/utils/apiErrorHandling";
 import { ExpressionEditor } from "./ExpressionEditor";
 import { ATTENDANCE_LABELS, MailingStatusChip } from "./status";
-import { TelegramMessage } from "./TelegramMessage";
+import { formatSize, TelegramMessage } from "./TelegramMessage";
 import { TemplateEditor } from "./TemplateEditor";
 
 const DEBOUNCE_MS = 700;
 const NO_HALL = -1;
 const ATTENDANCES = Object.keys(ATTENDANCE_LABELS) as Attendance[];
+const MAX_ATTACHMENTS = 10;
+const MAX_ATTACHMENT_MB = 10;
 
 // The app is served under BASE_URL, same as the router
 const CONFIRM_URL_TEMPLATE = `${new URL(import.meta.env.BASE_URL, window.location.origin).toString()}{{ year.id }}/days/{{ day.id }}/confirm`;
@@ -156,6 +161,7 @@ export function MailingDraftEditor({ mailing }: { mailing: MailingResponse }) {
 
   const previewRequest: MailingPreviewRequest | null = selection
     ? {
+        mailing_id: mailing.mailing_id,
         draft: debouncedDraft,
         form_id: selection.formId,
         user_day_id: selection.userDayId,
@@ -167,6 +173,9 @@ export function MailingDraftEditor({ mailing }: { mailing: MailingResponse }) {
   const testSend = useTestSendMessage();
   const startMailing = useStartMailing();
   const deleteMailing = useDeleteMailing();
+  const uploadAttachment = useUploadAttachment();
+  const deleteAttachment = useDeleteAttachment();
+  const attachments = mailing.attachments ?? [];
   const [confirmStart, setConfirmStart] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [startErrors, setStartErrors] = useState<{
@@ -713,6 +722,95 @@ export function MailingDraftEditor({ mailing }: { mailing: MailingResponse }) {
                 </Box>
               </Typography>
             </Stack>
+
+            <Typography variant="subtitle1" sx={{ mt: 3, mb: 1 }}>
+              {t("Attachments")}
+            </Typography>
+            <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+              {t(
+                "Up to {{count}} files, at most {{size}} MB each. With attachments the message text is at most {{limit}} characters.",
+                {
+                  count: MAX_ATTACHMENTS,
+                  size: MAX_ATTACHMENT_MB,
+                  limit: 1024,
+                },
+              )}
+            </Typography>
+            {attachments.length > 0 && (
+              <Stack spacing={0.5} sx={{ mb: 1 }}>
+                {attachments.map((attachment) => (
+                  <Box
+                    key={attachment.attachment_id}
+                    sx={{ display: "flex", alignItems: "center", gap: 1 }}
+                  >
+                    <AttachFileIcon fontSize="small" color="action" />
+                    <Typography
+                      variant="body2"
+                      sx={{
+                        flexGrow: 1,
+                        minWidth: 0,
+                        overflow: "hidden",
+                        textOverflow: "ellipsis",
+                        whiteSpace: "nowrap",
+                      }}
+                    >
+                      {attachment.file_name}
+                    </Typography>
+                    <Typography variant="body2" color="text.secondary">
+                      {formatSize(attachment.size)}
+                    </Typography>
+                    <IconButton
+                      size="small"
+                      disabled={deleteAttachment.isPending}
+                      onClick={() =>
+                        deleteAttachment.mutate({
+                          mailingId: mailing.mailing_id,
+                          attachmentId: attachment.attachment_id,
+                        })
+                      }
+                      aria-label={t("Detach file")}
+                    >
+                      <DeleteIcon fontSize="small" />
+                    </IconButton>
+                  </Box>
+                ))}
+              </Stack>
+            )}
+            <Button
+              size="small"
+              variant="outlined"
+              component="label"
+              startIcon={<AttachFileIcon />}
+              disabled={
+                uploadAttachment.isPending ||
+                attachments.length >= MAX_ATTACHMENTS
+              }
+              data-testid="mailing-attach-file"
+            >
+              {t("Attach a file")}
+              <input
+                type="file"
+                hidden
+                onChange={(event) => {
+                  const file = event.target.files?.[0];
+                  if (file) {
+                    uploadAttachment.mutate({
+                      mailingId: mailing.mailing_id,
+                      file,
+                    });
+                  }
+                  event.target.value = "";
+                }}
+              />
+            </Button>
+            {uploadAttachment.error && (
+              <Alert severity="error" sx={{ mt: 1 }}>
+                {apiErrorMessage(
+                  uploadAttachment.error,
+                  t("Failed to attach the file"),
+                )}
+              </Alert>
+            )}
           </CardContent>
         </Card>
 
@@ -769,6 +867,7 @@ export function MailingDraftEditor({ mailing }: { mailing: MailingResponse }) {
               <TelegramMessage
                 text={preview.data.text}
                 buttons={preview.data.buttons}
+                attachments={preview.data.attachments}
               />
             )}
             {previewRequest && (
