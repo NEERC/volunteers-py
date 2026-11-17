@@ -4,13 +4,14 @@ import {
   AccordionDetails,
   AccordionSummary,
   Alert,
-  Autocomplete,
   Box,
   Button,
+  Checkbox,
   CircularProgress,
   Dialog,
   DialogActions,
   DialogTitle,
+  FormControlLabel,
   MenuItem,
   Paper,
   Stack,
@@ -79,7 +80,9 @@ export function PrintTemplateEditor({ template, yearId }: Props) {
   const [day, setDay] = useState("");
   const [expression, setExpression] = useState("");
   const [assignmentMode, setAssignmentMode] = useState<AssignmentMode>("first");
-  const [excluded, setExcluded] = useState<PrintRecipient[]>([]);
+  const [excluded, setExcluded] = useState<number[]>([]);
+  const [recipientSearch, setRecipientSearch] = useState("");
+  const [lastPdf, setLastPdf] = useState<Blob | null>(null);
   const [selectedRecipient, setSelectedRecipient] = useState("");
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [assetsVersion, setAssetsVersion] = useState(0);
@@ -96,7 +99,7 @@ export function PrintTemplateEditor({ template, yearId }: Props) {
   const context = useMemo<PrintContext>(
     () => ({
       ...candidateContext,
-      excluded_form_ids: excluded.map(({ form_id }) => form_id),
+      excluded_form_ids: excluded,
     }),
     [candidateContext, excluded],
   );
@@ -114,8 +117,9 @@ export function PrintTemplateEditor({ template, yearId }: Props) {
     retry: false,
   });
   const candidates = recipients.data?.recipients ?? [];
+  const excludedIds = useMemo(() => new Set(excluded), [excluded]);
   const included = candidates.filter(
-    (recipient) => !context.excluded_form_ids?.includes(recipient.form_id),
+    (recipient) => !excludedIds.has(recipient.form_id),
   );
   const activeRecipient = included.find(
     (recipient) => recipientKey(recipient) === selectedRecipient,
@@ -149,6 +153,10 @@ export function PrintTemplateEditor({ template, yearId }: Props) {
       !recipients.isError,
     retry: false,
   });
+  useEffect(() => {
+    if (preview.data !== undefined) setLastPdf(preview.data);
+  }, [preview.data]);
+
   const save = useMutation({
     mutationFn: () =>
       editPrintTemplate({
@@ -212,14 +220,30 @@ export function PrintTemplateEditor({ template, yearId }: Props) {
   const error = save.error || generate.error || daysError;
   const noRecipients = t("No recipients match the filters.");
   const requestFailed = t("Template request failed");
-  const excludedOptions = Array.from(
+  const shownRecipients = Array.from(
     new Map(
-      [...candidates, ...excluded].map((recipient) => [
-        recipient.form_id,
-        recipient,
-      ]),
+      candidates.map((recipient) => [recipient.form_id, recipient]),
     ).values(),
+  ).filter(({ name }) =>
+    name
+      .toLocaleLowerCase()
+      .includes(recipientSearch.trim().toLocaleLowerCase()),
   );
+  const shownIncluded = shownRecipients.filter(
+    ({ form_id }) => !excludedIds.has(form_id),
+  ).length;
+  const allShownIncluded = shownIncluded === shownRecipients.length;
+  const setRecipientsIncluded = (formIds: number[], included: boolean) => {
+    setExcluded((current) => {
+      const next = new Set(current);
+      for (const id of formIds) {
+        if (included) next.delete(id);
+        else next.add(id);
+      }
+      return [...next];
+    });
+  };
+  const pdf = preview.data === undefined ? lastPdf : preview.data;
 
   return (
     <Stack spacing={2}>
@@ -296,6 +320,7 @@ export function PrintTemplateEditor({ template, yearId }: Props) {
               label={t("Day")}
               value={day}
               onChange={(event) => {
+                setLastPdf(null);
                 setDay(event.target.value);
                 setSelectedRecipient("");
               }}
@@ -326,18 +351,53 @@ export function PrintTemplateEditor({ template, yearId }: Props) {
               </MenuItem>
               <MenuItem value="all">{t("All matching assignments")}</MenuItem>
             </TextField>
-            <Autocomplete
-              multiple
-              options={excludedOptions}
-              value={excluded}
-              isOptionEqualToValue={(a, b) => a.form_id === b.form_id}
-              getOptionLabel={(recipient) => recipient.name}
-              getOptionKey={(recipient) => recipient.form_id}
-              onChange={(_, value) => setExcluded(value)}
-              renderInput={(params) => (
-                <TextField {...params} label={t("Excluded applications")} />
-              )}
-            />
+            <Box>
+              <Typography gutterBottom>{t("Excluded applications")}</Typography>
+              <TextField
+                size="small"
+                type="search"
+                label={t("Search by name")}
+                value={recipientSearch}
+                onChange={(event) => setRecipientSearch(event.target.value)}
+              />
+              <Stack sx={{ maxHeight: 240, overflowY: "auto" }}>
+                <FormControlLabel
+                  control={
+                    <Checkbox
+                      checked={shownRecipients.length > 0 && allShownIncluded}
+                      indeterminate={shownIncluded > 0 && !allShownIncluded}
+                      disabled={shownRecipients.length === 0}
+                      onChange={() =>
+                        setRecipientsIncluded(
+                          shownRecipients.map(({ form_id }) => form_id),
+                          !allShownIncluded,
+                        )
+                      }
+                    />
+                  }
+                  label={t("Include all shown")}
+                />
+                {recipientSearch.trim() && shownRecipients.length === 0 && (
+                  <Typography color="text.secondary">
+                    {t("Nobody found")}
+                  </Typography>
+                )}
+                {shownRecipients.map(({ form_id, name }) => (
+                  <FormControlLabel
+                    key={form_id}
+                    control={
+                      <Checkbox
+                        checked={!excludedIds.has(form_id)}
+                        onChange={(event) =>
+                          setRecipientsIncluded([form_id], event.target.checked)
+                        }
+                      />
+                    }
+                    label={name}
+                  />
+                ))}
+              </Stack>
+            </Box>
             <TextField
               select
               label={t("Preview recipient")}
@@ -350,7 +410,13 @@ export function PrintTemplateEditor({ template, yearId }: Props) {
                   key={recipientKey(recipient)}
                   value={recipientKey(recipient)}
                 >
-                  {recipient.name}
+                  {[
+                    recipient.name,
+                    recipient.position_name,
+                    recipient.hall_name,
+                  ]
+                    .filter(Boolean)
+                    .join(" · ")}
                 </MenuItem>
               ))}
             </TextField>
@@ -384,7 +450,7 @@ export function PrintTemplateEditor({ template, yearId }: Props) {
             onChange={setSource}
           />
         </Paper>
-        <Paper variant="outlined" sx={{ minHeight: 560 }}>
+        <Paper variant="outlined" sx={{ minHeight: 560, position: "relative" }}>
           {!day && (
             <Alert severity="info">
               {t("Select a day to preview the PDF.")}
@@ -395,14 +461,27 @@ export function PrintTemplateEditor({ template, yearId }: Props) {
               <CircularProgress size={24} sx={{ m: 2 }} />
             )}
           {day && preview.error && (
-            <Alert severity="error" sx={{ whiteSpace: "pre-wrap" }}>
+            <Alert
+              severity="error"
+              variant="filled"
+              sx={{
+                whiteSpace: "pre-wrap",
+                ...(pdf && {
+                  position: "absolute",
+                  top: 8,
+                  left: 8,
+                  right: 8,
+                  zIndex: 1,
+                }),
+              }}
+            >
               {apiErrorMessage(preview.error, requestFailed)}
             </Alert>
           )}
           {day && preview.data === null && (
             <Alert severity="info">{noRecipients}</Alert>
           )}
-          {day && preview.data && <PdfFrame pdf={preview.data} />}
+          {day && pdf && <PdfFrame pdf={pdf} />}
         </Paper>
       </Box>
     </Stack>

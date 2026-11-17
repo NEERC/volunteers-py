@@ -34,6 +34,7 @@
   "Print template not found": "Print template not found",
   "Unsupported print asset name or file type": "Unsupported print asset name or file type",
   "Print assets must be at most 5 MB": "Print assets must be at most 5 MB",
+  "Print asset content does not match its file type": "Print asset content does not match its file type",
   "Print asset is empty": "Print asset is empty",
   "std.typ must be UTF-8": "std.typ must be UTF-8",
   "Print asset not found": "Print asset not found",

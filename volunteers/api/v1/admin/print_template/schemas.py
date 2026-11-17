@@ -62,6 +62,8 @@ class PrintRecipient(BaseModel):
     form_id: int
     user_day_id: int
     name: str
+    position_name: str
+    hall_name: str | None
 
 
 class PrintRecipients(BaseModel):
