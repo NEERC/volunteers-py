@@ -197,6 +197,10 @@ export type BodyUploadAttachmentApiV1AdminMailingMailingIdAttachmentsPost = {
     file: Blob | File;
 };
 
+export type BodyUploadPrintAssetApiV1AdminPrintTemplateYearYearIdTemplateIdAssetsPost = {
+    file: Blob | File;
+};
+
 /**
  * Whether the user can confirm their assignment on a day
  */
@@ -216,6 +220,10 @@ export type CopyAssignmentsResponse = {
 
 export type CreateMailingRequest = {
     source_mailing_id?: number | null;
+};
+
+export type CreatePrintTemplate = {
+    title: string;
 };
 
 /**
@@ -288,6 +296,11 @@ export type EditPositionRequest = {
     save_for_next_year?: boolean | null;
     score?: number | null;
     description?: string | null;
+};
+
+export type EditPrintTemplate = {
+    title: string;
+    source: string;
 };
 
 export type EditUserDayRequest = {
@@ -581,6 +594,66 @@ export type PositionOut = {
     score?: number;
     description?: string | null;
     position_id: number;
+};
+
+export type PrintAsset = {
+    asset_id: number;
+    file_name: string;
+    content_type: string;
+    size: number;
+};
+
+export type PrintContext = {
+    day_id: number;
+    filter?: MailingFilter;
+    assignment_mode?: AssignmentMode;
+    excluded_form_ids?: Array<number>;
+};
+
+export type PrintPreviewRequest = {
+    day_id: number;
+    filter?: MailingFilter;
+    assignment_mode?: AssignmentMode;
+    excluded_form_ids?: Array<number>;
+    source?: string | null;
+    form_id?: number | null;
+    user_day_id?: number | null;
+};
+
+export type PrintRecipient = {
+    form_id: number;
+    user_day_id: number;
+    name: string;
+};
+
+export type PrintRecipients = {
+    recipients: Array<PrintRecipient>;
+};
+
+export type PrintRenderRequest = {
+    day_id: number;
+    filter?: MailingFilter;
+    assignment_mode?: AssignmentMode;
+    excluded_form_ids?: Array<number>;
+    source?: string | null;
+};
+
+export type PrintTemplateDetail = {
+    title: string;
+    template_id: number;
+    year_id: number;
+    source: string;
+    assets: Array<PrintAsset>;
+};
+
+export type PrintTemplateList = {
+    templates: Array<PrintTemplateSummary>;
+};
+
+export type PrintTemplateSummary = {
+    title: string;
+    template_id: number;
+    year_id: number;
 };
 
 export type RecipientAssignment = {
@@ -1626,6 +1699,320 @@ export type EditPositionApiV1AdminPositionPositionIdEditPostResponses = {
      */
     200: unknown;
 };
+
+export type ListPrintTemplatesApiV1AdminPrintTemplateYearYearIdGetData = {
+    body?: never;
+    path: {
+        year_id: number;
+    };
+    query?: never;
+    url: '/api/v1/admin/print-template/year/{year_id}';
+};
+
+export type ListPrintTemplatesApiV1AdminPrintTemplateYearYearIdGetErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type ListPrintTemplatesApiV1AdminPrintTemplateYearYearIdGetError = ListPrintTemplatesApiV1AdminPrintTemplateYearYearIdGetErrors[keyof ListPrintTemplatesApiV1AdminPrintTemplateYearYearIdGetErrors];
+
+export type ListPrintTemplatesApiV1AdminPrintTemplateYearYearIdGetResponses = {
+    /**
+     * Successful Response
+     */
+    200: PrintTemplateList;
+};
+
+export type ListPrintTemplatesApiV1AdminPrintTemplateYearYearIdGetResponse = ListPrintTemplatesApiV1AdminPrintTemplateYearYearIdGetResponses[keyof ListPrintTemplatesApiV1AdminPrintTemplateYearYearIdGetResponses];
+
+export type CreatePrintTemplateApiV1AdminPrintTemplateYearYearIdPostData = {
+    body: CreatePrintTemplate;
+    path: {
+        year_id: number;
+    };
+    query?: never;
+    url: '/api/v1/admin/print-template/year/{year_id}';
+};
+
+export type CreatePrintTemplateApiV1AdminPrintTemplateYearYearIdPostErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type CreatePrintTemplateApiV1AdminPrintTemplateYearYearIdPostError = CreatePrintTemplateApiV1AdminPrintTemplateYearYearIdPostErrors[keyof CreatePrintTemplateApiV1AdminPrintTemplateYearYearIdPostErrors];
+
+export type CreatePrintTemplateApiV1AdminPrintTemplateYearYearIdPostResponses = {
+    /**
+     * Successful Response
+     */
+    200: PrintTemplateDetail;
+};
+
+export type CreatePrintTemplateApiV1AdminPrintTemplateYearYearIdPostResponse = CreatePrintTemplateApiV1AdminPrintTemplateYearYearIdPostResponses[keyof CreatePrintTemplateApiV1AdminPrintTemplateYearYearIdPostResponses];
+
+export type DeletePrintTemplateApiV1AdminPrintTemplateYearYearIdTemplateIdDeleteData = {
+    body?: never;
+    path: {
+        year_id: number;
+        template_id: number;
+    };
+    query?: never;
+    url: '/api/v1/admin/print-template/year/{year_id}/{template_id}';
+};
+
+export type DeletePrintTemplateApiV1AdminPrintTemplateYearYearIdTemplateIdDeleteErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type DeletePrintTemplateApiV1AdminPrintTemplateYearYearIdTemplateIdDeleteError = DeletePrintTemplateApiV1AdminPrintTemplateYearYearIdTemplateIdDeleteErrors[keyof DeletePrintTemplateApiV1AdminPrintTemplateYearYearIdTemplateIdDeleteErrors];
+
+export type DeletePrintTemplateApiV1AdminPrintTemplateYearYearIdTemplateIdDeleteResponses = {
+    /**
+     * Successful Response
+     */
+    200: BaseSuccessResponse;
+};
+
+export type DeletePrintTemplateApiV1AdminPrintTemplateYearYearIdTemplateIdDeleteResponse = DeletePrintTemplateApiV1AdminPrintTemplateYearYearIdTemplateIdDeleteResponses[keyof DeletePrintTemplateApiV1AdminPrintTemplateYearYearIdTemplateIdDeleteResponses];
+
+export type GetPrintTemplateApiV1AdminPrintTemplateYearYearIdTemplateIdGetData = {
+    body?: never;
+    path: {
+        year_id: number;
+        template_id: number;
+    };
+    query?: never;
+    url: '/api/v1/admin/print-template/year/{year_id}/{template_id}';
+};
+
+export type GetPrintTemplateApiV1AdminPrintTemplateYearYearIdTemplateIdGetErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type GetPrintTemplateApiV1AdminPrintTemplateYearYearIdTemplateIdGetError = GetPrintTemplateApiV1AdminPrintTemplateYearYearIdTemplateIdGetErrors[keyof GetPrintTemplateApiV1AdminPrintTemplateYearYearIdTemplateIdGetErrors];
+
+export type GetPrintTemplateApiV1AdminPrintTemplateYearYearIdTemplateIdGetResponses = {
+    /**
+     * Successful Response
+     */
+    200: PrintTemplateDetail;
+};
+
+export type GetPrintTemplateApiV1AdminPrintTemplateYearYearIdTemplateIdGetResponse = GetPrintTemplateApiV1AdminPrintTemplateYearYearIdTemplateIdGetResponses[keyof GetPrintTemplateApiV1AdminPrintTemplateYearYearIdTemplateIdGetResponses];
+
+export type EditPrintTemplateApiV1AdminPrintTemplateYearYearIdTemplateIdPatchData = {
+    body: EditPrintTemplate;
+    path: {
+        year_id: number;
+        template_id: number;
+    };
+    query?: never;
+    url: '/api/v1/admin/print-template/year/{year_id}/{template_id}';
+};
+
+export type EditPrintTemplateApiV1AdminPrintTemplateYearYearIdTemplateIdPatchErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type EditPrintTemplateApiV1AdminPrintTemplateYearYearIdTemplateIdPatchError = EditPrintTemplateApiV1AdminPrintTemplateYearYearIdTemplateIdPatchErrors[keyof EditPrintTemplateApiV1AdminPrintTemplateYearYearIdTemplateIdPatchErrors];
+
+export type EditPrintTemplateApiV1AdminPrintTemplateYearYearIdTemplateIdPatchResponses = {
+    /**
+     * Successful Response
+     */
+    200: PrintTemplateDetail;
+};
+
+export type EditPrintTemplateApiV1AdminPrintTemplateYearYearIdTemplateIdPatchResponse = EditPrintTemplateApiV1AdminPrintTemplateYearYearIdTemplateIdPatchResponses[keyof EditPrintTemplateApiV1AdminPrintTemplateYearYearIdTemplateIdPatchResponses];
+
+export type UploadPrintAssetApiV1AdminPrintTemplateYearYearIdTemplateIdAssetsPostData = {
+    body: BodyUploadPrintAssetApiV1AdminPrintTemplateYearYearIdTemplateIdAssetsPost;
+    path: {
+        year_id: number;
+        template_id: number;
+    };
+    query?: never;
+    url: '/api/v1/admin/print-template/year/{year_id}/{template_id}/assets';
+};
+
+export type UploadPrintAssetApiV1AdminPrintTemplateYearYearIdTemplateIdAssetsPostErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type UploadPrintAssetApiV1AdminPrintTemplateYearYearIdTemplateIdAssetsPostError = UploadPrintAssetApiV1AdminPrintTemplateYearYearIdTemplateIdAssetsPostErrors[keyof UploadPrintAssetApiV1AdminPrintTemplateYearYearIdTemplateIdAssetsPostErrors];
+
+export type UploadPrintAssetApiV1AdminPrintTemplateYearYearIdTemplateIdAssetsPostResponses = {
+    /**
+     * Successful Response
+     */
+    200: PrintAsset;
+};
+
+export type UploadPrintAssetApiV1AdminPrintTemplateYearYearIdTemplateIdAssetsPostResponse = UploadPrintAssetApiV1AdminPrintTemplateYearYearIdTemplateIdAssetsPostResponses[keyof UploadPrintAssetApiV1AdminPrintTemplateYearYearIdTemplateIdAssetsPostResponses];
+
+export type DeletePrintAssetApiV1AdminPrintTemplateYearYearIdTemplateIdAssetsAssetIdDeleteData = {
+    body?: never;
+    path: {
+        year_id: number;
+        template_id: number;
+        asset_id: number;
+    };
+    query?: never;
+    url: '/api/v1/admin/print-template/year/{year_id}/{template_id}/assets/{asset_id}';
+};
+
+export type DeletePrintAssetApiV1AdminPrintTemplateYearYearIdTemplateIdAssetsAssetIdDeleteErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type DeletePrintAssetApiV1AdminPrintTemplateYearYearIdTemplateIdAssetsAssetIdDeleteError = DeletePrintAssetApiV1AdminPrintTemplateYearYearIdTemplateIdAssetsAssetIdDeleteErrors[keyof DeletePrintAssetApiV1AdminPrintTemplateYearYearIdTemplateIdAssetsAssetIdDeleteErrors];
+
+export type DeletePrintAssetApiV1AdminPrintTemplateYearYearIdTemplateIdAssetsAssetIdDeleteResponses = {
+    /**
+     * Successful Response
+     */
+    200: BaseSuccessResponse;
+};
+
+export type DeletePrintAssetApiV1AdminPrintTemplateYearYearIdTemplateIdAssetsAssetIdDeleteResponse = DeletePrintAssetApiV1AdminPrintTemplateYearYearIdTemplateIdAssetsAssetIdDeleteResponses[keyof DeletePrintAssetApiV1AdminPrintTemplateYearYearIdTemplateIdAssetsAssetIdDeleteResponses];
+
+export type GetPrintAssetApiV1AdminPrintTemplateYearYearIdTemplateIdAssetsAssetIdGetData = {
+    body?: never;
+    path: {
+        year_id: number;
+        template_id: number;
+        asset_id: number;
+    };
+    query?: never;
+    url: '/api/v1/admin/print-template/year/{year_id}/{template_id}/assets/{asset_id}';
+};
+
+export type GetPrintAssetApiV1AdminPrintTemplateYearYearIdTemplateIdAssetsAssetIdGetErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type GetPrintAssetApiV1AdminPrintTemplateYearYearIdTemplateIdAssetsAssetIdGetError = GetPrintAssetApiV1AdminPrintTemplateYearYearIdTemplateIdAssetsAssetIdGetErrors[keyof GetPrintAssetApiV1AdminPrintTemplateYearYearIdTemplateIdAssetsAssetIdGetErrors];
+
+export type GetPrintAssetApiV1AdminPrintTemplateYearYearIdTemplateIdAssetsAssetIdGetResponses = {
+    /**
+     * Successful Response
+     */
+    200: unknown;
+};
+
+export type ListPrintRecipientsApiV1AdminPrintTemplateYearYearIdTemplateIdRecipientsPostData = {
+    body: PrintContext;
+    path: {
+        year_id: number;
+        template_id: number;
+    };
+    query?: never;
+    url: '/api/v1/admin/print-template/year/{year_id}/{template_id}/recipients';
+};
+
+export type ListPrintRecipientsApiV1AdminPrintTemplateYearYearIdTemplateIdRecipientsPostErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type ListPrintRecipientsApiV1AdminPrintTemplateYearYearIdTemplateIdRecipientsPostError = ListPrintRecipientsApiV1AdminPrintTemplateYearYearIdTemplateIdRecipientsPostErrors[keyof ListPrintRecipientsApiV1AdminPrintTemplateYearYearIdTemplateIdRecipientsPostErrors];
+
+export type ListPrintRecipientsApiV1AdminPrintTemplateYearYearIdTemplateIdRecipientsPostResponses = {
+    /**
+     * Successful Response
+     */
+    200: PrintRecipients;
+};
+
+export type ListPrintRecipientsApiV1AdminPrintTemplateYearYearIdTemplateIdRecipientsPostResponse = ListPrintRecipientsApiV1AdminPrintTemplateYearYearIdTemplateIdRecipientsPostResponses[keyof ListPrintRecipientsApiV1AdminPrintTemplateYearYearIdTemplateIdRecipientsPostResponses];
+
+export type PreviewPrintTemplateApiV1AdminPrintTemplateYearYearIdTemplateIdPreviewPostData = {
+    body: PrintPreviewRequest;
+    path: {
+        year_id: number;
+        template_id: number;
+    };
+    query?: never;
+    url: '/api/v1/admin/print-template/year/{year_id}/{template_id}/preview';
+};
+
+export type PreviewPrintTemplateApiV1AdminPrintTemplateYearYearIdTemplateIdPreviewPostErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type PreviewPrintTemplateApiV1AdminPrintTemplateYearYearIdTemplateIdPreviewPostError = PreviewPrintTemplateApiV1AdminPrintTemplateYearYearIdTemplateIdPreviewPostErrors[keyof PreviewPrintTemplateApiV1AdminPrintTemplateYearYearIdTemplateIdPreviewPostErrors];
+
+export type PreviewPrintTemplateApiV1AdminPrintTemplateYearYearIdTemplateIdPreviewPostResponses = {
+    /**
+     * Successful Response
+     */
+    200: Blob | File;
+    /**
+     * No matching recipients
+     */
+    204: void;
+};
+
+export type PreviewPrintTemplateApiV1AdminPrintTemplateYearYearIdTemplateIdPreviewPostResponse = PreviewPrintTemplateApiV1AdminPrintTemplateYearYearIdTemplateIdPreviewPostResponses[keyof PreviewPrintTemplateApiV1AdminPrintTemplateYearYearIdTemplateIdPreviewPostResponses];
+
+export type GeneratePrintTemplateApiV1AdminPrintTemplateYearYearIdTemplateIdGeneratePostData = {
+    body: PrintRenderRequest;
+    path: {
+        year_id: number;
+        template_id: number;
+    };
+    query?: never;
+    url: '/api/v1/admin/print-template/year/{year_id}/{template_id}/generate';
+};
+
+export type GeneratePrintTemplateApiV1AdminPrintTemplateYearYearIdTemplateIdGeneratePostErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type GeneratePrintTemplateApiV1AdminPrintTemplateYearYearIdTemplateIdGeneratePostError = GeneratePrintTemplateApiV1AdminPrintTemplateYearYearIdTemplateIdGeneratePostErrors[keyof GeneratePrintTemplateApiV1AdminPrintTemplateYearYearIdTemplateIdGeneratePostErrors];
+
+export type GeneratePrintTemplateApiV1AdminPrintTemplateYearYearIdTemplateIdGeneratePostResponses = {
+    /**
+     * Successful Response
+     */
+    200: Blob | File;
+    /**
+     * No matching recipients
+     */
+    204: void;
+};
+
+export type GeneratePrintTemplateApiV1AdminPrintTemplateYearYearIdTemplateIdGeneratePostResponse = GeneratePrintTemplateApiV1AdminPrintTemplateYearYearIdTemplateIdGeneratePostResponses[keyof GeneratePrintTemplateApiV1AdminPrintTemplateYearYearIdTemplateIdGeneratePostResponses];
 
 export type ExportUsersCsvApiV1AdminUserExportCsvGetData = {
     body?: never;
