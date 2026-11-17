@@ -1,5 +1,7 @@
 When using the terminal - don't use cd to navigate to the project directory. Use the project root directory as the current directory.
 
+Always work on tasks in a separate git worktree (e.g. `git worktree add .claude/worktrees/<task> -b <branch>`), not in the main checkout.
+
 When writing backend code, follow these rules:
 - Use .venv/bin for executing commands like pytest or alembic
 - Always use alebmic's automigration for generating migrations. Never generate migrations manually.
