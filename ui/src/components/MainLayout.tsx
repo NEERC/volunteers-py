@@ -147,6 +147,14 @@ const getRoutesConfig = (
           adminOnly: true,
         },
         {
+          id: "templates",
+          type: "simple",
+          labelKey: "Templates",
+          icon: DescriptionIcon,
+          path: `/${selectedYear}/templates`,
+          adminOnly: true,
+        },
+        {
           id: "settings",
           type: "simple",
           labelKey: "Settings",
