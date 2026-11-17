@@ -624,6 +624,8 @@ export type PrintRecipient = {
     form_id: number;
     user_day_id: number;
     name: string;
+    position_name: string;
+    hall_name: string | null;
 };
 
 export type PrintRecipients = {

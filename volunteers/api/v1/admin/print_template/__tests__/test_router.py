@@ -19,6 +19,7 @@ from volunteers.services.__tests__.test_mailing import (  # noqa: F401
     service,
     worker,
 )
+from volunteers.services.i18n import I18nService
 from volunteers.services.mailing import MailingService
 
 
@@ -27,6 +28,7 @@ async def app(engine: AsyncEngine, service: MailingService) -> AsyncGenerator[Fa
     container = Container()
     container.db.override(engine)
     container.mailing_service.override(service)
+    container.i18n_service.override(I18nService())
     container.wire(modules=["volunteers.api.v1.admin.print_template.router"])
     app = FastAPI()
     app.include_router(router, prefix="/api/v1/admin")
@@ -84,6 +86,10 @@ async def test_assets(client: AsyncClient, template_url: str) -> None:
     assert (
         await client.post(url, files={"file": ("large.png", b"x" * (5 * 1024**2 + 1))})
     ).status_code == 413
+    for name in ("logo.png", "logo.jpg", "logo.svg", "font.ttf", "font.otf", "font.woff2"):
+        response = await client.post(url, files={"file": (name, b"<html/>")})
+        assert response.status_code == 422
+        assert response.json()["detail"] == "Print asset content does not match its file type"
     response = await client.post(url, files={"file": ("logo.svg", b"<svg/>", "image/svg+xml")})
     assert response.status_code == 200
     assert (await client.delete(f"{url}/{response.json()['asset_id']}")).status_code == 200
@@ -122,7 +128,17 @@ async def test_generation_shares_mailing_context(
         "assignment_mode": "all",
     }
     response = await client.post(f"{template_url}/recipients", json=context)
-    assert [item["form_id"] for item in response.json()["recipients"]] == [seed.carol_form_id]
+    assert response.status_code == 200
+    (recipient,) = response.json()["recipients"]
+    assert recipient["form_id"] == seed.carol_form_id
+    assert recipient["position_name"] == "Registration"
+    assert recipient["hall_name"] is None
+    preview = await client.post(
+        f"{template_url}/preview",
+        json={**context, "form_id": recipient["form_id"], "user_day_id": recipient["user_day_id"]},
+    )
+    assert preview.status_code == 200
+    assert preview.content.startswith(b"%PDF")
     source = """
 #assert.eq(data.len(), 1)
 #assert.eq(data.first().user.first_name_ru, "Carol")

@@ -32,6 +32,7 @@
   "Print template not found": "Шаблон печати не найден",
   "Unsupported print asset name or file type": "Имя или тип файла не поддерживается",
   "Print assets must be at most 5 MB": "Размер файла не должен превышать 5 МБ",
+  "Print asset content does not match its file type": "Содержимое файла не соответствует его типу",
   "Print asset is empty": "Файл пуст",
   "std.typ must be UTF-8": "Файл std.typ должен быть в кодировке UTF-8",
   "Print asset not found": "Файл шаблона не найден",

@@ -69,39 +69,45 @@ export function TypstEditor({ label, value, onChange, height = 560 }: Props) {
         const prefix = current
           .getLineContent(position.lineNumber)
           .slice(0, position.column - 1);
-        const chain = prefix
-          .match(/([\w-]+(?:\.[\w-]+)*)\.[\w-]*$/)?.[1]
-          ?.split(".");
-        const lastDot = chain ? prefix.lastIndexOf(".") + 1 : undefined;
+        const chain = prefix.match(
+          /(?<![\w.-])(?:it|data\.first\(\))((?:\.[a-zA-Z_][\w-]*)*)\.[\w-]*$/,
+        )?.[1];
+        const lastDot =
+          chain === undefined ? undefined : prefix.lastIndexOf(".");
         const word = current.getWordUntilPosition(position);
         const range = new monaco.Range(
           position.lineNumber,
-          lastDot === undefined ? word.startColumn : lastDot + 1,
+          lastDot === undefined ? word.startColumn : lastDot + 2,
           position.lineNumber,
           position.column,
         );
 
-        const names = chain
-          ? fieldsAt(variables ?? [], chain.slice(1))
-          : (variables ?? []);
+        const fields =
+          chain === undefined
+            ? []
+            : fieldsAt(variables ?? [], chain.split(".").slice(1));
+        const helpers =
+          chain === undefined && !/\.[\w-]*$/.test(prefix)
+            ? ["data", "render-each", "full-name"]
+            : [];
         return {
           suggestions: [
-            ...names.map((variable) => ({
-              label: variable.name,
-              kind: monaco.languages.CompletionItemKind.Field,
-              insertText: variable.name,
-              detail: variable.type,
-              documentation: t(variable.description),
+            ...fields
+              .filter((variable) => /^[a-zA-Z_][\w-]*$/.test(variable.name))
+              .map((variable) => ({
+                label: variable.name,
+                kind: monaco.languages.CompletionItemKind.Field,
+                insertText: variable.name,
+                detail: variable.type,
+                documentation: t(variable.description),
+                range,
+              })),
+            ...helpers.map((name) => ({
+              label: name,
+              kind: monaco.languages.CompletionItemKind.Variable,
+              insertText: name,
               range,
             })),
-            ...(!chain
-              ? ["data", "render-each", "full-name"].map((name) => ({
-                  label: name,
-                  kind: monaco.languages.CompletionItemKind.Variable,
-                  insertText: name,
-                  range,
-                }))
-              : []),
           ],
         };
       },
