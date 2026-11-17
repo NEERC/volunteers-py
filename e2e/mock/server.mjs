@@ -70,17 +70,23 @@ const readBody = (req) =>
     req.on("error", reject);
   });
 
-/** Parses urlencoded, JSON and simple (text-only) multipart bodies. */
+/** Parses urlencoded, JSON and multipart bodies (file parts come through as text). */
 const parseBody = (req, raw) => {
   const type = req.headers["content-type"] ?? "";
   if (type.includes("application/json")) {
     return raw ? JSON.parse(raw) : {};
   }
   if (type.includes("multipart/form-data")) {
+    const boundary = type.split("boundary=")[1]?.trim();
     const fields = {};
-    const re = /name="([^"]+)"\r\n(?:[^\r\n]*\r\n)*\r\n([\s\S]*?)\r\n--/g;
-    for (const match of raw.matchAll(re)) {
-      fields[match[1]] = match[2];
+    for (const part of raw.split(`--${boundary}`)) {
+      const headerEnd = part.indexOf("\r\n\r\n");
+      if (headerEnd === -1) continue;
+      const name = part.slice(0, headerEnd).match(/name="([^"]+)"/)?.[1];
+      if (!name) continue;
+      let value = part.slice(headerEnd + 4);
+      if (value.endsWith("\r\n")) value = value.slice(0, -2);
+      fields[name] = value;
     }
     return fields;
   }
@@ -299,20 +305,28 @@ async function handleTelegram(req, res, method) {
         date: Math.floor(Date.now() / 1000),
         chat: { id: Number(params.chat_id) || 0, type: "supergroup" },
         caption: params.caption ?? "",
-        document: { file_name: "mock", file_id: "mock" },
+        document: { file_name: "mock", file_id: "mock", file_unique_id: "mock" },
       },
     });
   }
   if (method === "sendMediaGroup") {
-    const media = Array.isArray(params.media) ? params.media : [];
+    let media = params.media;
+    if (typeof media === "string") {
+      try {
+        media = JSON.parse(media);
+      } catch {
+        media = null;
+      }
+    }
+    const items = Array.isArray(media) ? media : [];
     return send(res, 200, {
       ok: true,
-      result: media.map((item) => ({
+      result: items.map((item) => ({
         message_id: randomInt(1, 2 ** 31),
         date: Math.floor(Date.now() / 1000),
         chat: { id: Number(params.chat_id) || 0, type: "supergroup" },
         caption: item.caption ?? "",
-        document: { file_name: "mock", file_id: "mock" },
+        document: { file_name: "mock", file_id: "mock", file_unique_id: "mock" },
       })),
     });
   }
