@@ -453,7 +453,12 @@ class MailingService(BaseService):
             self.logger.info(f"Deleted unreferenced attachments: {orphans}")
 
     async def _plan(
-        self, session: AsyncSession, year_id: int, draft: MailingDraft
+        self,
+        session: AsyncSession,
+        year_id: int,
+        draft: MailingDraft,
+        *,
+        force_assignment: bool = False,
     ) -> RecipientsPlan:
         year = await session.get(Year, year_id)
         if year is None:
@@ -475,7 +480,7 @@ class MailingService(BaseService):
             key=lambda f: (f.user.last_name_ru, f.user.first_name_ru, f.id),
         )
 
-        with_assignment = uses_assignment(
+        with_assignment = force_assignment or uses_assignment(
             draft.template, [button.model_dump() for button in draft.buttons]
         )
         excluded = set(draft.excluded_form_ids)
@@ -555,9 +560,11 @@ class MailingService(BaseService):
         )
         return RecipientsPlan(year, recipients, with_assignment, has_unpublished_days)
 
-    async def get_recipients(self, year_id: int, draft: MailingDraft) -> RecipientsPlan:
+    async def get_recipients(
+        self, year_id: int, draft: MailingDraft, *, force_assignment: bool = False
+    ) -> RecipientsPlan:
         async with self.session_scope() as session:
-            return await self._plan(session, year_id, draft)
+            return await self._plan(session, year_id, draft, force_assignment=force_assignment)
 
     async def preview(
         self,

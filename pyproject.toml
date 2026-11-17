@@ -34,6 +34,8 @@ httpx = "^0.28.1"
 aiohttp-socks = "^0.10.1"
 simpleeval = "^1.0.8"
 python-multipart = "^0.0.33"
+typst = "^0.15.2"
+fonttools = { version = "^4.61.0", extras = ["woff"] }
 
 [tool.poetry.group.dev.dependencies]
 ruff = "^0.11.7"
@@ -71,6 +73,12 @@ exclude = ["__tests__",]
 [[tool.mypy.overrides]]
 module = ["simpleeval"]
 ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module = ["fontTools.*", "typst"]
+ignore_missing_imports = true
+follow_imports = "skip"
+
 
 [tool.ruff]
 # Target the same interpreter as mypy for consistent syntax targeting
