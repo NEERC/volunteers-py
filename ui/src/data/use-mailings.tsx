@@ -193,8 +193,19 @@ const useUpdateMailingCache = () => {
   };
 };
 
+// Previews are keyed by the draft, not by the saved attachments, so they go
+// stale when an attachment is uploaded or deleted
+const useInvalidateMailingPreviews = () => {
+  const queryClient = useQueryClient();
+  return () =>
+    queryClient.invalidateQueries({
+      queryKey: [...queryKeys.admin.mailings.all(), "preview"],
+    });
+};
+
 export const useUploadAttachment = () => {
   const updateMailing = useUpdateMailingCache();
+  const invalidatePreviews = useInvalidateMailingPreviews();
   return useMutation({
     mutationFn: async ({
       mailingId,
@@ -216,12 +227,14 @@ export const useUploadAttachment = () => {
         ...mailing,
         attachments: [...mailing.attachments, meta],
       }));
+      invalidatePreviews();
     },
   });
 };
 
 export const useDeleteAttachment = () => {
   const updateMailing = useUpdateMailingCache();
+  const invalidatePreviews = useInvalidateMailingPreviews();
   return useMutation({
     mutationFn: async ({
       mailingId,
@@ -244,6 +257,7 @@ export const useDeleteAttachment = () => {
           (attachment) => attachment.attachment_id !== attachmentId,
         ),
       }));
+      invalidatePreviews();
     },
   });
 };
