@@ -20,6 +20,7 @@ import type { RegistrationFormItem } from "@/client/types.gen";
 import { DetailedUserCard } from "@/components/DetailedUserCard";
 import { useRegistrationForms } from "@/data/use-admin";
 import { shouldBeAdmin } from "@/utils/should-be-logged-in";
+import { matchesTelegramUsername } from "@/utils/telegram-search";
 
 export const Route = createFileRoute("/_logged-in/$yearId/registration-forms")({
   component: RouteComponent,
@@ -66,7 +67,7 @@ function RouteComponent() {
 
     let filtered = data.forms;
 
-    // Filter by name
+    // Filter by name or Telegram username
     if (nameFilter.trim()) {
       const searchTerm = nameFilter.toLowerCase();
       filtered = filtered.filter((form) => {
@@ -76,7 +77,9 @@ function RouteComponent() {
           `${form.first_name_en} ${form.last_name_en}`.toLowerCase();
 
         return (
-          fullNameRu.includes(searchTerm) || fullNameEn.includes(searchTerm)
+          fullNameRu.includes(searchTerm) ||
+          fullNameEn.includes(searchTerm) ||
+          matchesTelegramUsername(form.telegram_username, searchTerm)
         );
       });
     }
@@ -167,7 +170,7 @@ function RouteComponent() {
         }}
       >
         <TextField
-          placeholder={t("Search by name...")}
+          placeholder={t("Search by name or Telegram...")}
           value={nameFilter}
           onChange={(e) => setNameFilter(e.target.value)}
           InputProps={{

@@ -1,4 +1,5 @@
 import type { RegistrationFormItem } from "@/client/types.gen";
+import { matchesTelegramUsername } from "@/utils/telegram-search";
 
 export type VolunteerSort = "original" | "experience" | "newest" | "name";
 
@@ -34,7 +35,11 @@ export function filterAndSortAvailableVolunteers(
         form.desired_positions.some(
           (position) => position.position_id === positionId,
         )) &&
-      terms.every((term) => searchableName(form).includes(term)),
+      terms.every(
+        (term) =>
+          searchableName(form).includes(term) ||
+          matchesTelegramUsername(form.telegram_username, term),
+      ),
   );
 
   switch (sort) {

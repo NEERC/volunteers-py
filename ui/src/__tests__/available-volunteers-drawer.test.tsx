@@ -20,6 +20,7 @@ const volunteers = [
     first_name_ru: "Анна",
     last_name_ru: "Соколова",
     first_name_en: "Anna",
+    telegram_username: "sokolova_anna",
     last_name_en: "Sokolova",
     desired_positions: [{ position_id: 10, name: "Registration desk" }],
     created_at: "2026-01-01T00:00:00Z",
@@ -83,6 +84,18 @@ describe("AvailableVolunteersDrawer", () => {
     });
     expect(screen.getByText("No volunteers match the filters")).toBeTruthy();
   });
+
+  test.each(["@SOKOLOVA_", "sokolova_"])(
+    "searches available volunteers by Telegram username (%s)",
+    (query) => {
+      renderDrawer();
+      fireEvent.change(screen.getByRole("textbox", { name: "Search" }), {
+        target: { value: query },
+      });
+      expect(screen.getByText("Соколова Анна")).toBeTruthy();
+      expect(screen.queryByText("Миронов Борис")).toBeNull();
+    },
+  );
 
   test("shows the assigned state only when there are no available volunteers", () => {
     renderDrawer([]);

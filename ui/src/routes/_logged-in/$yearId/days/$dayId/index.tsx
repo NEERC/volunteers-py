@@ -45,6 +45,7 @@ import { ConfirmedMark } from "@/components/ConfirmedMark";
 import { LinkButton } from "@/components/LinkButton";
 import { useUserDayAssignments } from "@/data";
 import { useAssignmentUpdates } from "@/hooks/useAssignmentUpdates";
+import { telegramGlobalFilter } from "@/utils/telegram-search";
 
 export const Route = createFileRoute("/_logged-in/$yearId/days/$dayId/")({
   component: RouteComponent,
@@ -166,7 +167,8 @@ function AssignmentsTable({ assignments }: AssignmentsTableProps) {
       enableGrouping: false,
       enableColumnFilter: false,
     }),
-    columnHelper.accessor("telegram", {
+    columnHelper.accessor((assignment) => assignment.telegram ?? "", {
+      id: "telegram",
       header: t("Telegram"),
       cell: (info) => {
         const username = info.getValue();
@@ -226,6 +228,7 @@ function AssignmentsTable({ assignments }: AssignmentsTableProps) {
     onSortingChange: setSorting,
     onColumnFiltersChange: setColumnFilters,
     onGlobalFilterChange: setGlobalFilter,
+    globalFilterFn: telegramGlobalFilter,
     getCoreRowModel: getCoreRowModel(),
     getGroupedRowModel: getGroupedRowModel(),
     getSortedRowModel: getSortedRowModel(),
