@@ -3,6 +3,7 @@ import {
   Box,
   ButtonBase,
   IconButton,
+  MenuItem,
   Paper,
   Tab,
   Table,
@@ -77,6 +78,8 @@ export interface VolunteerAttendance {
   hall_name: string | null;
   attendanceByDay: Map<number, AttendanceItem>;
 }
+
+const UNSORTED = "unsorted";
 
 const ATTENDANCE_SORT_RANK: Record<Attendance, number> = {
   yes: 0,
@@ -339,14 +342,14 @@ function RouteComponent() {
               onChange={({ target: { value } }) =>
                 changeDay(value === "all" ? value : Number(value))
               }
-              slotProps={{ select: { native: true } }}
+              slotProps={{ select: { autoWidth: true } }}
               sx={{ "& .MuiInputBase-root": { minHeight: 44 } }}
             >
-              <option value="all">{t("All Days")}</option>
+              <MenuItem value="all">{t("All Days")}</MenuItem>
               {days.map((day) => (
-                <option key={day.day_id} value={day.day_id}>
+                <MenuItem key={day.day_id} value={day.day_id}>
                   {day.day_name}
-                </option>
+                </MenuItem>
               ))}
             </TextField>
             {attendanceSelector}
@@ -356,21 +359,23 @@ function RouteComponent() {
                 fullWidth
                 size="small"
                 label={t("Sort by")}
-                value={activeSort?.id ?? ""}
+                value={activeSort?.id ?? UNSORTED}
                 onChange={({ target: { value } }) =>
-                  setSorting(value ? [{ id: value, desc: false }] : [])
+                  setSorting(
+                    value === UNSORTED ? [] : [{ id: value, desc: false }],
+                  )
                 }
-                slotProps={{ select: { native: true } }}
+                slotProps={{ select: { autoWidth: true } }}
                 sx={{ minWidth: 0, "& .MuiInputBase-root": { minHeight: 44 } }}
               >
-                <option value="">{t("Unsorted")}</option>
+                <MenuItem value={UNSORTED}>{t("Unsorted")}</MenuItem>
                 {headers.map((header) => (
-                  <option key={header.id} value={header.column.id}>
+                  <MenuItem key={header.id} value={header.column.id}>
                     {flexRender(
                       header.column.columnDef.header,
                       header.getContext(),
                     )}
-                  </option>
+                  </MenuItem>
                 ))}
               </TextField>
               <Tooltip title={sortDirectionLabel}>
