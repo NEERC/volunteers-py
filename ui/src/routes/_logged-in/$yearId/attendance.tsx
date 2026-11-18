@@ -1,5 +1,8 @@
+import { ArrowDownward, ArrowUpward } from "@mui/icons-material";
 import {
   Box,
+  ButtonBase,
+  IconButton,
   Paper,
   Tab,
   Table,
@@ -9,7 +12,11 @@ import {
   TableHead,
   TableRow,
   Tabs,
+  TextField,
+  Tooltip,
   Typography,
+  useMediaQuery,
+  useTheme,
 } from "@mui/material";
 import {
   createFileRoute,
@@ -115,11 +122,12 @@ export function flattenVolunteers(
 
 function RouteComponent() {
   const { t } = useTranslation();
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down("lg"));
   const { yearId } = Route.useParams();
   const { user } = Route.useRouteContext();
   const navigate = useNavigate();
   const search = useSearch({ from: "/_logged-in/$yearId/attendance" });
-  const selectedDayId = search.day;
   const [selectedAttendance, setSelectedAttendance] =
     useState<Attendance>("yes");
 
@@ -153,6 +161,8 @@ function RouteComponent() {
     [attendanceData],
   );
 
+  const selectedDayId = days.find((day) => day.day_id === search.day)?.day_id;
+
   // Filter days based on selected day
   const displayedDays = useMemo(() => {
     if (selectedDayId) {
@@ -184,19 +194,31 @@ function RouteComponent() {
 
   const [sorting, setSorting] = useState<SortingState>([]);
 
+  const visibleSorting = useMemo(
+    () =>
+      sorting.filter(({ id }) =>
+        columns.some(
+          (column) =>
+            id === column.id ||
+            ("accessorKey" in column && id === column.accessorKey),
+        ),
+      ),
+    [columns, sorting],
+  );
+
   const table = useReactTable({
     data: volunteers,
     columns,
-    state: { sorting },
-    onSortingChange: setSorting,
+    state: { sorting: visibleSorting },
+    onSortingChange: (updater) =>
+      setSorting(
+        typeof updater === "function" ? updater(visibleSorting) : updater,
+      ),
     getCoreRowModel: getCoreRowModel(),
     getSortedRowModel: getSortedRowModel(),
   });
 
-  const handleDayTabChange = (
-    _: React.SyntheticEvent,
-    newDayId: number | "all",
-  ) => {
+  const changeDay = (newDayId: number | "all") => {
     navigate({
       to: "/$yearId/attendance",
       params: { yearId },
@@ -250,89 +272,196 @@ function RouteComponent() {
     );
   }
 
+  const headers = table.getFlatHeaders();
+  const activeSort = visibleSorting[0];
+  const sortDirectionLabel = activeSort?.desc
+    ? t("Sort ascending")
+    : t("Sort descending");
+  const attendanceSelector = (
+    <AttendanceSelector
+      value={selectedAttendance}
+      onChange={setSelectedAttendance}
+      isMobile={isMobile}
+    />
+  );
+  const rows = table
+    .getRowModel()
+    .rows.map((row) => (
+      <VolunteerRow
+        key={row.id}
+        volunteer={row.original}
+        days={displayedDays}
+        isMobile={isMobile}
+        canEditAttendance={canEditAttendance}
+        onAttendanceChange={handleAttendanceChange}
+        onAddAssessment={handleAddAssessment}
+        onEditAssessment={handleEditAssessment}
+        onDeleteAssessment={handleDeleteAssessment}
+        selectedAttendance={selectedAttendance}
+      />
+    ));
+
   return (
     <Box
       sx={{
         width: "100%",
-        height: "100%",
+        flex: 1,
+        minHeight: 0,
         display: "flex",
         flexDirection: "column",
         overflow: "hidden",
       }}
     >
-      <Box sx={{ borderBottom: 1, borderColor: "divider", px: 2, py: 1 }}>
-        <Box sx={{ display: "flex", alignItems: "center", gap: 2, mb: 1 }}>
-          <Typography variant="body2" fontWeight="medium">
-            {t("Select Attendance")}:
-          </Typography>
-          <AttendanceSelector
-            value={selectedAttendance}
-            onChange={setSelectedAttendance}
-          />
-        </Box>
-        <Tabs
-          value={selectedDayId || "all"}
-          onChange={(_, value) =>
-            handleDayTabChange(_, value as number | "all")
-          }
-          variant="scrollable"
-          scrollButtons="auto"
-        >
-          <Tab label={t("All Days")} value="all" />
-          {days.map((day) => (
-            <Tab key={day.day_id} label={day.day_name} value={day.day_id} />
-          ))}
-        </Tabs>
+      <Box
+        sx={{
+          borderBottom: 1,
+          borderColor: "divider",
+          px: { xs: 1.5, lg: 2 },
+          py: 1,
+        }}
+      >
+        {isMobile ? (
+          <Box
+            sx={{
+              display: "grid",
+              gridTemplateColumns: "minmax(0, 1fr)",
+              "@media (min-width: 420px)": {
+                gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
+              },
+              gap: 1,
+            }}
+          >
+            <TextField
+              select
+              size="small"
+              label={t("Day")}
+              value={selectedDayId ?? "all"}
+              onChange={({ target: { value } }) =>
+                changeDay(value === "all" ? value : Number(value))
+              }
+              slotProps={{ select: { native: true } }}
+              sx={{ "& .MuiInputBase-root": { minHeight: 44 } }}
+            >
+              <option value="all">{t("All Days")}</option>
+              {days.map((day) => (
+                <option key={day.day_id} value={day.day_id}>
+                  {day.day_name}
+                </option>
+              ))}
+            </TextField>
+            {attendanceSelector}
+            <Box sx={{ gridColumn: "1 / -1", display: "flex", gap: 0.5 }}>
+              <TextField
+                select
+                fullWidth
+                size="small"
+                label={t("Sort by")}
+                value={activeSort?.id ?? ""}
+                onChange={({ target: { value } }) =>
+                  setSorting(value ? [{ id: value, desc: false }] : [])
+                }
+                slotProps={{ select: { native: true } }}
+                sx={{ minWidth: 0, "& .MuiInputBase-root": { minHeight: 44 } }}
+              >
+                <option value="">{t("Unsorted")}</option>
+                {headers.map((header) => (
+                  <option key={header.id} value={header.column.id}>
+                    {flexRender(
+                      header.column.columnDef.header,
+                      header.getContext(),
+                    )}
+                  </option>
+                ))}
+              </TextField>
+              <Tooltip title={sortDirectionLabel}>
+                <span>
+                  <IconButton
+                    aria-label={sortDirectionLabel}
+                    disabled={!activeSort}
+                    sx={{ width: 44, height: 44 }}
+                    onClick={() => {
+                      if (activeSort) {
+                        setSorting([
+                          { id: activeSort.id, desc: !activeSort.desc },
+                        ]);
+                      }
+                    }}
+                  >
+                    {activeSort?.desc ? <ArrowDownward /> : <ArrowUpward />}
+                  </IconButton>
+                </span>
+              </Tooltip>
+            </Box>
+          </Box>
+        ) : (
+          <>
+            <Box sx={{ display: "flex", alignItems: "center", gap: 2, mb: 1 }}>
+              <Typography variant="body2" fontWeight="medium">
+                {t("Select Attendance")}:
+              </Typography>
+              {attendanceSelector}
+            </Box>
+            <Tabs
+              value={selectedDayId ?? "all"}
+              onChange={(_, value) => changeDay(value as number | "all")}
+              variant="scrollable"
+              scrollButtons="auto"
+            >
+              <Tab label={t("All Days")} value="all" />
+              {days.map((day) => (
+                <Tab key={day.day_id} label={day.day_name} value={day.day_id} />
+              ))}
+            </Tabs>
+          </>
+        )}
       </Box>
 
-      <Box sx={{ flex: 1, overflow: "auto", p: 2 }}>
-        <TableContainer component={Paper}>
-          <Table stickyHeader size="small">
-            <TableHead>
-              {table.getHeaderGroups().map((headerGroup) => (
-                <TableRow key={headerGroup.id}>
-                  {headerGroup.headers.map((header) => (
-                    <TableCell
-                      key={header.id}
-                      onClick={header.column.getToggleSortingHandler()}
-                      sx={{
-                        cursor: header.column.getCanSort()
-                          ? "pointer"
-                          : "default",
-                        userSelect: "none",
-                        "&:hover": header.column.getCanSort()
-                          ? { backgroundColor: "action.hover" }
-                          : {},
-                      }}
-                    >
-                      {flexRender(
-                        header.column.columnDef.header,
-                        header.getContext(),
-                      )}
-                      {header.column.getIsSorted() === "asc" && " ↑"}
-                      {header.column.getIsSorted() === "desc" && " ↓"}
-                    </TableCell>
-                  ))}
-                </TableRow>
-              ))}
-            </TableHead>
-            <TableBody>
-              {table.getRowModel().rows.map((row) => (
-                <VolunteerRow
-                  key={row.id}
-                  volunteer={row.original}
-                  days={displayedDays}
-                  canEditAttendance={canEditAttendance}
-                  onAttendanceChange={handleAttendanceChange}
-                  onAddAssessment={handleAddAssessment}
-                  onEditAssessment={handleEditAssessment}
-                  onDeleteAssessment={handleDeleteAssessment}
-                  selectedAttendance={selectedAttendance}
-                />
-              ))}
-            </TableBody>
-          </Table>
-        </TableContainer>
+      <Box
+        sx={{ flex: 1, minHeight: 0, overflow: "auto", p: { xs: 1.5, lg: 2 } }}
+      >
+        {isMobile ? (
+          <Box
+            component="ul"
+            role="list"
+            sx={{ listStyle: "none", m: 0, p: 0, display: "grid", gap: 1 }}
+          >
+            {rows}
+          </Box>
+        ) : (
+          <TableContainer component={Paper}>
+            <Table stickyHeader size="small">
+              <TableHead>
+                {table.getHeaderGroups().map((headerGroup) => (
+                  <TableRow key={headerGroup.id}>
+                    {headerGroup.headers.map((header) => (
+                      <TableCell
+                        key={header.id}
+                        onClick={header.column.getToggleSortingHandler()}
+                        sx={{
+                          cursor: header.column.getCanSort()
+                            ? "pointer"
+                            : "default",
+                          userSelect: "none",
+                          "&:hover": header.column.getCanSort()
+                            ? { backgroundColor: "action.hover" }
+                            : {},
+                        }}
+                      >
+                        {flexRender(
+                          header.column.columnDef.header,
+                          header.getContext(),
+                        )}
+                        {header.column.getIsSorted() === "asc" && " ↑"}
+                        {header.column.getIsSorted() === "desc" && " ↓"}
+                      </TableCell>
+                    ))}
+                  </TableRow>
+                ))}
+              </TableHead>
+              <TableBody>{rows}</TableBody>
+            </Table>
+          </TableContainer>
+        )}
       </Box>
     </Box>
   );
@@ -341,6 +470,7 @@ function RouteComponent() {
 interface VolunteerRowProps {
   volunteer: VolunteerAttendance;
   days: Array<{ day_id: number; day_name: string }>;
+  isMobile: boolean;
   canEditAttendance: boolean;
   onAttendanceChange: (
     userDayId: number,
@@ -363,6 +493,7 @@ interface VolunteerRowProps {
 function VolunteerRow({
   volunteer,
   days,
+  isMobile,
   canEditAttendance,
   onAttendanceChange,
   onAddAssessment,
@@ -372,15 +503,117 @@ function VolunteerRow({
 }: VolunteerRowProps) {
   const { t } = useTranslation();
 
-  const handleAttendanceChange = async (
-    dayId: number,
-    attendance: Attendance,
-  ) => {
-    const item = volunteer.attendanceByDay.get(dayId);
-    if (!item) return;
+  const dayCells = days.map((day) => {
+    const item = volunteer.attendanceByDay.get(day.day_id);
+    const content = item ? (
+      <Box
+        sx={{
+          display: "flex",
+          flexDirection: { xs: "row", lg: "column" },
+          alignItems: "center",
+          gap: 0.5,
+          minWidth: 0,
+        }}
+      >
+        <ButtonBase
+          component={canEditAttendance ? "button" : "span"}
+          disabled={!canEditAttendance}
+          sx={{
+            gap: 0.5,
+            px: 0.5,
+            borderRadius: 1,
+            minHeight: { xs: 44, lg: 0 },
+            textAlign: "start",
+            "&:hover, &.Mui-focusVisible": { backgroundColor: "action.hover" },
+          }}
+          onClick={() =>
+            onAttendanceChange(item.user_day_id, selectedAttendance)
+          }
+        >
+          {getAttendanceIcon(item.attendance)}
+          <Typography component="span" variant="body2">
+            {getAttendanceLabel(item.attendance, t)}
+          </Typography>
+        </ButtonBase>
+        <AssessmentInput
+          userDayId={item.user_day_id}
+          assessments={item.assessments}
+          canEdit={canEditAttendance}
+          onAdd={onAddAssessment}
+          onEdit={onEditAssessment}
+          onDelete={onDeleteAssessment}
+        />
+      </Box>
+    ) : (
+      <Typography variant="body2" color="text.secondary">
+        -
+      </Typography>
+    );
 
-    await onAttendanceChange(item.user_day_id, attendance);
-  };
+    if (isMobile) {
+      return (
+        <Box
+          key={day.day_id}
+          sx={{
+            display: "flex",
+            alignItems: "center",
+            flexWrap: "wrap",
+            justifyContent: "space-between",
+            columnGap: 1,
+            minHeight: 44,
+            px: 1.5,
+            borderTop: 1,
+            borderColor: "divider",
+          }}
+        >
+          {days.length > 1 && (
+            <Typography
+              variant="body2"
+              fontWeight="medium"
+              sx={{ minWidth: 0 }}
+            >
+              {day.day_name}
+            </Typography>
+          )}
+          {content}
+        </Box>
+      );
+    }
+
+    return (
+      <TableCell key={day.day_id} align="center" sx={{ py: 0.5 }}>
+        {content}
+      </TableCell>
+    );
+  });
+
+  const telegram = volunteer.user_telegram && (
+    <Typography variant="caption" color="text.secondary">
+      @{volunteer.user_telegram}
+    </Typography>
+  );
+
+  if (isMobile) {
+    return (
+      <Paper
+        component="li"
+        variant="outlined"
+        sx={{ minWidth: 0, overflowWrap: "anywhere" }}
+      >
+        <Box sx={{ px: 1.5, py: 1 }}>
+          <Typography variant="subtitle2" component="h2">
+            {volunteer.user_name}
+          </Typography>
+          {telegram}
+          <Typography variant="body2" color="text.secondary">
+            {volunteer.position_name}
+            {volunteer.hall_name && <> · {volunteer.hall_name}</>}
+          </Typography>
+        </Box>
+        {dayCells}
+      </Paper>
+    );
+  }
 
   return (
     <TableRow>
@@ -393,75 +626,10 @@ function VolunteerRow({
         <Typography variant="body2">{volunteer.hall_name || "-"}</Typography>
       </TableCell>
       <TableCell sx={{ py: 0.5 }}>
-        <Box>
-          <Typography variant="body2">{volunteer.user_name}</Typography>
-          {volunteer.user_telegram && (
-            <Typography variant="caption" color="text.secondary">
-              @{volunteer.user_telegram}
-            </Typography>
-          )}
-        </Box>
+        <Typography variant="body2">{volunteer.user_name}</Typography>
+        {telegram}
       </TableCell>
-      {days.map((day) => {
-        const item = volunteer.attendanceByDay.get(day.day_id);
-
-        return (
-          <TableCell
-            key={day.day_id}
-            align="center"
-            sx={{
-              py: 0.5,
-            }}
-          >
-            {item ? (
-              <Box
-                sx={{
-                  display: "flex",
-                  flexDirection: "column",
-                  alignItems: "center",
-                  gap: 0.5,
-                }}
-              >
-                <Box
-                  sx={{
-                    display: "flex",
-                    alignItems: "center",
-                    gap: 0.5,
-                    cursor: canEditAttendance ? "pointer" : "default",
-                    "&:hover": canEditAttendance
-                      ? { backgroundColor: "action.hover" }
-                      : {},
-                    px: 0.5,
-                    borderRadius: 1,
-                  }}
-                  onClick={() => {
-                    if (canEditAttendance) {
-                      handleAttendanceChange(day.day_id, selectedAttendance);
-                    }
-                  }}
-                >
-                  {getAttendanceIcon(item.attendance)}
-                  <Typography variant="body2">
-                    {getAttendanceLabel(item.attendance, t)}
-                  </Typography>
-                </Box>
-                <AssessmentInput
-                  userDayId={item.user_day_id}
-                  assessments={item.assessments}
-                  canEdit={canEditAttendance}
-                  onAdd={onAddAssessment}
-                  onEdit={onEditAssessment}
-                  onDelete={onDeleteAssessment}
-                />
-              </Box>
-            ) : (
-              <Typography variant="body2" color="text.secondary">
-                -
-              </Typography>
-            )}
-          </TableCell>
-        );
-      })}
+      {dayCells}
     </TableRow>
   );
 }

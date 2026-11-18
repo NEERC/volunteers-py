@@ -87,6 +87,76 @@ test("attendance -> assessment -> results -> certificates -> export", async ({
   const nameOf = (key: Vol) => `${names[key].first} ${names[key].last}`;
   const [alice, boris, vera] = [nameOf("vol1"), nameOf("vol2"), nameOf("vol3")];
 
+  await test.step("admin marks attendance on a narrow screen", async () => {
+    const desktopViewport = page.viewportSize()!;
+    await page.setViewportSize({ width: 320, height: 740 });
+    try {
+      await page.goto(`/${yearId}/attendance?day=${dayIds[0]}`);
+      const main = page.getByRole("main");
+      const daySelect = main.getByRole("combobox", { name: "Day", exact: true });
+      await expect(daySelect).toHaveValue(String(dayIds[0]));
+
+      const volunteer = main.getByRole("listitem").filter({ hasText: alice });
+      await expect(volunteer.getByText(`Hall usher ${RUN_TAG}`)).toBeVisible();
+      await expect(volunteer.getByText(`Main hall ${RUN_TAG}`)).toBeVisible();
+
+      const status = volunteer.getByRole("button", {
+        name: "Unknown",
+        exact: true,
+      });
+      const assessment = volunteer.getByRole("button", {
+        name: "Add assessment",
+      });
+      for (const control of [status, assessment]) {
+        await expect(control).toBeVisible();
+        const bounds = await control.boundingBox();
+        if (!bounds) throw new Error("Expected an on-screen control");
+        expect(bounds.x).toBeGreaterThanOrEqual(0);
+        expect(bounds.x + bounds.width).toBeLessThanOrEqual(320);
+        expect(bounds.height).toBeGreaterThanOrEqual(44);
+      }
+      await main.getByRole("combobox", { name: /^Attendance/ }).click();
+      await page.getByRole("option", { name: "Late", exact: true }).click();
+      await status.click();
+      await expect(
+        volunteer.getByRole("button", { name: "Late", exact: true }),
+      ).toBeVisible();
+      await assessment.click();
+      const dialog = page.getByRole("dialog", { name: "Add Assessment" });
+      await dialog.getByLabel("Comment").fill("Mobile assessment");
+      await page.setViewportSize({ width: 932, height: 430 });
+      await expect(dialog.getByLabel("Comment")).toHaveValue("Mobile assessment");
+      await dialog.getByRole("button", { name: "Cancel" }).click();
+      await page.setViewportSize({ width: 320, height: 740 });
+      await expect(dialog).toBeHidden();
+
+      await daySelect.selectOption({ label: "All Days" });
+      await expect(page).not.toHaveURL(/\?day=/);
+      for (const day of [day1, day2, party]) {
+        await expect(volunteer.getByText(day, { exact: true })).toBeVisible();
+      }
+
+      const names = main.getByRole("listitem").getByRole("heading");
+      const originalOrder = await names.allTextContents();
+      const sortBy = main.getByRole("combobox", { name: "Sort by" });
+      await sortBy.selectOption({ label: day1 });
+      await expect(names.first()).toHaveText(alice);
+      await main.getByRole("button", { name: "Sort descending" }).click();
+      await expect(names.last()).toHaveText(alice);
+      if (originalOrder.at(-1) === alice) {
+        await main.getByRole("button", { name: "Sort ascending" }).click();
+        await expect(names.first()).toHaveText(alice);
+      }
+
+      await daySelect.selectOption({ label: day2 });
+      await expect(page).toHaveURL(new RegExp(`day=${dayIds[1]}$`));
+      await expect(sortBy).toHaveValue("");
+      await expect(names).toHaveText(originalOrder);
+    } finally {
+      await page.setViewportSize(desktopViewport);
+    }
+  });
+
   // --- 1. Attendance through the UI ---
   const plan: [string, string, "Yes" | "Late" | "No"][] = [
     [alice, day1, "Yes"],

@@ -2,6 +2,7 @@ import { Star, StarBorder } from "@mui/icons-material";
 import {
   Box,
   Button,
+  ButtonBase,
   Dialog,
   DialogActions,
   DialogContent,
@@ -145,6 +146,7 @@ export function AssessmentInput({
             }
           >
             <Box
+              component={canEdit ? ButtonBase : "div"}
               aria-label={
                 assessments.length > 1
                   ? `${t("Average of")} ${assessments.length} ${t("assessments")}`
@@ -154,7 +156,11 @@ export function AssessmentInput({
                 display: "flex",
                 alignItems: "center",
                 gap: 0.5,
-                cursor: canEdit ? "pointer" : "default",
+                minWidth: { xs: 44, lg: 0 },
+                minHeight: { xs: 44, lg: 0 },
+                borderRadius: 1,
+                flexShrink: 0,
+                "&.Mui-focusVisible": { backgroundColor: "action.hover" },
               }}
               onClick={() => {
                 if (canEdit && assessments.length === 1) {
@@ -165,7 +171,7 @@ export function AssessmentInput({
               }}
             >
               <Star sx={{ fontSize: 16, color: "warning.main" }} />
-              <Typography variant="body2" fontWeight="medium">
+              <Typography component="span" variant="body2" fontWeight="medium">
                 {formatAverage(averageScore)}
               </Typography>
             </Box>
@@ -175,7 +181,11 @@ export function AssessmentInput({
             <IconButton
               size="small"
               onClick={() => handleOpenDialog()}
-              sx={{ p: 0.5 }}
+              sx={{
+                p: 0.5,
+                minWidth: { xs: 44, lg: 0 },
+                minHeight: { xs: 44, lg: 0 },
+              }}
             >
               <StarBorder sx={{ fontSize: 16 }} />
             </IconButton>
