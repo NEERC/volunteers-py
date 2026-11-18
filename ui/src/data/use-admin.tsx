@@ -26,6 +26,7 @@ import {
   getYearPositionsApiV1AdminYearYearIdPositionsGet,
   getYearResultsApiV1AdminYearYearIdResultsGet,
   mergeUsersApiV1AdminUserUserIdMergeOtherUserIdPost,
+  setRegistrationCancelledApiV1AdminYearYearIdRegistrationFormsFormIdCancelledPatch,
 } from "@/client";
 import type {
   AddDayRequest,
@@ -536,6 +537,43 @@ export const useRegistrationForms = (yearId: string | number) => {
       return response.data;
     },
     enabled: !!yearId,
+  });
+};
+
+export const useSetRegistrationCancelled = (yearId: string) => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({
+      formId,
+      cancelled,
+    }: {
+      formId: number;
+      cancelled: boolean;
+    }) => {
+      await setRegistrationCancelledApiV1AdminYearYearIdRegistrationFormsFormIdCancelledPatch(
+        {
+          path: { year_id: Number(yearId), form_id: formId },
+          body: { cancelled },
+          throwOnError: true,
+        },
+      );
+    },
+    onSuccess: () =>
+      Promise.all([
+        queryClient.invalidateQueries({
+          queryKey: queryKeys.admin.registrationForms.year(yearId),
+        }),
+        queryClient.invalidateQueries({
+          queryKey: queryKeys.admin.users.list(yearId),
+        }),
+        queryClient.invalidateQueries({
+          queryKey: queryKeys.admin.mailings.recipientsForYear(yearId),
+        }),
+        queryClient.invalidateQueries({
+          queryKey: queryKeys.year.form(yearId),
+        }),
+      ]),
   });
 };
 

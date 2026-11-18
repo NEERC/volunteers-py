@@ -41,8 +41,9 @@ test("admin sends a mailing to the volunteers of a day", async ({
     await api.apply(yearId, { desired_positions_ids: [positionId] });
     userIds[key] = (await api.me()).user_id;
   }
+  const vol1FormId = await adminApi.formIdOf(yearId, userIds.vol1);
   await adminApi.assign({
-    application_form_id: await adminApi.formIdOf(yearId, userIds.vol1),
+    application_form_id: vol1FormId,
     day_id: day1Id,
     position_id: positionId,
   });
@@ -51,6 +52,8 @@ test("admin sends a mailing to the volunteers of a day", async ({
     day_id: day2Id,
     position_id: positionId,
   });
+
+  await adminApi.setRegistrationCancelled(yearId, vol1FormId, true);
 
   // --- Draft ---
   await page.goto(`/${yearId}/mailings`);
@@ -93,6 +96,9 @@ test("admin sends a mailing to the volunteers of a day", async ({
     await page.keyboard.press("Escape");
     await expect(recipients.getByRole("row")).toHaveCount(1);
     await expect(recipients).toContainText(recipientName("vol1"));
+    await expect(
+      recipients.getByText("Withdrawal", { exact: true }),
+    ).toBeVisible();
   });
 
   await test.step("write the template in Monaco", async () => {
@@ -198,6 +204,8 @@ test("admin filters recipients with an expression", async ({
   await expect(recipients.getByRole("row")).toHaveCount(3);
 
   const expression = page.getByTestId("mailing-filter-expression");
+  // Monaco uses the Desktop Chrome profile’s Windows keybindings.
+  const selectExpression = () => page.keyboard.press("Control+a");
   await test.step("a form-level expression filters the recipients", async () => {
     await expression.click();
     await page.keyboard.type(`user.last_name_ru == "${users.vol2.lastNameRu}"`);
@@ -208,7 +216,7 @@ test("admin filters recipients with an expression", async ({
 
   await test.step("a broken expression shows an error", async () => {
     await expression.click();
-    await page.keyboard.press("ControlOrMeta+a");
+    await selectExpression();
     await page.keyboard.type(`user.last_name_ru == "${users.vol2.lastNameRu}" and`);
     await page.keyboard.press("Escape");
     await expect(page.getByTestId("mailing-filter-error")).toBeVisible();
@@ -218,7 +226,7 @@ test("admin filters recipients with an expression", async ({
 
   await test.step("clearing the expression restores the recipients", async () => {
     await expression.click();
-    await page.keyboard.press("ControlOrMeta+a");
+    await selectExpression();
     await page.keyboard.press("Backspace");
     await page.keyboard.press("Escape");
     await expect(recipients.getByRole("row")).toHaveCount(3);

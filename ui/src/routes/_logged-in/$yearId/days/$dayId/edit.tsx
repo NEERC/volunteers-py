@@ -932,6 +932,8 @@ function RouteComponent() {
   // Get unassigned users (all users who haven't been manually assigned to any position yet)
   const unassignedUsers: RegistrationFormItem[] =
     registrationFormsData?.forms.filter((form) => {
+      if (form.cancelled) return false;
+
       // Check if user is assigned to any position for this day (including optimistic updates)
       const isAssignedInData =
         assignmentsData?.assignments.some((assignment) => {

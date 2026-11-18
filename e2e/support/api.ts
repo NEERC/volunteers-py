@@ -100,6 +100,19 @@ export class Api {
 
   // --- admin ---
 
+  async setRegistrationCancelled(
+    yearId: number,
+    formId: number,
+    cancelled: boolean,
+  ) {
+    await ok(
+      await this.ctx.patch(
+        `/api/v1/admin/year/${yearId}/registration-forms/${formId}/cancelled`,
+        { data: { cancelled } },
+      ),
+    );
+  }
+
   async createYear(yearName: string): Promise<number> {
     const { year_id } = await this.post<{ year_id: number }>(
       "/admin/year/add",

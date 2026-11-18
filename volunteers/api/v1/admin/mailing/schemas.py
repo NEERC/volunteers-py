@@ -76,6 +76,7 @@ class RecipientAssignment(BaseModel):
 
 class MailingRecipient(BaseModel):
     form_id: int
+    cancelled: bool
     user_id: int
     name: str
     telegram_username: str | None

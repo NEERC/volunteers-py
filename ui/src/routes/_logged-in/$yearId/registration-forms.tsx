@@ -2,7 +2,9 @@ import SearchIcon from "@mui/icons-material/Search";
 import {
   Alert,
   Box,
+  Button,
   Card,
+  CardActions,
   Chip,
   CircularProgress,
   FormControl,
@@ -14,11 +16,15 @@ import {
   Typography,
 } from "@mui/material";
 import { createFileRoute } from "@tanstack/react-router";
-import { useMemo, useState } from "react";
+import { useId, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import type { RegistrationFormItem } from "@/client/types.gen";
 import { DetailedUserCard } from "@/components/DetailedUserCard";
-import { useRegistrationForms } from "@/data/use-admin";
+import {
+  useRegistrationForms,
+  useSetRegistrationCancelled,
+} from "@/data/use-admin";
+import { apiErrorMessage } from "@/utils/apiErrorHandling";
 import { shouldBeAdmin } from "@/utils/should-be-logged-in";
 import { matchesTelegramUsername } from "@/utils/telegram-search";
 
@@ -33,6 +39,7 @@ export const Route = createFileRoute("/_logged-in/$yearId/registration-forms")({
 });
 
 const EMPTY: RegistrationFormItem[] = [];
+type ParticipationFilter = "active" | "cancelled" | "all";
 
 function RouteComponent() {
   const { t } = useTranslation();
@@ -41,20 +48,31 @@ function RouteComponent() {
 
   const [nameFilter, setNameFilter] = useState("");
   const [positionFilter, setPositionFilter] = useState("");
+  const [participationFilter, setParticipationFilter] =
+    useState<ParticipationFilter>("active");
+  const participationFilterId = useId();
+  const setCancelled = useSetRegistrationCancelled(yearId);
+
+  const formsByParticipation = useMemo(() => {
+    const forms = data?.forms ?? EMPTY;
+    if (participationFilter === "all") return forms;
+    return forms.filter(
+      (form) => form.cancelled === (participationFilter === "cancelled"),
+    );
+  }, [data?.forms, participationFilter]);
 
   // Get all unique positions and their counts
   const positionCounts = useMemo(() => {
-    if (!data?.forms) return {};
-
     const counts: Record<string, number> = {};
-    data.forms.forEach((form) => {
+    if (positionFilter) counts[positionFilter] = 0;
+    formsByParticipation.forEach((form) => {
       form.desired_positions.forEach((position) => {
         counts[position.name] = (counts[position.name] || 0) + 1;
       });
     });
 
     return counts;
-  }, [data?.forms]);
+  }, [formsByParticipation, positionFilter]);
 
   // Get unique positions for the filter dropdown
   const uniquePositions = useMemo(() => {
@@ -63,9 +81,7 @@ function RouteComponent() {
 
   // Filter registration forms based on name and position search
   const filteredForms = useMemo(() => {
-    if (!data?.forms) return EMPTY;
-
-    let filtered = data.forms;
+    let filtered = formsByParticipation;
 
     // Filter by name or Telegram username
     if (nameFilter.trim()) {
@@ -94,7 +110,7 @@ function RouteComponent() {
     }
 
     return filtered;
-  }, [data?.forms, nameFilter, positionFilter]);
+  }, [formsByParticipation, nameFilter, positionFilter]);
 
   if (isLoading) {
     return (
@@ -201,7 +217,32 @@ function RouteComponent() {
             ))}
           </Select>
         </FormControl>
+
+        <FormControl size="small" sx={{ minWidth: 200 }}>
+          <InputLabel id={participationFilterId}>
+            {t("Participation status")}
+          </InputLabel>
+          <Select<ParticipationFilter>
+            labelId={participationFilterId}
+            label={t("Participation status")}
+            value={participationFilter}
+            onChange={(e) => setParticipationFilter(e.target.value)}
+          >
+            <MenuItem value="active">{t("No withdrawal")}</MenuItem>
+            <MenuItem value="cancelled">{t("Withdrawal")}</MenuItem>
+            <MenuItem value="all">{t("All")}</MenuItem>
+          </Select>
+        </FormControl>
       </Box>
+
+      {setCancelled.isError && (
+        <Alert severity="error" sx={{ mb: 2 }} onClose={setCancelled.reset}>
+          {apiErrorMessage(
+            setCancelled.error,
+            t("Failed to update participation status"),
+          )}
+        </Alert>
+      )}
 
       {/* Cards List */}
       <Box
@@ -227,6 +268,21 @@ function RouteComponent() {
               expandedDefault={true}
               expandable={true}
             />
+            <CardActions>
+              <Button
+                size="small"
+                color={form.cancelled ? "primary" : "error"}
+                disabled={setCancelled.isPending}
+                onClick={() =>
+                  setCancelled.mutate({
+                    formId: form.form_id,
+                    cancelled: !form.cancelled,
+                  })
+                }
+              >
+                {form.cancelled ? t("Undo withdrawal") : t("Mark as withdrawn")}
+              </Button>
+            </CardActions>
           </Card>
         ))}
       </Box>

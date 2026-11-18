@@ -224,6 +224,7 @@ async def get_recipients(
         recipients=[
             MailingRecipient(
                 form_id=r.form.id,
+                cancelled=r.form.cancelled,
                 user_id=r.form.user_id,
                 name=r.name,
                 telegram_username=r.form.user.telegram_username,

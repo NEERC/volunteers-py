@@ -113,6 +113,8 @@ class ApplicationForm(Base, TimestampMixin):
     user_id: Mapped[int] = mapped_column(ForeignKey("users.id"))
     user: Mapped[User] = relationship(back_populates="application_forms")
 
+    cancelled: Mapped[bool] = mapped_column(Boolean, default=False, server_default="false")
+
     # Fields that do not participate in business logic (itmo_group, comments,
     # additional_skills, needs_invitation, lives_in_vyazma, ...).
     # Use the `extras` property for typed access.

@@ -25,7 +25,7 @@ import * as Yup from "yup";
 import type { Gender } from "@/client/types.gen";
 import { useMyIdentities } from "@/data/use-auth";
 
-import { useSaveRegistration } from "@/data/use-year";
+import { useSaveRegistration, useYearForm } from "@/data/use-year";
 import { authStore } from "@/store/auth";
 import { submitOnCtrlEnter } from "@/utils/formShortcuts";
 import { GENDER_OPTIONS, getGenderLabel } from "@/utils/gender";
@@ -59,8 +59,8 @@ type RegistrationFormValues = {
 
 function RouteComponent() {
   const { t } = useTranslation();
-  const year = Route.useRouteContext().year;
   const { yearId } = Route.useParams();
+  const { data: year } = useYearForm(yearId);
   const navigate = useNavigate();
   const user = authStore.user;
 
@@ -188,6 +188,12 @@ function RouteComponent() {
         <Typography variant="h4" component="h1" gutterBottom>
           {t("Registration Form")}
         </Typography>
+
+        {year.cancelled && (
+          <Alert severity="warning" sx={{ mb: 2 }}>
+            {t("Withdrawal")}
+          </Alert>
+        )}
 
         {showTelegramWarning && (
           <Alert severity="warning" sx={{ mb: 2 }}>

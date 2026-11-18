@@ -108,6 +108,7 @@ export type ApplicationFormYearSavedResponse = {
     needs_invitation: boolean;
     lives_in_vyazma: boolean;
     open_for_registration: boolean;
+    cancelled: boolean;
 };
 
 export type AssessmentAuthorOut = {
@@ -461,6 +462,7 @@ export type MailingPreviewResponse = {
 
 export type MailingRecipient = {
     form_id: number;
+    cancelled: boolean;
     user_id: number;
     name: string;
     telegram_username: string | null;
@@ -601,6 +603,7 @@ export type RefreshTokenRequest = {
 
 export type RegistrationFormItem = {
     form_id: number;
+    cancelled: boolean;
     user_id: number;
     first_name_ru: string;
     last_name_ru: string;
@@ -685,6 +688,10 @@ export type SaveDayAttendanceRequest = {
     attendance: Attendance;
 };
 
+export type SetRegistrationCancelledRequest = {
+    cancelled: boolean;
+};
+
 export type StartMailingResponse = {
     started: boolean;
     mailing: MailingResponse;
@@ -758,6 +765,7 @@ export type UserListItem = {
     telegram_username: string | null;
     gender: Gender | null;
     is_registered: boolean;
+    cancelled: boolean;
 };
 
 export type UserListResponse = {
@@ -2064,6 +2072,34 @@ export type GetRegistrationFormsApiV1AdminYearYearIdRegistrationFormsGetResponse
 };
 
 export type GetRegistrationFormsApiV1AdminYearYearIdRegistrationFormsGetResponse = GetRegistrationFormsApiV1AdminYearYearIdRegistrationFormsGetResponses[keyof GetRegistrationFormsApiV1AdminYearYearIdRegistrationFormsGetResponses];
+
+export type SetRegistrationCancelledApiV1AdminYearYearIdRegistrationFormsFormIdCancelledPatchData = {
+    body: SetRegistrationCancelledRequest;
+    path: {
+        year_id: number;
+        form_id: number;
+    };
+    query?: never;
+    url: '/api/v1/admin/year/{year_id}/registration-forms/{form_id}/cancelled';
+};
+
+export type SetRegistrationCancelledApiV1AdminYearYearIdRegistrationFormsFormIdCancelledPatchErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type SetRegistrationCancelledApiV1AdminYearYearIdRegistrationFormsFormIdCancelledPatchError = SetRegistrationCancelledApiV1AdminYearYearIdRegistrationFormsFormIdCancelledPatchErrors[keyof SetRegistrationCancelledApiV1AdminYearYearIdRegistrationFormsFormIdCancelledPatchErrors];
+
+export type SetRegistrationCancelledApiV1AdminYearYearIdRegistrationFormsFormIdCancelledPatchResponses = {
+    /**
+     * Successful Response
+     */
+    204: void;
+};
+
+export type SetRegistrationCancelledApiV1AdminYearYearIdRegistrationFormsFormIdCancelledPatchResponse = SetRegistrationCancelledApiV1AdminYearYearIdRegistrationFormsFormIdCancelledPatchResponses[keyof SetRegistrationCancelledApiV1AdminYearYearIdRegistrationFormsFormIdCancelledPatchResponses];
 
 export type GetYearResultsApiV1AdminYearYearIdResultsGetData = {
     body?: never;
