@@ -547,7 +547,18 @@ export function MailingDraftEditor({ mailing }: { mailing: MailingResponse }) {
                         }}
                       />
                     </TableCell>
-                    <TableCell>{recipient.name}</TableCell>
+                    <TableCell>
+                      {recipient.name}
+                      {recipient.cancelled && (
+                        <Typography
+                          variant="caption"
+                          color="error"
+                          display="block"
+                        >
+                          {t("Withdrawal")}
+                        </Typography>
+                      )}
+                    </TableCell>
                     <TableCell>
                       {recipient.has_telegram ? (
                         recipient.telegram_username ? (

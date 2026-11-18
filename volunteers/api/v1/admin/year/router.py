@@ -14,8 +14,9 @@ from volunteers.schemas.assessment import AssessmentAuthorOut, AssessmentOut
 from volunteers.schemas.position import PositionOut
 from volunteers.schemas.year import YearEditIn, YearIn
 from volunteers.services.export import ExportService
+from volunteers.services.i18n import I18nService
 from volunteers.services.user import UserService
-from volunteers.services.year import YearService
+from volunteers.services.year import ApplicationFormNotFound, YearService
 
 from .schemas import (
     AddYearRequest,
@@ -26,6 +27,7 @@ from .schemas import (
     RegistrationFormsResponse,
     ResultItem,
     ResultsResponse,
+    SetRegistrationCancelledRequest,
     UserListItem,
     UserListResponse,
 )
@@ -103,8 +105,9 @@ async def get_users_list(
             telegram_username=user.telegram_username,
             gender=user.gender,
             is_registered=is_registered,
+            cancelled=cancelled,
         )
-        for user, is_registered, itmo_group in user_data
+        for user, is_registered, itmo_group, cancelled in user_data
     ]
 
     return UserListResponse(users=user_list)
@@ -162,6 +165,7 @@ async def get_registration_forms(
         form_items.append(
             RegistrationFormItem(
                 form_id=form.id,
+                cancelled=form.cancelled,
                 user_id=form.user.id,
                 first_name_ru=form.user.first_name_ru,
                 last_name_ru=form.user.last_name_ru,
@@ -202,6 +206,28 @@ async def get_registration_forms(
         )
 
     return RegistrationFormsResponse(forms=form_items)
+
+
+@router.patch(
+    "/{year_id}/registration-forms/{form_id}/cancelled",
+    status_code=status.HTTP_204_NO_CONTENT,
+    description="Mark a registration form as cancelled or restore it (admin only)",
+)
+@inject
+async def set_registration_cancelled(
+    year_id: Annotated[int, Path(title="The ID of the year")],
+    form_id: Annotated[int, Path(title="The ID of the registration form")],
+    request: SetRegistrationCancelledRequest,
+    _: Annotated[User, Depends(with_admin)],
+    year_service: Annotated[YearService, Depends(Provide[Container.year_service])],
+    i18n: Annotated[I18nService, Depends(Provide[Container.i18n_service])],
+) -> None:
+    try:
+        await year_service.set_registration_cancelled(
+            year_id=year_id, form_id=form_id, cancelled=request.cancelled
+        )
+    except ApplicationFormNotFound as exc:
+        raise HTTPException(status_code=404, detail=i18n.translate(str(exc))) from exc
 
 
 @router.get(

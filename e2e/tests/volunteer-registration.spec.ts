@@ -200,3 +200,54 @@ test("admin sees the applications and the registered volunteers", async ({
     );
   }
 });
+
+test("admin can mark a registration as withdrawn and restore it", async ({
+  adminPage: page,
+  pageAs,
+}) => {
+  const user = users.vol1;
+  const name = `${user.firstNameEn} ${user.lastNameEn}`;
+  await page.goto(`/${yearId}/registration-forms`);
+  const card = page.locator(".MuiCard-root").filter({ hasText: name });
+  const status = page.getByRole("combobox", { name: "Participation status" });
+
+  await card.getByRole("button", { name: "Mark as withdrawn" }).click();
+  await expect(card).toHaveCount(0);
+
+  await status.click();
+  await page.getByRole("option", { name: "Withdrawal", exact: true }).click();
+  await expect(card.getByText("Withdrawal", { exact: true })).toBeVisible();
+
+  await page.goto(`/${yearId}/contacts`);
+  await page.getByRole("button", { name: "Show filters" }).click();
+  await page.getByRole("combobox", { name: "Status", exact: true }).click();
+  await page.getByRole("option", { name: "Withdrawal", exact: true }).click();
+  await expect(page.getByText("Status: Withdrawal", { exact: true })).toBeVisible();
+  await expect(page.getByText(name, { exact: true })).toBeVisible();
+  const otherUser = users.vol2;
+  await expect(
+    page.getByText(`${otherUser.firstNameEn} ${otherUser.lastNameEn}`, { exact: true }),
+  ).toHaveCount(0);
+
+  const volunteerPage = await pageAs("vol1");
+  const form = new ApplicationForm(volunteerPage);
+  await form.open(yearId, user);
+  await expect(
+    volunteerPage.getByText("Withdrawal", { exact: true }),
+  ).toBeVisible();
+  await form.fill(applications.vol1);
+  await form.submitAndExpectSaved();
+  await volunteerPage.reload();
+  await expect(
+    volunteerPage.getByText("Withdrawal", { exact: true }),
+  ).toBeVisible();
+
+  await page.goto(`/${yearId}/registration-forms`);
+  await status.click();
+  await page.getByRole("option", { name: "Withdrawal", exact: true }).click();
+  await card.getByRole("button", { name: "Undo withdrawal" }).click();
+  await expect(card).toHaveCount(0);
+  await status.click();
+  await page.getByRole("option", { name: "No withdrawal" }).click();
+  await expect(card.getByRole("button", { name: "Mark as withdrawn" })).toBeVisible();
+});

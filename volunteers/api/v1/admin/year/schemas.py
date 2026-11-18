@@ -33,6 +33,7 @@ class UserListItem(BaseModel):
     telegram_username: str | None
     gender: Gender | None
     is_registered: bool
+    cancelled: bool
 
 
 class UserListResponse(BaseModel):
@@ -48,6 +49,7 @@ class ExperienceItem(BaseModel):
 
 class RegistrationFormItem(BaseModel):
     form_id: int
+    cancelled: bool
     user_id: int
     first_name_ru: str
     last_name_ru: str
@@ -77,6 +79,10 @@ class RegistrationFormItem(BaseModel):
 
 class RegistrationFormsResponse(BaseModel):
     forms: list[RegistrationFormItem]
+
+
+class SetRegistrationCancelledRequest(BaseModel):
+    cancelled: bool
 
 
 class AttendanceItem(BaseModel):

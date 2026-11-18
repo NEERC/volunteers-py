@@ -59,11 +59,22 @@ export function DetailedUserCard({
         //   expandable && setExpanded(!expanded);
         // }}
       >
-        <Box sx={{ flex: 1, display: "flex", alignItems: "center", gap: 0.5 }}>
+        <Box
+          sx={{
+            flex: 1,
+            display: "flex",
+            flexWrap: "wrap",
+            alignItems: "center",
+            gap: 0.5,
+          }}
+        >
           {beforeName}
           <Typography variant="body2" sx={{ fontWeight: 600 }}>
             {fullName}
           </Typography>
+          {user.cancelled && (
+            <Chip label={t("Withdrawal")} size="small" color="error" />
+          )}
         </Box>
         {hasExtraInfo && expandable && (
           <IconButton

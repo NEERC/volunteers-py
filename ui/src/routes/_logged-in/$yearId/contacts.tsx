@@ -36,7 +36,7 @@ import {
   useReactTable,
 } from "@tanstack/react-table";
 import { useVirtualizer } from "@tanstack/react-virtual";
-import { useCallback, useMemo, useRef, useState } from "react";
+import { useCallback, useId, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import type { UserListItem } from "@/client/types.gen";
 import { DetailedUserCard } from "@/components/DetailedUserCard";
@@ -55,6 +55,16 @@ export const Route = createFileRoute("/_logged-in/$yearId/contacts")({
 });
 
 const EMPTY: UserListItem[] = [];
+const STATUS_LABELS = {
+  registered: "Registered",
+  unregistered: "Not Registered",
+  cancelled: "Withdrawal",
+} as const;
+
+function registrationStatus(user: UserListItem) {
+  if (user.cancelled) return "cancelled";
+  return user.is_registered ? "registered" : "unregistered";
+}
 
 function RouteComponent() {
   // console.log("render");
@@ -67,6 +77,7 @@ function RouteComponent() {
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
   const [globalFilter, setGlobalFilter] = useState("");
   const [showFilters, setShowFilters] = useState(false);
+  const filtersId = useId();
   const [selectedUserId, setSelectedUserId] = useState<number | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [copySuccess, setCopySuccess] = useState(false);
@@ -283,17 +294,22 @@ function RouteComponent() {
       {
         id: "status",
         header: t("Status"),
-        accessorKey: "is_registered",
+        accessorFn: registrationStatus,
         size: 170, // Status chips are compact
         cell: (info) => {
-          const isRegistered = info.getValue() as boolean;
-          const userId = info.row.original.id;
+          const user = info.row.original;
           return (
             <Chip
-              label={isRegistered ? t("Registered") : t("Not Registered")}
+              label={t(STATUS_LABELS[registrationStatus(user)])}
               size="small"
-              color={isRegistered ? "success" : "default"}
-              variant={isRegistered ? "filled" : "outlined"}
+              color={
+                user.cancelled
+                  ? "error"
+                  : user.is_registered
+                    ? "success"
+                    : "default"
+              }
+              variant={user.is_registered ? "filled" : "outlined"}
               sx={{
                 height: 20,
                 fontSize: "0.75rem",
@@ -302,16 +318,13 @@ function RouteComponent() {
                   opacity: 0.8,
                 },
               }}
-              onClick={() => handleStatusClick(userId)}
+              onClick={() => handleStatusClick(user.id)}
             />
           );
         },
         enableColumnFilter: true,
-        filterFn: (row, _columnId, filterValue) => {
-          if (!filterValue) return true;
-          const value = row.original.is_registered;
-          return String(value) === filterValue;
-        },
+        filterFn: "equalsString",
+        enableGlobalFilter: false,
       },
     ],
     [t, handleStatusClick],
@@ -484,16 +497,19 @@ function RouteComponent() {
                         label: g === "male" ? t("Male") : t("Female"),
                       }));
                     case "status":
-                      return [
-                        { value: "true", label: t("Registered") },
-                        { value: "false", label: t("Not Registered") },
-                      ];
+                      return Object.entries(STATUS_LABELS).map(
+                        ([value, label]) => ({
+                          value,
+                          label: t(label),
+                        }),
+                      );
                     default:
                       return [];
                   }
                 };
 
                 const options = getFilterOptions();
+                const labelId = `${filtersId}-${column.id}`;
 
                 return (
                   <FormControl
@@ -501,8 +517,11 @@ function RouteComponent() {
                     size="small"
                     sx={{ minWidth: 120 }}
                   >
-                    <InputLabel>{column.columnDef.header as string}</InputLabel>
+                    <InputLabel id={labelId}>
+                      {column.columnDef.header as string}
+                    </InputLabel>
                     <Select
+                      labelId={labelId}
                       value={String(column.getFilterValue() ?? "")}
                       onChange={(e) =>
                         column.setFilterValue(e.target.value || undefined)
@@ -549,10 +568,10 @@ function RouteComponent() {
               let displayValue = filterValue;
 
               if (filter.id === "status") {
-                displayValue =
-                  filterValue === "true"
-                    ? t("Registered")
-                    : t("Not Registered");
+                const label = Object.entries(STATUS_LABELS).find(
+                  ([value]) => value === filterValue,
+                )?.[1];
+                if (label) displayValue = t(label);
               } else if (filter.id === "gender") {
                 displayValue = filterValue === "male" ? t("Male") : t("Female");
               }

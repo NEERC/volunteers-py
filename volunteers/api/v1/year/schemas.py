@@ -18,6 +18,7 @@ class ApplicationFormYearSavedResponse(BaseSuccessResponse):
     needs_invitation: bool = False
     lives_in_vyazma: bool = False
     open_for_registration: bool
+    cancelled: bool
 
 
 class ApplicationFormYearSaveRequest(BaseModel):

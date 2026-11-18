@@ -76,6 +76,7 @@ async def get_form_year(
     logger.debug(f"{DB_PREFIX} Got user form and year positions")
     return ApplicationFormYearSavedResponse(
         open_for_registration=year.open_for_registration,
+        cancelled=form.cancelled if form else False,
         positions=[
             PositionOut(
                 position_id=p.id,

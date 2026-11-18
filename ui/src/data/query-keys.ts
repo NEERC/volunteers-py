@@ -138,13 +138,14 @@ export const queryKeys = {
         [...queryKeys.admin.mailings.all(), "detail", String(id)] as const,
       messages: (id: string | number) =>
         [...queryKeys.admin.mailings.all(), "messages", String(id)] as const,
-      recipients: (yearId: string | number, draft: unknown) =>
+      recipientsForYear: (yearId: string | number) =>
         [
           ...queryKeys.admin.mailings.all(),
           "recipients",
           String(yearId),
-          draft,
         ] as const,
+      recipients: (yearId: string | number, draft: unknown) =>
+        [...queryKeys.admin.mailings.recipientsForYear(yearId), draft] as const,
       preview: (yearId: string | number, request: unknown) =>
         [
           ...queryKeys.admin.mailings.all(),

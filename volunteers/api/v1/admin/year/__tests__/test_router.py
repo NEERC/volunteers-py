@@ -8,7 +8,7 @@ from fastapi import FastAPI, status
 from httpx import ASGITransport, AsyncClient
 
 from volunteers.api.v1.admin.year.router import router
-from volunteers.auth.deps import with_admin
+from volunteers.auth.deps import with_admin, with_user
 from volunteers.core.di import Container
 from volunteers.models import User
 from volunteers.models.gender import Gender
@@ -155,6 +155,7 @@ async def test_get_registration_forms_with_experience(app: AppWithContainer) -> 
         id=1,
         year_id=1,
         user_id=1,
+        cancelled=True,
         extra_fields={
             "itmo_group": "M1234",
             "comments": "Test comment",
@@ -194,6 +195,7 @@ async def test_get_registration_forms_with_experience(app: AppWithContainer) -> 
     form_data = data["forms"][0]
     assert form_data["form_id"] == 1
     assert form_data["user_id"] == 1
+    assert form_data["cancelled"] is True
     assert form_data["first_name_ru"] == "Иван"
     assert form_data["last_name_ru"] == "Иванов"
     assert form_data["patronymic_ru"] == "Иванович"
@@ -225,3 +227,34 @@ async def test_get_registration_forms_with_experience(app: AppWithContainer) -> 
     # Verify service methods were called
     app.test_year_service.get_all_forms_by_year_id.assert_awaited_once_with(year_id=1)
     app.test_year_service.get_user_experience.assert_awaited_once_with(1)
+
+
+@pytest.mark.parametrize("cancelled", [True, False])
+async def test_set_registration_cancelled(app: AppWithContainer, cancelled: bool) -> None:
+    app.test_year_service.set_registration_cancelled = AsyncMock()
+
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as ac:
+        response = await ac.patch(
+            "/api/v1/admin/year/1/registration-forms/2/cancelled",
+            json={"cancelled": cancelled},
+        )
+
+    assert response.status_code == status.HTTP_204_NO_CONTENT
+    app.test_year_service.set_registration_cancelled.assert_awaited_once_with(
+        year_id=1, form_id=2, cancelled=cancelled
+    )
+
+
+async def test_set_registration_cancelled_forbidden(app: AppWithContainer) -> None:
+    app.dependency_overrides.pop(with_admin)
+    app.dependency_overrides[with_user] = lambda: User(id=2, is_admin=False)
+    app.test_year_service.set_registration_cancelled = AsyncMock()
+
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as ac:
+        response = await ac.patch(
+            "/api/v1/admin/year/1/registration-forms/2/cancelled",
+            json={"cancelled": True},
+        )
+
+    assert response.status_code == status.HTTP_403_FORBIDDEN
+    app.test_year_service.set_registration_cancelled.assert_not_awaited()

@@ -114,8 +114,8 @@ async def test_get_users_list_success(
 
     # Mock the service method to return the expected data
     app.test_user_service.get_users_with_registration_status.return_value = [
-        (sample_users[0], True, "M3234"),  # user1, registered, with group
-        (sample_users[1], False, None),  # user2, not registered, no group
+        (sample_users[0], True, "M3234", True),
+        (sample_users[1], False, None, False),
     ]
 
     client = TestClient(app)
@@ -139,6 +139,7 @@ async def test_get_users_list_success(
     assert user1_data["phone"] == "+1234567890"
     assert user1_data["telegram_username"] == "ivan_user"
     assert user1_data["is_registered"] is True
+    assert user1_data["cancelled"] is True
 
     # Check second user (not registered for year 1)
     user2_data = data["users"][1]
@@ -153,3 +154,4 @@ async def test_get_users_list_success(
     assert user2_data["phone"] == "+0987654321"
     assert user2_data["telegram_username"] == "petr_user"
     assert user2_data["is_registered"] is False
+    assert user2_data["cancelled"] is False

@@ -827,6 +827,20 @@ class YearService(BaseService):
             for assignment in assignments
         ]
 
+    async def set_registration_cancelled(
+        self, *, year_id: int, form_id: int, cancelled: bool
+    ) -> None:
+        async with self.session_scope() as session:
+            updated_id = await session.scalar(
+                update(ApplicationForm)
+                .where(ApplicationForm.id == form_id, ApplicationForm.year_id == year_id)
+                .values(cancelled=cancelled)
+                .returning(ApplicationForm.id)
+            )
+            if updated_id is None:
+                raise ApplicationFormNotFound()
+            await session.commit()
+
     async def create_form(self, form: ApplicationFormIn) -> None:
         async with self.session_scope() as session:
             created_form = ApplicationForm(
