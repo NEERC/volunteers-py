@@ -64,6 +64,7 @@ import {
 } from "@/data/use-mailings";
 import { useDebouncedValue } from "@/hooks/useDebouncedValue";
 import { apiErrorMessage } from "@/utils/apiErrorHandling";
+import { matchesTelegramUsername } from "@/utils/telegram-search";
 import { ExpressionEditor } from "./ExpressionEditor";
 import { ATTENDANCE_LABELS, MailingStatusChip } from "./status";
 import { formatSize, TelegramMessage } from "./TelegramMessage";
@@ -210,12 +211,16 @@ export function MailingDraftEditor({ mailing }: { mailing: MailingResponse }) {
     update({ excluded_form_ids: [...next] });
   };
 
-  // Search by name only hides rows; the checkbox in the header sends to or
+  // Search only hides rows; the checkbox in the header sends to or
   // excludes all the found recipients
   const [search, setSearch] = useState("");
   const query = search.trim().toLocaleLowerCase();
   const shownRecipients = query
-    ? recipientList.filter((r) => r.name.toLocaleLowerCase().includes(query))
+    ? recipientList.filter(
+        (r) =>
+          r.name.toLocaleLowerCase().includes(query) ||
+          matchesTelegramUsername(r.telegram_username, query),
+      )
     : recipientList;
   // From the draft, so the header follows clicks before the recipients reload
   const shownIncluded = shownRecipients.filter(
@@ -471,7 +476,7 @@ export function MailingDraftEditor({ mailing }: { mailing: MailingResponse }) {
           <TextField
             size="small"
             type="search"
-            label={t("Search by name")}
+            label={t("Search by name or Telegram")}
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             sx={{ mb: 1, width: { xs: "100%", sm: 300 } }}

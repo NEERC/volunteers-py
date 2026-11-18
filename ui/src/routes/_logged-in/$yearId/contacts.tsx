@@ -43,6 +43,7 @@ import { DetailedUserCard } from "@/components/DetailedUserCard";
 import { useRegistrationForms, useUsersList } from "@/data/use-admin";
 import { getGenderLabel } from "@/utils/gender";
 import { shouldBeAdmin } from "@/utils/should-be-logged-in";
+import { telegramGlobalFilter } from "@/utils/telegram-search";
 
 export const Route = createFileRoute("/_logged-in/$yearId/contacts")({
   component: RouteComponent,
@@ -250,7 +251,7 @@ function RouteComponent() {
       {
         id: "telegram",
         header: t("Telegram"),
-        accessorKey: "telegram_username",
+        accessorFn: (user) => user.telegram_username ?? "",
         size: 200, // Telegram usernames are short
         cell: (info) => {
           const username = info.getValue() as string | null;
@@ -329,6 +330,7 @@ function RouteComponent() {
     onSortingChange: setSorting,
     onColumnFiltersChange: setColumnFilters,
     onGlobalFilterChange: setGlobalFilter,
+    globalFilterFn: telegramGlobalFilter,
     getCoreRowModel: getCoreRowModel(),
     getFilteredRowModel: getFilteredRowModel(),
     getSortedRowModel: getSortedRowModel(),

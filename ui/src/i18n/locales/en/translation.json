@@ -127,7 +127,7 @@
   "All registration forms for this year": "All registration forms for this year",
   "forms": "forms",
   "Search registration forms...": "Search registration forms...",
-  "Search by name...": "Search by name...",
+  "Search by name or Telegram...": "Search by name or Telegram...",
   "Position counts": "Position counts",
   "Filter by position": "Filter by position",
   "All positions": "All positions",
@@ -475,7 +475,7 @@
   "Search all columns...": "Search all columns...",
   "Volunteers": "Volunteers",
   "Copy badges data": "Copy badges data",
-  "Search by name": "Search by name",
+  "Search by name or Telegram": "Search by name or Telegram",
   "Send to all shown": "Send to all shown",
   "Nobody found": "Nobody found"
 }

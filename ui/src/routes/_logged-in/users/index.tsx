@@ -39,6 +39,7 @@ import { downloadFile } from "@/utils/download";
 import { findSuspectedDuplicates } from "@/utils/duplicates";
 import { getGenderLabel } from "@/utils/gender";
 import { shouldBeAdmin } from "@/utils/should-be-logged-in";
+import { telegramGlobalFilter } from "@/utils/telegram-search";
 
 export const Route = createFileRoute("/_logged-in/users/")({
   component: RouteComponent,
@@ -171,7 +172,7 @@ function RouteComponent() {
         {
           id: "telegram",
           header: t("Telegram"),
-          accessorKey: "telegram_username",
+          accessorFn: (user) => user.telegram_username ?? "",
           size: 140,
           cell: (info) => {
             const username = info.getValue() as string | null;
@@ -245,6 +246,7 @@ function RouteComponent() {
     onSortingChange: setSorting,
     onColumnFiltersChange: setColumnFilters,
     onGlobalFilterChange: setGlobalFilter,
+    globalFilterFn: telegramGlobalFilter,
     getCoreRowModel: getCoreRowModel(),
     getFilteredRowModel: getFilteredRowModel(),
     getSortedRowModel: getSortedRowModel(),

@@ -65,7 +65,7 @@ test("admin sends a mailing to the volunteers of a day", async ({
 
   await test.step("search by name and select all", async () => {
     const sendToAll = page.getByRole("checkbox", { name: "Send to all shown" });
-    const search = page.getByRole("searchbox", { name: "Search by name" });
+    const search = page.getByRole("searchbox", { name: "Search by name or Telegram" });
     await search.fill(users.vol2.lastNameRu);
     await expect(recipients.getByRole("row")).toHaveCount(1);
     await expect(recipients).toContainText(recipientName("vol2"));

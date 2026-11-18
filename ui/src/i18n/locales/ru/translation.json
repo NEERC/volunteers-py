@@ -137,7 +137,7 @@
   "All registration forms for this year": "Все формы регистрации для этого года",
   "forms": "форм",
   "Search registration forms...": "Поиск форм регистрации...",
-  "Search by name...": "Поиск по имени...",
+  "Search by name or Telegram...": "Поиск по имени или Telegram...",
   "Position counts": "Количество по ролям",
   "Filter by position": "Фильтр по роли",
   "All positions": "Все роли",
@@ -477,7 +477,7 @@
   "Edit Day": "Редактировать день",
   "This position requires assignment to a specific hall": "Для этой роли нужно назначение в конкретный холл",
   "Failed to download data": "Не удалось скачать данные",
-  "Search by name": "Поиск по имени",
+  "Search by name or Telegram": "Поиск по имени или Telegram",
   "Send to all shown": "Отправить всем показанным",
   "Nobody found": "Никого не найдено"
 }
