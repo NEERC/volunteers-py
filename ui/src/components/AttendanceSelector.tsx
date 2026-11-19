@@ -7,19 +7,21 @@ import LocalHospitalIcon from "@mui/icons-material/LocalHospital";
 import {
   Box,
   FormControl,
+  InputLabel,
   MenuItem,
   Select,
   ToggleButton,
   ToggleButtonGroup,
-  useMediaQuery,
-  useTheme,
+  Typography,
 } from "@mui/material";
+import { useId } from "react";
 import { useTranslation } from "react-i18next";
 import type { Attendance } from "@/client/types.gen";
 
 interface AttendanceSelectorProps {
   value: Attendance;
   onChange: (value: Attendance) => void;
+  isMobile: boolean;
 }
 
 export function getAttendanceIcon(attendance: Attendance) {
@@ -72,22 +74,29 @@ const ATTENDANCE_OPTIONS: Attendance[] = [
 export function AttendanceSelector({
   value,
   onChange,
+  isMobile,
 }: AttendanceSelectorProps) {
   const { t } = useTranslation();
-  const theme = useTheme();
-  const isMobile = useMediaQuery(theme.breakpoints.down("md"));
+  const labelId = useId();
 
   const renderOption = (attendance: Attendance) => (
     <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
       {getAttendanceIcon(attendance)}
-      {getAttendanceLabel(attendance, t)}
+      <Typography component="span" variant="inherit" noWrap>
+        {getAttendanceLabel(attendance, t)}
+      </Typography>
     </Box>
   );
 
   if (isMobile) {
     return (
-      <FormControl size="small" sx={{ minWidth: 150 }}>
+      <FormControl size="small" fullWidth>
+        <InputLabel id={labelId}>{t("Attendance")}</InputLabel>
         <Select
+          labelId={labelId}
+          autoWidth
+          label={t("Attendance")}
+          sx={{ minHeight: 44 }}
           value={value}
           onChange={(e) => onChange(e.target.value as Attendance)}
           renderValue={(selectedValue) =>
