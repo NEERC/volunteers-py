@@ -52,8 +52,10 @@ import {
   useEditAssessment,
   useSaveAttendance,
 } from "@/data/use-year";
+import { useYears } from "@/data/use-years";
 import {
   buildAttendanceTsv,
+  getAttendanceFilename,
   getDisplayedHalls,
 } from "@/utils/attendance-export";
 import { shouldBeManager } from "@/utils/should-be-logged-in";
@@ -134,6 +136,10 @@ function RouteComponent() {
   const isMobile = useMediaQuery(theme.breakpoints.down("lg"));
   const { yearId } = Route.useParams();
   const { user } = Route.useRouteContext();
+  const { data: yearsData } = useYears();
+  const currentYear = yearsData?.years.find(
+    (year) => year.year_id === Number(yearId),
+  );
   const navigate = useNavigate();
   const search = useSearch({ from: "/_logged-in/$yearId/attendance" });
   const [selectedAttendance, setSelectedAttendance] =
@@ -236,6 +242,11 @@ function RouteComponent() {
       ),
     [exportRows, displayedDays, t],
   );
+  const selectedDay = days.find((day) => day.day_id === selectedDayId);
+  const filename = currentYear
+    ? getAttendanceFilename(currentYear.year_name, selectedDay?.day_name)
+    : undefined;
+
   const changeDay = (newDayId: number | "all") => {
     navigate({
       to: "/$yearId/attendance",
@@ -340,7 +351,7 @@ function RouteComponent() {
       >
         <AttendanceExportActions
           content={exportContent}
-          filename={`attendance-${yearId}.tsv`}
+          filename={filename}
           disabled={!volunteers.length}
         />
         {isMobile ? (

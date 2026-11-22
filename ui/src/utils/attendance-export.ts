@@ -1,6 +1,17 @@
 import type { VolunteersApiV1AttendanceSchemasAttendanceItem as AttendanceItem } from "@/client/types.gen";
 import { getAttendanceLabel } from "@/components/AttendanceSelector";
 
+export function getAttendanceFilename(
+  eventName: string,
+  dayName?: string,
+): string {
+  const part = (name: string, fallback: string) =>
+    name
+      .replace(/[<>:"/\\|?*\p{Cc}\s]+/gu, "-")
+      .replace(/^[.-]+|[.-]+$/g, "") || fallback;
+  return `attendance-${part(eventName, "event")}-${dayName === undefined ? "all-days" : part(dayName, "day")}.tsv`;
+}
+
 export interface VolunteerAttendance {
   user_id: number;
   user_name: string;

@@ -15,6 +15,20 @@ afterEach(() => {
 describe("AttendanceExportActions", () => {
   const props = { content: "Name\tDay\nAnna\tYes", filename: "attendance.tsv" };
 
+  test("allows copying while the download filename is unavailable", async () => {
+    const writeText = vi.fn().mockResolvedValue(undefined);
+    vi.stubGlobal("navigator", { ...navigator, clipboard: { writeText } });
+    render(<AttendanceExportActions content={props.content} />);
+
+    expect(
+      (screen.getByRole("button", { name: "Download" }) as HTMLButtonElement)
+        .disabled,
+    ).toBe(true);
+    fireEvent.click(screen.getByRole("button", { name: "Copy" }));
+    expect(writeText).toHaveBeenCalledWith(props.content);
+    expect(await screen.findByText("Data copied to clipboard")).toBeTruthy();
+  });
+
   test("copies the export and reports success", async () => {
     const writeText = vi.fn().mockResolvedValue(undefined);
     vi.stubGlobal("navigator", { ...navigator, clipboard: { writeText } });

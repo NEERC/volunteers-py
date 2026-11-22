@@ -1,12 +1,12 @@
 import ContentCopyIcon from "@mui/icons-material/ContentCopy";
 import DownloadIcon from "@mui/icons-material/Download";
 import { Alert, Box, Button, Snackbar } from "@mui/material";
-import { useState } from "react";
+import { useId, useState } from "react";
 import { useTranslation } from "react-i18next";
 
 interface AttendanceExportActionsProps {
   content: string;
-  filename: string;
+  filename?: string;
   disabled?: boolean;
 }
 
@@ -16,6 +16,7 @@ export function AttendanceExportActions({
   disabled,
 }: AttendanceExportActionsProps) {
   const { t } = useTranslation();
+  const id = useId();
   const [notification, setNotification] = useState<{
     message: string;
     error: boolean;
@@ -34,6 +35,7 @@ export function AttendanceExportActions({
   };
 
   const download = () => {
+    if (!filename) return;
     let url: string | undefined;
     try {
       url = URL.createObjectURL(
@@ -55,7 +57,7 @@ export function AttendanceExportActions({
   return (
     <Box sx={{ display: "flex", gap: 1 }}>
       <Button
-        id="attendance-copy"
+        id={`${id}-copy`}
         size="small"
         variant="outlined"
         startIcon={<ContentCopyIcon />}
@@ -65,12 +67,12 @@ export function AttendanceExportActions({
         {t("Copy")}
       </Button>
       <Button
-        id="attendance-download"
+        id={`${id}-download`}
         size="small"
         variant="outlined"
         startIcon={<DownloadIcon />}
         onClick={download}
-        disabled={disabled}
+        disabled={disabled || !filename}
       >
         {t("Download")}
       </Button>

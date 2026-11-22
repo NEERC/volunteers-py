@@ -1,12 +1,36 @@
 import { describe, expect, it } from "vitest";
 import type { VolunteersApiV1AttendanceSchemasAttendanceItem as AttendanceItem } from "@/client/types.gen";
-import { buildAttendanceTsv, groupAttendance } from "@/utils/attendance-export";
+import {
+  buildAttendanceTsv,
+  getAttendanceFilename,
+  groupAttendance,
+} from "@/utils/attendance-export";
 
 const days = [
   { day_id: 1, day_name: "Day 1" },
   { day_id: 2, day_name: "Day 2" },
 ];
 const t = (key: string) => key;
+
+describe("getAttendanceFilename", () => {
+  it("includes the event and selected day, or all-days", () => {
+    expect(getAttendanceFilename("NEERC 2026", "Day 1")).toBe(
+      "attendance-NEERC-2026-Day-1.tsv",
+    );
+    expect(getAttendanceFilename("NEERC 2026")).toBe(
+      "attendance-NEERC-2026-all-days.tsv",
+    );
+  });
+
+  it("preserves Cyrillic and replaces characters forbidden in filenames", () => {
+    expect(getAttendanceFilename("  Финал / 2026  ", "День: 1?")).toBe(
+      "attendance-Финал-2026-День-1.tsv",
+    );
+    expect(getAttendanceFilename("...", " / ")).toBe(
+      "attendance-event-day.tsv",
+    );
+  });
+});
 
 function item(overrides: Partial<AttendanceItem> = {}): AttendanceItem {
   return {
