@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { VolunteersApiV1AttendanceSchemasAttendanceItem as AttendanceItem } from "@/client/types.gen";
-import { buildAttendanceTsv } from "@/utils/attendance-export";
+import { buildAttendanceTsv, groupAttendance } from "@/utils/attendance-export";
 
 const days = [
   { day_id: 1, day_name: "Day 1" },
@@ -27,6 +27,28 @@ function item(overrides: Partial<AttendanceItem> = {}): AttendanceItem {
 }
 
 describe("buildAttendanceTsv", () => {
+  it("keeps separate rows for the same volunteer in different roles and sorts roles", () => {
+    const items = [
+      item({ position_id: 2, position_name: "Usher", attendance: "late" }),
+      item({ position_id: 1, position_name: "Helper", attendance: "yes" }),
+      item({
+        position_id: 2,
+        position_name: "Usher",
+        day_id: 2,
+        attendance: "no",
+      }),
+    ];
+
+    expect(buildAttendanceTsv(groupAttendance(items), days, t)).toBe(
+      "Position\tHall\tName\tDay 1\tDay 2\n" +
+        "Helper\tMain\tAlice (@alice)\tYes\t-\n" +
+        "Usher\tMain\tAlice (@alice)\tLate\tNo",
+    );
+    expect(groupAttendance(items).map((row) => row.position_id)).toEqual([
+      1, 2,
+    ]);
+  });
+
   it("exports the displayed days, grouping assignments by position and volunteer", () => {
     const items = [
       item({ day_id: 2, day_name: "Day 2", attendance: "late" }),
@@ -46,12 +68,12 @@ describe("buildAttendanceTsv", () => {
       }),
     ];
 
-    expect(buildAttendanceTsv(items, days, t)).toBe(
+    expect(buildAttendanceTsv(groupAttendance(items), days, t)).toBe(
       "Position\tHall\tName\tDay 1\tDay 2\n" +
         "Helper\tMain\tAlice (@alice)\tYes (0.75)\tLate\n" +
         "Helper\t-\tBob\tUnknown\t-",
     );
-    expect(buildAttendanceTsv(items, [days[1]], t)).toBe(
+    expect(buildAttendanceTsv(groupAttendance(items), [days[1]], t)).toBe(
       "Position\tHall\tName\tDay 2\n" +
         "Helper\tMain\tAlice (@alice)\tLate\n" +
         "Helper\t-\tBob\t-",
@@ -64,7 +86,7 @@ describe("buildAttendanceTsv", () => {
       user_name: "Alice\nSmith",
       user_telegram: null,
     });
-    expect(buildAttendanceTsv([special], [days[0]], t)).toBe(
+    expect(buildAttendanceTsv(groupAttendance([special]), [days[0]], t)).toBe(
       'Position\tHall\tName\tDay 1\n"Front\t""desk"""\tMain\t"Alice\nSmith"\tYes',
     );
   });
@@ -75,10 +97,18 @@ describe("buildAttendanceTsv", () => {
       item({ day_id: 2, day_name: "Day 2", hall_id: 2, hall_name: "Side" }),
     ];
 
-    expect(buildAttendanceTsv(items, days, t)).toContain("\tMain, Side\t");
-    expect(buildAttendanceTsv(items, [days[1]], t)).toContain("\tSide\t");
+    expect(buildAttendanceTsv(groupAttendance(items), days, t)).toContain(
+      "\tMain, Side\t",
+    );
+    expect(buildAttendanceTsv(groupAttendance(items), [days[1]], t)).toContain(
+      "\tSide\t",
+    );
     expect(
-      buildAttendanceTsv(items, [{ day_id: 3, day_name: "Day 3" }], t),
+      buildAttendanceTsv(
+        groupAttendance(items),
+        [{ day_id: 3, day_name: "Day 3" }],
+        t,
+      ),
     ).toContain("\t-\t");
   });
 
@@ -90,7 +120,11 @@ describe("buildAttendanceTsv", () => {
       user_telegram: null,
     });
     expect(
-      buildAttendanceTsv([special], [{ day_id: 1, day_name: "-Day 1" }], t),
+      buildAttendanceTsv(
+        groupAttendance([special]),
+        [{ day_id: 1, day_name: "-Day 1" }],
+        t,
+      ),
     ).toBe(
       `Position\tHall\tName\t'-Day 1\n` +
         `"'=HYPERLINK(""https://example.com"")"\t'  +Hall\t"'@Alice\tSmith"\tYes`,
@@ -108,8 +142,8 @@ describe("buildAttendanceTsv", () => {
     expect(buildAttendanceTsv([], days, translate)).toBe(
       "Роль\tХолл\tИмя\tDay 1\tDay 2",
     );
-    expect(buildAttendanceTsv([item()], [days[0]], translate)).toContain(
-      "\tДа",
-    );
+    expect(
+      buildAttendanceTsv(groupAttendance([item()]), [days[0]], translate),
+    ).toContain("\tДа");
   });
 });

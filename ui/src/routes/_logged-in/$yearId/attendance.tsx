@@ -39,6 +39,7 @@ import type {
   VolunteersApiV1AttendanceSchemasAttendanceItem as AttendanceItem,
 } from "@/client/types.gen";
 import { AssessmentInput } from "@/components/AssessmentInput";
+import { AttendanceExportActions } from "@/components/AttendanceExportActions";
 import {
   AttendanceSelector,
   getAttendanceIcon,
@@ -51,6 +52,10 @@ import {
   useEditAssessment,
   useSaveAttendance,
 } from "@/data/use-year";
+import {
+  buildAttendanceTsv,
+  getDisplayedHalls,
+} from "@/utils/attendance-export";
 import { shouldBeManager } from "@/utils/should-be-logged-in";
 
 export const Route = createFileRoute("/_logged-in/$yearId/attendance")({
@@ -179,7 +184,7 @@ function RouteComponent() {
       { accessorKey: "position_name", header: t("Position") },
       {
         id: "hall_name",
-        accessorFn: (volunteer) => volunteer.hall_name ?? "",
+        accessorFn: (volunteer) => getDisplayedHalls(volunteer, displayedDays),
         header: t("Hall"),
       },
       { accessorKey: "user_name", header: t("Name") },
@@ -221,6 +226,16 @@ function RouteComponent() {
     getSortedRowModel: getSortedRowModel(),
   });
 
+  const exportRows = table.getRowModel().rows;
+  const exportContent = useMemo(
+    () =>
+      buildAttendanceTsv(
+        exportRows.map((row) => row.original),
+        displayedDays,
+        t,
+      ),
+    [exportRows, displayedDays, t],
+  );
   const changeDay = (newDayId: number | "all") => {
     navigate({
       to: "/$yearId/attendance",
@@ -323,6 +338,11 @@ function RouteComponent() {
           py: 1,
         }}
       >
+        <AttendanceExportActions
+          content={exportContent}
+          filename={`attendance-${yearId}.tsv`}
+          disabled={!volunteers.length}
+        />
         {isMobile ? (
           <Box
             sx={{
@@ -508,6 +528,8 @@ function VolunteerRow({
 }: VolunteerRowProps) {
   const { t } = useTranslation();
 
+  const hallName = getDisplayedHalls(volunteer, days);
+
   const dayCells = days.map((day) => {
     const item = volunteer.attendanceByDay.get(day.day_id);
     const content = item ? (
@@ -628,7 +650,7 @@ function VolunteerRow({
         </Typography>
       </TableCell>
       <TableCell sx={{ py: 0.5 }}>
-        <Typography variant="body2">{volunteer.hall_name || "-"}</Typography>
+        <Typography variant="body2">{hallName}</Typography>
       </TableCell>
       <TableCell sx={{ py: 0.5 }}>
         <Typography variant="body2">{volunteer.user_name}</Typography>
